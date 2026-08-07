@@ -28,6 +28,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.PSeries
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Prime.Infinite
+import Mathlib.NumberTheory.PrimeCounting
 import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -1299,6 +1300,46 @@ stated using mathlib's standard counting function. -/
 theorem primeCount_eq_primeCounting (x : ℕ) :
     primeCount x = Nat.primeCounting x := by
   simp only [primeCount, Nat.primeCounting, Nat.primeCounting', Nat.count_eq_card_filter_range]
+
+/-- A prime-counting PNT in the normal form exported by PNTAnd's `pi_alt`.
+
+This is kept as a separate interface: adapting an external proof to the
+project toolchain only has to establish this proposition. -/
+def PrimeCountingPNT : Prop :=
+  ∃ c : ℕ → ℝ, c =o[Filter.atTop] (fun _ ↦ (1 : ℝ)) ∧
+    ∀ x : ℕ, (primeCount x : ℝ) = (1 + c x) * (x : ℝ) / log x
+
+/-- The `pi_alt` normal form implies the epsilon formulation used by the
+project's PNT declaration. -/
+theorem primeCountingPNT_implies_prime_number_theorem (hPNT : PrimeCountingPNT) :
+    ∀ ε : ℝ, 0 < ε → ∃ x₀ : ℕ,
+      ∀ x : ℕ, x₀ ≤ x →
+        |(primeCount x : ℝ) - (x : ℝ) / log x| ≤
+          ε * (x : ℝ) / log x := by
+  obtain ⟨c, hc, hcount⟩ := hPNT
+  rw [Asymptotics.isLittleO_iff] at hc
+  intro ε hε
+  specialize hc (c := ε) hε
+  rw [Filter.eventually_atTop] at hc
+  obtain ⟨x₀, hx₀⟩ := hc
+  refine ⟨max 2 x₀, ?_⟩
+  intro x hx
+  have hx2 : 2 ≤ x := le_trans (le_max_left _ _) hx
+  have hcx : |c x| ≤ ε := by
+    have := hx₀ x (le_trans (le_max_right _ _) hx)
+    simpa using this
+  have hlog : 0 < log (x : ℝ) :=
+    Real.log_pos (by exact_mod_cast (show 1 < x by omega))
+  have hscale : 0 ≤ (x : ℝ) / log x := by positivity
+  rw [hcount x]
+  have hrewrite :
+      (1 + c x) * (x : ℝ) / log x - (x : ℝ) / log x =
+        c x * ((x : ℝ) / log x) := by ring
+  rw [hrewrite, abs_mul, abs_of_nonneg hscale]
+  calc
+    |c x| * ((x : ℝ) / log x) ≤ ε * ((x : ℝ) / log x) :=
+      mul_le_mul_of_nonneg_right hcx hscale
+    _ = ε * (x : ℝ) / log x := by ring
 
 /-- π(x) ≥ 1 当 x ≥ 2 (至少有素数 2) -/
 theorem primeCount_pos (x : ℕ) (hx : 2 ≤ x) : 0 < primeCount x := by

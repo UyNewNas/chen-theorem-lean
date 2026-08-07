@@ -59,6 +59,13 @@ the conventional prime-counting asymptotic.  Together they give a credible
 analytic foundation for the local `prime_number_theorem` after toolchain and
 normalization adaptation.
 
+The local repository already proves the normalization step independently:
+`primeCount_eq_primeCounting` identifies its finite definition with
+`Nat.primeCounting`, and `primeCountingPNT_implies_prime_number_theorem`
+derives the local epsilon-PNT statement from the `pi_alt` shape.  Thus a future
+port only needs to provide `PrimeCountingPNT`; it does not need to redo this
+logical conversion.
+
 ## What it does not establish
 
 This audit is not an integration.  The public Chen repository uses Lean
@@ -70,8 +77,8 @@ statements use specific finite sums and products.
 Before removing any local `sorry`, an integration must:
 
 1. port or otherwise bridge the dependency to the pinned public toolchain;
-2. translate `pi_alt` to the project's exact finite `primeCount` and epsilon
-   normalization (or derive that translation from `Strong_PNT`);
+2. establish the local `PrimeCountingPNT` interface from the ported `pi_alt`
+   statement;
 3. derive the two stated Mertens estimates, including their finite-range and
    constant conventions;
 4. rerun `#print axioms` on every resulting local theorem and on
