@@ -29,12 +29,35 @@ At that revision, running `#print axioms Strong_PNT` reported only:
 
 In particular, it did **not** report `sorryAx`.
 
+## Verified prime-counting consequence
+
+The pinned `PrimeNumberTheoremAnd` dependency also contains
+`PrimeNumberTheoremAnd.Consequences.pi_alt`, a standard prime-counting
+asymptotic:
+
+```lean
+pi_alt : ∃ c : ℝ → ℝ, c =o[atTop] (fun _ ↦ (1 : ℝ)) ∧
+  ∀ x : ℝ, Nat.primeCounting ⌊x⌋₊ = (1 + c x) * x / log x
+```
+
+At the same pinned dependency revision, `Consequences.olean` was built
+separately and `#print axioms pi_alt` reported only:
+
+```text
+[propext, Classical.choice, Quot.sound]
+```
+
+The source file and one of its transitive files contain unrelated unfinished
+declarations.  They do not occur in the dependency closure of `pi_alt`, as the
+axiom report confirms.
+
 ## What this establishes
 
 The candidate supplies a kernel-checked strong prime number theorem for the
-Chebyshev psi function.  This is materially stronger than the asymptotic input
-needed to derive a conventional PNT and is a credible analytic foundation for
-the three open PNT/Mertens obligations in this repository.
+Chebyshev psi function.  Separately, the audited `pi_alt` consequence supplies
+the conventional prime-counting asymptotic.  Together they give a credible
+analytic foundation for the local `prime_number_theorem` after toolchain and
+normalization adaptation.
 
 ## What it does not establish
 
@@ -47,8 +70,8 @@ statements use specific finite sums and products.
 Before removing any local `sorry`, an integration must:
 
 1. port or otherwise bridge the dependency to the pinned public toolchain;
-2. derive the project's exact `prime_number_theorem` normalization from
-   `Strong_PNT`;
+2. translate `pi_alt` to the project's exact finite `primeCount` and epsilon
+   normalization (or derive that translation from `Strong_PNT`);
 3. derive the two stated Mertens estimates, including their finite-range and
    constant conventions;
 4. rerun `#print axioms` on every resulting local theorem and on
