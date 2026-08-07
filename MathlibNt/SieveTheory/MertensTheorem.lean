@@ -1293,6 +1293,13 @@ theorem sieve_product_asymptotic :
 def primeCount (x : ℕ) : ℕ :=
   ((range (x + 1)).filter Nat.Prime).card
 
+/-- The project's finite prime count agrees definitionally with mathlib's
+`Nat.primeCounting`.  This is the normalization needed when importing a PNT
+stated using mathlib's standard counting function. -/
+theorem primeCount_eq_primeCounting (x : ℕ) :
+    primeCount x = Nat.primeCounting x := by
+  simp only [primeCount, Nat.primeCounting, Nat.primeCounting', Nat.count_eq_card_filter_range]
+
 /-- π(x) ≥ 1 当 x ≥ 2 (至少有素数 2) -/
 theorem primeCount_pos (x : ℕ) (hx : 2 ≤ x) : 0 < primeCount x := by
   unfold primeCount
