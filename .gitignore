@@ -1,0 +1,19 @@
+# Lean build artifacts
+.lake/
+build/
+
+# Docker
+docker-entrypoint.sh
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc

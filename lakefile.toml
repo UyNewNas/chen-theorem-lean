@@ -1,0 +1,15 @@
+name = "mathlib_nt"
+version = "0.1.0"
+keywords = ["math", "number-theory"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+
+# Chen theorem formalization chain
+[[lean_lib]]
+name = "MathlibNt"
+globs = [
+  "MathlibNt.ChensTheorem",
+  "MathlibNt.SieveTheory.+"
+]
