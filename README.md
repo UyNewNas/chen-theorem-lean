@@ -33,10 +33,13 @@ pointwise remainder interfaces, review commands, and completion milestones.
 ## Build
 
 ```sh
-lake build MathlibNt
+lake build
+lake env lean Audit.lean
 ```
 
-The project toolchain is pinned by `lean-toolchain`.
+The project toolchain is pinned by `lean-toolchain`.  `Audit.lean` prints the
+axioms used by the two conditional derivations; its output must not contain
+`sorryAx`.
 
 ## Verify the open obligations
 

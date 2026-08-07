@@ -1,15 +1,16 @@
 name = "mathlib_nt"
 version = "0.1.0"
 keywords = ["math", "number-theory"]
+defaultTargets = ["MathlibNt"]
 
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
 
-# Chen theorem formalization chain
+# `MathlibNt.lean` is the audited public root: building it recursively checks
+# the entire module set shipped by this focused repository.
 [[lean_lib]]
 name = "MathlibNt"
 globs = [
-  "MathlibNt.ChensTheorem",
-  "MathlibNt.SieveTheory.+"
+  "MathlibNt"
 ]
