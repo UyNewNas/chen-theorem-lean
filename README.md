@@ -22,6 +22,9 @@ the prime number theorem and two precise Mertens statements.
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.
+The separately verified status of a possible strong-PNT dependency is recorded
+in [the external dependency audit](EXTERNAL_DEPENDENCY_AUDIT.md); it is not yet
+an imported dependency.
 
 ## Layout
 
