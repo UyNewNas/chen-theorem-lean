@@ -328,7 +328,8 @@ $$
 | $R$ 界 | `SelbergUpperBound.lean` | `error_term_bound` | 内核已证的固定参数接口；非 Pan 均值定理 |
 | $\Omega$ 完整界 | `SelbergUpperBound.lean` | `chenOmega_complete_bound` | 内核已证的固定参数接口 |
 | Lemma 1 | `MertensTheorem.lean` | `prime_reciprocal_sum_bounded` | 依赖 `mertens_second_theorem`，故含 `sorryAx` |
-| Lemma 2 | `SelbergUpperBound.lean` | `divisor_sum_bound` | 内核已证 |
+| Lemma 2 | `SelbergUpperBound.lean` | `divisor_sum_bound` | 经 `prime_inv_pminus1_bound → mertens_second_theorem` 依赖 `sorryAx`；另含有限计算的 `native_decide` 公理 |
+| $R_1$ 辅助界 | `SelbergUpperBound.lean` | `r1_upper_bound` | 经素数倒数和界依赖 `mertens_second_theorem`，故含 `sorryAx` |
 
 ## 关键数值常数
 
