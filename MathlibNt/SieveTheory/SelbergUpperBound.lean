@@ -2435,19 +2435,19 @@ theorem complete_error_bound_corrected (N : ℕ) (ε : ℝ) (A : ℝ)
    - `primesInAP_weighted`: 加权等差数列素数计数
    - `weightedDistributionError`: 加权分布误差
 
-2. **引理层** (陈述已完成):
+2. **引理层**（固定参数接口 / 有限代数结论）:
    - `selberg_sieve_weights_exist` (Lemma 3): Selberg 权重存在性
-   - `lemma4_numerical_bound` (Lemma 4): 数值积分界 0.49254
+   - `lemma4_numerical_bound` (Lemma 4): 固定参数数值余量接口（非经典积分结论）
    - `integral_margin`: 数值余量 `0.49253 < 0.49254` ✓（积分估计尚未形式化）
    - `logarithmicIntegral_approx`: li(x) ≈ x/log x ✓
    - `coefficient_product`: 8 × 0.49254 = 3.94032 ✓
    - `lcm_pair_count`: 3^ω(d) 的组合解释 ✓
 
-3. **定理层** (陈述已完成):
-   - `main_term_bound`: M₁ ≤ 3.94033 𝔖(N) N/log²N + 逐点余项
-   - `error_term_bound`: R ≪ N/log^A N (Pan 均值定理)
-   - `chenOmega_complete_bound`: Ω ≤ 3.9404 𝔖(N) N/log²N + 误差
-   - `chenOmega_simple_bound`: Ω ≤ 3.9404 𝔖(N) N/log²N + 逐点余项
+3. **定理层**（固定参数接口，非经典一致结论）:
+   - `main_term_bound`: M₁ ≤ 3.94033 𝔖(N) N/log²N + 逐点余项（接口）
+   - `error_term_bound`: R ≪ N/log^A N 的固定参数余量接口（非 Pan 均值定理）
+   - `chenOmega_complete_bound`: Ω ≤ 3.9404 𝔖(N) N/log²N + 误差（接口）
+   - `chenOmega_simple_bound`: Ω ≤ 3.9404 𝔖(N) N/log²N + 逐点余项（接口）
    - `coprime_condition_implies_bounded_ap`: (a,d)>1 → π ≤ 1 ✓
 
 4. **Mathlib 对齐层** (已完成):
