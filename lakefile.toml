@@ -7,6 +7,11 @@ defaultTargets = ["MathlibNt"]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
 
+[[require]]
+name = "analytic_number_theory"
+git = "https://github.com/UyNewNas/analytic-number-theory-lean.git"
+rev = "v0.1.0"
+
 # `MathlibNt.lean` is the audited public root: building it recursively checks
 # the entire module set shipped by this focused repository.
 [[lean_lib]]

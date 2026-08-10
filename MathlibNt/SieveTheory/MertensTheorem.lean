@@ -34,6 +34,7 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.IntervalCases
+import AnalyticNumberTheory
 import MathlibNt.SieveTheory.SingularSeries
 
 namespace MathlibNt.SieveTheory.MertensTheorem
@@ -1358,9 +1359,13 @@ theorem prime_number_theorem :
       ∀ x : ℕ, x₀ ≤ x →
         |(primeCount x : ℝ) - (x : ℝ) / log x| ≤
           ε * (x : ℝ) / log x := by
-  -- 素数定理的完整证明极为复杂 (de la Vallée-Poussin, 1899)
-  -- 需要 ζ 函数零点分析
-  sorry
+  apply primeCountingPNT_implies_prime_number_theorem
+  obtain ⟨c, hc, hcount⟩ :=
+    AnalyticNumberTheory.PrimeDistribution.natPrimeCountingPNT
+  refine ⟨c, hc, ?_⟩
+  intro x
+  rw [primeCount_eq_primeCounting]
+  exact hcount x
 
 /-! ## 6. 孪生素数常数 -/
 
