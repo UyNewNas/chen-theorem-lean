@@ -122,6 +122,20 @@ current three executable `sorry`s.  Lake dependencies and the Lean toolchain
 are cached only for speed; the job remains correct on a cache miss because it
 rebuilds from `lake-manifest.json`.
 
+The first archived successful public run of the complete audit is
+[run 31351904681](https://github.com/UyNewNas/chen-theorem-lean/actions/runs/31351904681)
+for commit `e198c4d`.  It completed `lake build`, the conditional-chain audit,
+and the three-`sorry` inventory guard.  Its `Audit.lean` output was:
+
+```text
+'MathlibNt.ChensTheorem.chens_theorem' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibNt.SieveTheory.SwitchingPrinciple.key_inequality_implies_chen' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+Thus these two conditional derivations contain no `sorryAx`; this record does
+not discharge their two explicit proposition inputs or the three separately
+listed Mertens obligations.
+
 ## Verify the open obligations
 
 ```sh
