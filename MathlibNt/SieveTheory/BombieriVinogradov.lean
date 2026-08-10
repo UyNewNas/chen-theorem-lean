@@ -279,16 +279,16 @@ theorem chenSieveRatio_approx (ε : ℝ) (hε : 0 < ε) (hε' : ε < 1/100) :
    - `chenNu`: Goldbach 密度函数 ν(d)
    - `chenDistributionLevel`: 分布水平 D = N^(1/2 - ε)
 
-2. **定理陈述层** (已完成):
-   - `bombieri_vinogradov`: 完整形式
-   - `bombieri_vinogradov_simple`: 简化形式
+2. **接口层** (已完成):
+   - `bombieri_vinogradov`: 固定参数的余项接口，并非经典的平均型 BV 定理
+   - `bombieri_vinogradov_simple`: 相应简化接口
    - `pan_mean_value_theorem`: 固定参数的 Pan 型余项接口
    - `chen_distribution_condition`: 陈氏定理分布条件
 
-3. **证明层** (待完成):
-   - Bombieri-Vinogradov 证明依赖大筛法和 Vaughan 恒等式
-   - 真正的统一 Pan 均值定理需先修正依赖求和变量的加权误差定义
-   - 当前仅 `bombieri_vinogradov` 保留 `sorry`
+3. **尚未形式化的经典内容**:
+   - 经典 Bombieri--Vinogradov 证明依赖大筛法和 Vaughan 恒等式
+   - 真正的统一 Pan 均值定理还需修正依赖求和变量的加权误差定义
+   - 本文件没有 `sorry`；这些经典统一结论没有被当前逐点接口声称或证明
 
 4. **在陈氏定理中的作用**:
    - 分布条件 → Jurkat-Richert 定理可用 → W(N) 下界

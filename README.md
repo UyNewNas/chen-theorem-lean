@@ -114,6 +114,14 @@ The project toolchain is pinned by `lean-toolchain`.  `Audit.lean` prints the
 axioms used by the two conditional derivations; its output must not contain
 `sorryAx`.
 
+## Continuous audit
+
+GitHub Actions runs the same build and axiom audit on pushes to `main`, pull
+requests, and manual dispatches.  It also rejects any increase above the
+current three executable `sorry`s.  Lake dependencies and the Lean toolchain
+are cached only for speed; the job remains correct on a cache miss because it
+rebuilds from `lake-manifest.json`.
+
 ## Verify the open obligations
 
 ```sh

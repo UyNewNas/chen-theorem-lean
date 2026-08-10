@@ -22,7 +22,7 @@ number-theory results listed below.
 
 ## Current `sorry` inventory
 
-As of 2026-08-07, `rg -n '^  sorry$' MathlibNt --glob '*.lean'` reports:
+As of 2026-08-10, `rg -n '^\s*sorry\s*$' MathlibNt --glob '*.lean'` reports:
 
 | File | Declaration | Status | Why it matters |
 | --- | --- | --- | --- |
@@ -110,7 +110,7 @@ genuine uniform estimates.
 1. Confirm the inventory with:
 
    ```sh
-   rg -n '^  sorry$' MathlibNt --glob '*.lean'
+   rg -n '^\s*sorry\s*$' MathlibNt --glob '*.lean'
    ```
 
 2. Inspect the exact types of `ChenAnalyticBounds` and `ChenCountingBridge` in
@@ -130,5 +130,6 @@ genuine uniform estimates.
 4. Re-run the inventory and strengthen `chens_theorem` by removing its two
    explicit assumptions only after steps 2 and 3 are complete.
 
-Related project-level history and dependency metadata live in `STATUS.md`,
-`DEPENDENCY_GRAPH.yaml`, and `PROOF_REFERENCE.md`.
+The public repository's related documentation is `PROOF_REFERENCE.md` and
+`EXTERNAL_DEPENDENCY_AUDIT.md`.  Project-wide scratch status files are
+intentionally not part of this release.

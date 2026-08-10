@@ -302,26 +302,33 @@ $$
 
 即陈氏定理成立。$\square$
 
+> **Release-status note.** The preceding argument summarizes the classical
+> paper, not a completed Lean proof in this repository.  In the present
+> development the uniform analytic estimates and the precise switching count
+> are explicit assumptions (`ChenAnalyticBounds` and `ChenCountingBridge`).
+> Consult `CHEN_CHAIN_AUDIT.md` for the audited formal status.
+
 ## Lean 形式化对应
 
 下表将论文中的概念映射到 Lean 形式化中的模块与定义/定理:
 
 | 论文概念 | Lean 模块 | Lean 定义/定理 | 状态 |
 |---------|----------|--------------|------|
-| $\mathfrak{S}(N)$ | `SingularSeries.lean` | `singularSeries` | 已完成 |
-| $F(s), f(s)$ | `LinearSieve.lean` | `sieveFunctionF`, `sieveFunctionf` | 已完成 |
+| $\mathfrak{S}(N)$ | `SingularSeries.lean` | `singularSeries` | 截断工作定义；非文献中的无穷乘积 |
+| $F(s), f(s)$ | `LinearSieve.lean` | `sieveFunctionF`, `sieveFunctionf` | 工作定义与初等性质；非完整统一筛函数理论 |
 | Mertens 定理 | `MertensTheorem.lean` | `mertens_second_theorem` | sorry |
-| Bombieri-Vinogradov 型逐参数接口 | `BombieriVinogradov.lean` | `bombieri_vinogradov` | 已完成（真正统一 BV 为 external） |
-| $W(N)$ | `SwitchingPrinciple.lean` | `chenW` | 已完成 |
-| $\Omega$ | `SwitchingPrinciple.lean` | `chenOmega` | 已完成 |
-| 关键不等式 | `SwitchingPrinciple.lean` | `chen_key_inequality` | 已完成（需 `ChenAnalyticBounds`） |
-| Lemma 3 (Selberg) | `SelbergUpperBound.lean` | `selberg_sieve_weights_exist` | 已完成（逐点余项接口） |
-| Lemma 4 (积分) | `SelbergUpperBound.lean` | `lemma4_numerical_bound` | 已完成（逐点余项接口） |
-| $M_1$ 界 | `SelbergUpperBound.lean` | `main_term_bound` | 已完成（逐点余项接口） |
-| $R$ 界 | `SelbergUpperBound.lean` | `error_term_bound` | sorry |
-| $\Omega$ 完整界 | `SelbergUpperBound.lean` | `chenOmega_complete_bound` | sorry |
-| Lemma 1 | `MertensTheorem.lean` | `prime_reciprocal_sum_bounded` | sorry |
-| Lemma 2 | `SelbergUpperBound.lean` | (待添加) | 待添加 |
+| Bombieri--Vinogradov | `BombieriVinogradov.lean` | `bombieri_vinogradov` | 固定参数余项接口；非经典平均型 BV |
+| $W(N)$ | `SwitchingPrinciple.lean` | `chenW` | 未加权有限 filter 基数（工作定义） |
+| $\Omega$ | `SwitchingPrinciple.lean` | `chenOmega` | 有限因子对求和（工作定义） |
+| 关键不等式 | `SwitchingPrinciple.lean` | `chen_key_inequality` | 内核已证，前提为 `ChenAnalyticBounds` |
+| 切换/计数桥 | `SwitchingPrinciple.lean` | `ChenCountingBridge` | 显式外部假设；尚未证明 |
+| Lemma 3 (Selberg) | `SelbergUpperBound.lean` | `selberg_sieve_weights_exist` | 固定参数接口；非经典统一结论 |
+| Lemma 4 (积分) | `SelbergUpperBound.lean` | `lemma4_numerical_bound` | 固定参数接口；非文献完整积分估计 |
+| $M_1$ 界 | `SelbergUpperBound.lean` | `main_term_bound` | 固定参数加性余项接口 |
+| $R$ 界 | `SelbergUpperBound.lean` | `error_term_bound` | 内核已证的固定参数接口；非 Pan 均值定理 |
+| $\Omega$ 完整界 | `SelbergUpperBound.lean` | `chenOmega_complete_bound` | 内核已证的固定参数接口 |
+| Lemma 1 | `MertensTheorem.lean` | `prime_reciprocal_sum_bounded` | 依赖 `mertens_second_theorem`，故含 `sorryAx` |
+| Lemma 2 | `SelbergUpperBound.lean` | `divisor_sum_bound` | 内核已证 |
 
 ## 关键数值常数
 
@@ -355,4 +362,4 @@ $$
 
 ---
 
-*本文档随 Lean 形式化进度更新。状态列中"已完成"表示已有完整证明,"sorry"表示目标已声明但证明待补,"待添加"表示尚未声明。*
+*本文档随 Lean 形式化进度更新。状态列明确区分内核已证的工作接口、依赖 `sorryAx` 的结果、显式外部假设，以及尚未形式化的经典结论；不得将工作接口读作对应的经典统一定理。*

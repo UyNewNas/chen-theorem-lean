@@ -428,10 +428,10 @@ W(N)/Ω(N) 的精确定义与关键不等式均在 `SwitchingPrinciple.lean`
    - 局部因子, 截断乘积, 正性
    - 界估计待完成 (依赖 Mertens 定理 / PNT)
 
-2. **线性筛 / Jurkat-Richert 定理** (陈述层已完成):
+2. **线性筛 / Jurkat-Richert 工作接口**:
    - 筛函数 F(s), f(s) 定义
    - SieveProblem 结构 (扩展 Mathlib `BoundingSieve`)
-   - 上下界定理陈述 (证明层 sorry)
+   - 上下界为固定参数的余项接口；不是经典统一 Jurkat--Richert 定理
    - 陈氏定理中的 W(N), Ω 定义 (工作定义)
 
 3. **Mathlib 对齐层** (已完成):
