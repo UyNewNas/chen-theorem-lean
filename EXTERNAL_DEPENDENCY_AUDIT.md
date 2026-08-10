@@ -51,6 +51,28 @@ The source file and one of its transitive files contain unrelated unfinished
 declarations.  They do not occur in the dependency closure of `pi_alt`, as the
 axiom report confirms.
 
+## Newer PNTAnd release candidate
+
+PNTAnd has a newer standalone release that is much closer to this repository's
+toolchain:
+
+- Repository: [`AlexKontorovich/PrimeNumberTheoremAnd`](https://github.com/AlexKontorovich/PrimeNumberTheoremAnd)
+- Release: `v4.32.2`
+- Audited revision: `6a380f0c4658c04a420a9eb00b1ed62a1e3fde01`
+- Toolchain: Lean `v4.32.2`
+
+Its `PrimeNumberTheoremAnd.Consequences` module was built from a clean
+dependency resolution.  The release's `pi_alt` has the same relevant shape,
+and `#print axioms pi_alt` again reported only:
+
+```text
+[propext, Classical.choice, Quot.sound]
+```
+
+This is the preferred import candidate for the local prime-counting PNT: it
+requires a one-release toolchain adaptation from Lean 4.32.2 to the public
+Lean 4.33.0-rc1, rather than porting all of StrongPNT from Lean 4.21.
+
 ## What this establishes
 
 The candidate supplies a kernel-checked strong prime number theorem for the
@@ -76,7 +98,8 @@ statements use specific finite sums and products.
 
 Before removing any local `sorry`, an integration must:
 
-1. port or otherwise bridge the dependency to the pinned public toolchain;
+1. port or otherwise bridge the PNTAnd v4.32.2 dependency closure of `pi_alt`
+   to the pinned public toolchain;
 2. establish the local `PrimeCountingPNT` interface from the ported `pi_alt`
    statement;
 3. derive the two stated Mertens estimates, including their finite-range and
