@@ -47,6 +47,10 @@ open Real Finset
 noncomputable def primeReciprocalSum (x : ℕ) : ℝ :=
   ((range (x + 1)).filter Nat.Prime).sum (fun p => 1 / (p : ℝ))
 
+/-- The Chen-local reciprocal sum is definitionally the reusable ANT object. -/
+theorem primeReciprocalSum_eq_analyticNumberTheory (x : ℕ) :
+    primeReciprocalSum x = AnalyticNumberTheory.Mertens.primeReciprocalSum x := rfl
+
 /-- **Mertens 第二定理**: 存在常数 B₁ 使得
   Σ_{p ≤ x} 1/p = log log x + B₁ + O(1/log x)
 
@@ -66,6 +70,10 @@ theorem mertens_second_theorem :
 /-- 素数乘积: Π_{p ≤ x} (1 - 1/p) -/
 noncomputable def primeProduct (x : ℕ) : ℝ :=
   ((range (x + 1)).filter Nat.Prime).prod (fun p => 1 - 1 / (p : ℝ))
+
+/-- The Chen-local Euler product is definitionally the reusable ANT object. -/
+theorem primeProduct_eq_analyticNumberTheory (x : ℕ) :
+    primeProduct x = AnalyticNumberTheory.Mertens.primeProduct x := rfl
 
 /-- **Mertens 乘积公式**: Π_{p ≤ x} (1 - 1/p) ~ e^(-γ) / log x
 
