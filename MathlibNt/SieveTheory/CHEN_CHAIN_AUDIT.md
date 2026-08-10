@@ -17,7 +17,7 @@ ChenAnalyticBounds + ChenCountingBridge
 ```
 
 The two assumptions are named, typed Lean propositions rather than hidden
-`sorry`s.  The only remaining `sorry`s in `MathlibNt` are the three analytic
+`sorry`s. The only remaining `sorry`s in `MathlibNt` are the two analytic
 number-theory results listed below.
 
 ## Current `sorry` inventory
@@ -28,7 +28,6 @@ As of 2026-08-10, `rg -n '^\s*sorry\s*$' MathlibNt --glob '*.lean'` reports:
 | --- | --- | --- | --- |
 | `MertensTheorem.lean` | `mertens_second_theorem` | `sorry` | Prime reciprocal-sum asymptotic |
 | `MertensTheorem.lean` | `mertens_product_formula` | `sorry` | Precise Mertens product constant |
-| `MertensTheorem.lean` | `prime_number_theorem` | `sorry` | PNT in the project's prime-counting normalization |
 
 No declaration in `ChensTheorem.lean`, `SwitchingPrinciple.lean`,
 `SelbergUpperBound.lean`, or `BombieriVinogradov.lean` currently has a
@@ -118,12 +117,13 @@ genuine uniform estimates.
 3. Compile the chain, including dependencies, with the project toolchain.
 4. Do not label `chens_theorem` unconditional unless proofs of both explicit
    inputs are supplied.
-5. For an analytic completion, audit any imported PNT development with
-   `#print axioms` before using it to discharge the three remaining results.
+5. The imported `analytic-number-theory-lean` v0.1.0 PNT already discharges
+   the local `prime_number_theorem`; audit future analytic imports with
+   `#print axioms` before using them for the two remaining results.
 
 ## Next completion milestones
 
-1. Import or formalize an audited PNT, then derive the two Mertens statements.
+1. Derive the two Mertens statements from the imported audited PNT foundation.
 2. Replace `ChenAnalyticBounds` by a uniform Jurkat--Richert/Selberg proof.
 3. Begin the switching bridge with a weak lemma: instantiate
    `chenWeight_pos_implies_semiprime` at `N - p`, with the present

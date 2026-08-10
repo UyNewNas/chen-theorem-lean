@@ -32,19 +32,18 @@ The following are complete Lean proofs in this chain:
 - the project semiprime API and its agreement with the intended “one or two
   prime factors” interpretation.
 
-`lake build` succeeds for the full public module root.  `Audit.lean` verifies
-that `chens_theorem` and `key_inequality_implies_chen` depend only on Lean's
-standard `propext`, `Classical.choice`, and `Quot.sound` axioms — not on
-`sorryAx`.
+`lake build` succeeds for the full public module root. `Audit.lean` verifies
+that `chens_theorem`, `key_inequality_implies_chen`, and the local
+`prime_number_theorem` depend only on Lean's standard `propext`,
+`Classical.choice`, and `Quot.sound` axioms — not on `sorryAx`.
 
 ### Phase 2 — explicit open obligations
 
-There are currently exactly three executable `sorry`s, all in
+There are currently exactly two executable `sorry`s, both in
 `MathlibNt/SieveTheory/MertensTheorem.lean`:
 
 | Declaration | Work remaining |
 | --- | --- |
-| `prime_number_theorem` | PNT for the local finite `primeCount` normalization |
 | `mertens_second_theorem` | prime reciprocal-sum asymptotic with the stated error term |
 | `mertens_product_formula` | Mertens product formula with the stated constant and error term |
 
@@ -60,41 +59,35 @@ Consequently, the repository proves neither an unconditional Chen theorem nor
 the classical uniform sieve estimates.  It does prove exactly what follows
 from the stated inputs.
 
-### Phase 3 — audited external PNT route
+### Phase 3 — imported and audited PNT route
 
-Two external developments have been built and examined separately:
+The repository consumes
+[`analytic-number-theory-lean` v0.1.0](https://github.com/UyNewNas/analytic-number-theory-lean),
+whose audited public API ports the minimal PNTAnd closure to the same Lean and
+mathlib versions used here. It supplies a medium-strength Chebyshev-psi error
+estimate, the standard `pi_alt` asymptotic, and the natural-number interface
+`NatPrimeCountingPNT`.
 
-- `math-inc/strongpnt` at Lean 4.21 proves a strong PNT for Chebyshev's psi
-  function; its audited main theorem has no `sorryAx`.
-- `PrimeNumberTheoremAnd` v4.32.2 proves the standard prime-counting asymptotic
-  `pi_alt`; its audited theorem likewise has no `sorryAx`.
-
-The latter is the preferred import candidate because it is only one Lean
-release behind this repository.  It is **not yet a dependency**: the required
-v4.32.2-to-v4.33 adaptation has not been performed.
-
-The local normalization bridge is already complete:
-`primeCount_eq_primeCounting` identifies the project count with mathlib's
-`Nat.primeCounting`, and `primeCountingPNT_implies_prime_number_theorem`
-turns the `pi_alt` shape into this repository's epsilon-PNT statement.
+The local normalization bridge is complete: `primeCount_eq_primeCounting`
+identifies the project count with mathlib's `Nat.primeCounting`, and
+`primeCountingPNT_implies_prime_number_theorem` turns the imported
+natural-number PNT into this repository's epsilon-PNT statement. Thus
+`prime_number_theorem` is no longer an open obligation.
 
 ### Next milestones
 
-1. Port the dependency closure of PNTAnd's `pi_alt` to Lean 4.33 and establish
-   `PrimeCountingPNT`; this discharges the local PNT interface.
-2. Derive the two exact Mertens statements from an audited sufficiently strong
+1. Derive the two exact Mertens statements from an audited sufficiently strong
    analytic input.
-3. Formalize `ChenAnalyticBounds` with truly uniform constants.
-4. Formalize `ChenCountingBridge` for the present finite-set definitions.
-5. Remove the two explicit assumptions from `chens_theorem` only after steps
-   3 and 4 are complete.
+2. Formalize `ChenAnalyticBounds` with truly uniform constants.
+3. Formalize `ChenCountingBridge` for the present finite-set definitions.
+4. Remove the two explicit assumptions from `chens_theorem` only after steps
+   2 and 3 are complete.
 
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.
-The separately verified status of a possible strong-PNT dependency is recorded
-in [the external dependency audit](EXTERNAL_DEPENDENCY_AUDIT.md); it is not yet
-an imported dependency.
+The external dependency audit records historical alternatives; the active,
+imported PNT dependency is `analytic-number-theory-lean` v0.1.0.
 
 ## Layout
 
@@ -110,31 +103,30 @@ lake build
 lake env lean Audit.lean
 ```
 
-The project toolchain is pinned by `lean-toolchain`.  `Audit.lean` prints the
-axioms used by the two conditional derivations; its output must not contain
-`sorryAx`.
+The project toolchain is pinned by `lean-toolchain`. `Audit.lean` prints the
+axioms used by the two conditional derivations and `prime_number_theorem`; its
+output must not contain `sorryAx`.
 
 ## Continuous audit
 
 GitHub Actions runs the same build and axiom audit on pushes to `main`, pull
-requests, and manual dispatches.  It also rejects any increase above the
-current three executable `sorry`s.  Lake dependencies and the Lean toolchain
+requests, and manual dispatches. It requires the current inventory of exactly
+two executable `sorry`s. Lake dependencies and the Lean toolchain
 are cached only for speed; the job remains correct on a cache miss because it
 rebuilds from `lake-manifest.json`.
 
-The first archived successful public run of the complete audit is
-[run 31351904681](https://github.com/UyNewNas/chen-theorem-lean/actions/runs/31351904681)
-for commit `e198c4d`.  It completed `lake build`, the conditional-chain audit,
-and the three-`sorry` inventory guard.  Its `Audit.lean` output was:
+CI output is the source of truth for the current commit. The PNT integration
+extends the audit output with:
 
 ```text
 'MathlibNt.ChensTheorem.chens_theorem' depends on axioms: [propext, Classical.choice, Quot.sound]
 'MathlibNt.SieveTheory.SwitchingPrinciple.key_inequality_implies_chen' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibNt.SieveTheory.MertensTheorem.prime_number_theorem' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-Thus these two conditional derivations contain no `sorryAx`; this record does
-not discharge their two explicit proposition inputs or the three separately
-listed Mertens obligations.
+Thus the two conditional derivations and imported-PNT consumer contain no
+`sorryAx`; this record does not discharge the two explicit proposition inputs
+or the two separately listed Mertens obligations.
 
 ## Verify the open obligations
 
