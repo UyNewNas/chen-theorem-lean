@@ -125,8 +125,12 @@ genuine uniform estimates.
 
 1. Import or formalize an audited PNT, then derive the two Mertens statements.
 2. Replace `ChenAnalyticBounds` by a uniform Jurkat--Richert/Selberg proof.
-3. Prove `ChenCountingBridge` from a precise switching identity matching the
-   present finite-set definitions.
+3. Begin the switching bridge with a weak lemma: instantiate
+   `chenWeight_pos_implies_semiprime` at `N - p`, with the present
+   `floor (N^(1/10))` and `floor (N^(1/3))` cutoffs, and formalize the needed
+   membership/positivity translation.  Then strengthen it to a precise
+   switching identity matching the present finite-set definitions and prove
+   `ChenCountingBridge`.
 4. Re-run the inventory and strengthen `chens_theorem` by removing its two
    explicit assumptions only after steps 2 and 3 are complete.
 

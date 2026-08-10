@@ -774,7 +774,12 @@ theorem chenOmega_coefficient_derivation :
 
 /-! ## 7. 切换集 B 的定义 -/
 
-/-- **切换集 B**: N - p₁p₂p₃, 其中 z ≤ p₁ < y ≤ p₂ ≤ p₃, p₁p₂p₃ < N, (p₁p₂p₃, N) = 1 -/
+/-- **切换集 B**: `N - p₁p₂p₃`, 其中
+`z ≤ p₁ < y ≤ p₂ ≤ p₃`, `p₁p₂p₃ < N`, `(p₁p₂p₃, N) = 1`。
+
+这不是 `tripleFactorCount` 所用的三因子对象：这里额外要求与 `N` 互素及乘积小于
+`N`，并且由 `p₂ < p₃` 排除重复因子 `p₂ = p₃`。二者的精确关系仍是待形式化的
+切换桥的一部分。 -/
 noncomputable def switchedSet (N z y : ℕ) : Finset ℕ :=
   (Finset.range (N + 1)).filter (fun n =>
     ∃ p₁ p₂ p₃ : ℕ, p₁.Prime ∧ p₂.Prime ∧ p₃.Prime ∧

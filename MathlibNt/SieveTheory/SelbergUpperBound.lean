@@ -172,11 +172,11 @@ theorem lemma4_numerical_bound (N : ℕ) (hN : 2 ≤ N) :
   ring_nf
   rfl
 
-/-- 数值积分: ∫_{1/10}^{1/3} dα/α ∫_{1/3}^{(1-α)/2} dβ/(β(1-α-β)) < 0.49254
+/-- 工作 Lemma 4 接口使用的数值余量：`0.49253 < 0.49254`。
 
-该积分的数值计算由 Chen (1973) (28) 式给出, 实际值 ≈ 0.49253...
-完整证明需要 MeasureTheory 积分框架 (IntervalIntegral), 此处用数值常数近似. -/
-theorem numerical_integral_bound :
+这一定理**不**形式化其来源的二重积分；文献中的积分估计仍需用
+`MeasureTheory`/`IntervalIntegral` 单独形式化。 -/
+theorem integral_margin :
     (0.49253 : ℝ) < 0.49254 := by
   norm_num
 
@@ -2438,7 +2438,7 @@ theorem complete_error_bound_corrected (N : ℕ) (ε : ℝ) (A : ℝ)
 2. **引理层** (陈述已完成):
    - `selberg_sieve_weights_exist` (Lemma 3): Selberg 权重存在性
    - `lemma4_numerical_bound` (Lemma 4): 数值积分界 0.49254
-   - `numerical_integral_bound`: 积分 < 0.49254 ✓
+   - `integral_margin`: 数值余量 `0.49253 < 0.49254` ✓（积分估计尚未形式化）
    - `logarithmicIntegral_approx`: li(x) ≈ x/log x ✓
    - `coefficient_product`: 8 × 0.49254 = 3.94032 ✓
    - `lcm_pair_count`: 3^ω(d) 的组合解释 ✓

@@ -50,13 +50,14 @@ noncomputable def primeReciprocalSum (x : ℕ) : ℝ :=
   Σ_{p ≤ x} 1/p = log log x + B₁ + O(1/log x)
 
 这是陈氏定理证明中 Lemma 1 的理论基础.
-完整证明需要素数定理 (PNT). -/
+一条可采用的证明路线是 PNT 加 Abel 分部求和；这不是必要条件，
+Mertens 定理也有初等证明。 -/
 theorem mertens_second_theorem :
     ∃ B₁ : ℝ, ∃ C : ℝ,
       ∀ x : ℕ, 2 ≤ x →
         |primeReciprocalSum x - (log (log x) + B₁)| ≤ C / log x := by
-  -- 证明依赖素数定理 PNT: π(x) ~ x/log x
-  -- 以及分部求和 (Abel summation)
+  -- 计划路线：由 PNT: π(x) ~ x/log x 加 Abel 分部求和导出。
+  -- 这只是充分路线；也存在不使用 PNT 的初等证明。
   sorry
 
 /-! ## 2. Mertens 乘积公式 (陈述) -/
