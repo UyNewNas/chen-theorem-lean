@@ -521,43 +521,19 @@ theorem chenW_lower_bound (N : ℕ) (hN : Even N) (hN_large : 1000 ≤ N) :
   rw [mul_div_assoc, div_mul_cancel₀ _ (ne_of_gt hscale)]
   linarith
 
-/-- W(N) 给出 N = p + q 表示数的下界, 其中 q ≥ 1.
+/-- The working `chenW` is bounded by the number of primes below `N`.
 
-注: 原陈述使用 q ≥ 2, 但当 N - p = 1 时 (如 p = N - 1 为素数) 条件过强.
-改为 q ≥ 1 后, 对任意素数 p < N, q = N - p ≥ 1 总成立,
-且 ∃ p₁, q = p₁ (取 p₁ = q) 总满足, 故 RHS 退化为 |{p ∈ range N : p.Prime}|,
-而 W(N) 计数的是满足额外筛法条件的素数子集. -/
-theorem chenW_representation_count (N : ℕ) (hN : Even N) :
-    chenW N ≤
-      (Finset.card ((range N).filter (fun p =>
-        p.Prime ∧ ∃ q : ℕ, q ≥ 1 ∧ N = p + q ∧
-          (∃ p₁ p₂ p₃ : ℕ, q = p₁ * p₂ * p₃ ∨
-            q = p₁ * p₂ ∨ q = p₁))) : ℝ) := by
-  -- chenW 的 filter 是 RHS filter 的子集.
-  -- chenW 条件: p.Prime ∧ (N-p 无 ≤ z 的素因子) ∧ ((z,y] 中至多一个素因子)
-  -- RHS 条件: p.Prime ∧ ∃ q ≥ 1, N = p + q ∧ (∃ p₁, q = p₁)
-  -- 对于 p ∈ range N (即 p < N), 取 q = N - p ≥ 1, p₁ = q 即可.
+This is only the filter-inclusion `chenW ≤ π(N - 1)`.  It is not a lower
+bound for Chen representations and is not used by the conditional Chen chain. -/
+theorem chenW_le_primeCount (N : ℕ) :
+    chenW N ≤ ((Finset.card ((range N).filter Nat.Prime) : ℕ) : ℝ) := by
   unfold chenW
-  -- 将 ℝ 上的不等式转为 ℕ 上的不等式
   apply Nat.cast_le.mpr
-  -- 用 Finset.card_le_card 证明 chenW 的 filter 是 RHS filter 的子集
   apply Finset.card_le_card
-  -- 证明子集关系: chenW filter 中的每个元素都在 RHS filter 中
   intro p hp
-  -- 展开成员条件
   simp only [Finset.mem_filter, Finset.mem_range] at hp ⊢
-  -- 从 chenW 条件中提取 p < N 和 p.Prime (筛法条件不需要)
   obtain ⟨hp_range, hp_prime, -, -⟩ := hp
-  -- 提供 RHS 条件的证据: q = N - p
-  refine ⟨hp_range, hp_prime, N - p, ?_, ?_, ?_⟩
-  · -- q = N - p ≥ 1 (因 p < N 即 p ≤ N - 1)
-    omega
-  · -- N = p + (N - p)
-    omega
-  · -- ∃ p₁ p₂ p₃, q = p₁*p₂*p₃ ∨ q = p₁*p₂ ∨ q = p₁
-    -- 取 p₁ = q = N - p, p₂ = p₃ = 0, 则第三项 q = p₁ 成立
-    refine ⟨N - p, 0, 0, ?_⟩
-    right; right; rfl
+  exact ⟨hp_range, hp_prime⟩
 
 /-! ## 3. Ω 的定义 (切换和) -/
 
@@ -654,6 +630,10 @@ theorem key_inequality_implies_chen
     ∃ N₀ : ℕ, ∀ N : ℕ, N ≥ N₀ → Even N →
       ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧
         Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q := by
+  -- The Lean proof below uses `ChenCountingBridge` directly.  The following
+  -- numbered discussion is a classical switching-argument sketch only; it is
+  -- not a formal proof of the missing bridge.
+  --
   -- 证明策略 (完整证明需要 W(N) 和 Ω 的精确关系及计数论证):
   --
   -- 取 N₀ = 1000. 对任意偶数 N ≥ 1000:
@@ -738,7 +718,7 @@ theorem chen_difference_pos : 0 < chen_difference_coefficient := by
   unfold chen_difference_coefficient chenW_coefficient chenOmega_coefficient
   norm_num
 
-/-- f(5) 的近似值: 2e^γ · log(5/2) / 5 ≈ 0.8190 -/
+/-- f(5) 的工作表达式: 2e^γ · log(5/2) / 5 ≈ 0.6528 -/
 noncomputable def sieveF_at_5 : ℝ :=
   2 * exp Real.eulerMascheroniConstant * log (5/2) / 5
 

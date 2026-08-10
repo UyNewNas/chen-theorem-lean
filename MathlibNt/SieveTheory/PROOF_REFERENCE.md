@@ -318,8 +318,8 @@ $$
 | $F(s), f(s)$ | `LinearSieve.lean` | `sieveFunctionF`, `sieveFunctionf` | 工作定义与初等性质；非完整统一筛函数理论 |
 | Mertens 定理 | `MertensTheorem.lean` | `mertens_second_theorem` | sorry |
 | Bombieri--Vinogradov | `BombieriVinogradov.lean` | `bombieri_vinogradov` | 固定参数余项接口；非经典平均型 BV |
-| $W(N)$ | `SwitchingPrinciple.lean` | `chenW` | 未加权有限 filter 基数（工作定义） |
-| $\Omega$ | `SwitchingPrinciple.lean` | `chenOmega` | 有限因子对求和（工作定义） |
+| $W(N)$ | `SwitchingPrinciple.lean` | `chenW` | 使用 `floor(N^(1/10))`/`floor(N^(1/3))` 的未加权有限 filter 基数（工作定义） |
+| $\Omega$ | `SwitchingPrinciple.lean` | `chenOmega` | 使用精确实幂界的有限因子对求和（工作定义） |
 | 关键不等式 | `SwitchingPrinciple.lean` | `chen_key_inequality` | 内核已证，前提为 `ChenAnalyticBounds` |
 | 切换/计数桥 | `SwitchingPrinciple.lean` | `ChenCountingBridge` | 显式外部假设；尚未证明 |
 | Lemma 3 (Selberg) | `SelbergUpperBound.lean` | `selberg_sieve_weights_exist` | 固定参数接口；非经典统一结论 |

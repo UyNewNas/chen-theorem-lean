@@ -61,11 +61,16 @@ noncomputable def sieveFunctionF (s : ℝ) : ℝ :=
     -- 严格定义需 Buchstab 型递推
     2 * exp eulerMascheroni / s * (1 + 1 / s)
 
-/-- 下界筛函数 f(s) 的分段定义.
+/-- A nonstandard working normalization for a lower sieve function.
 
   - s ≤ 3:  f(s) = 0
-  - 3 ≤ s ≤ 5:  f(s) = (2e^γ / s) · log(s/2)  (Buchstab 公式)
-  - s ≥ 5:  由差分微分方程 (s·f(s))' = F(s-1) 递推定义 -/
+  - 3 ≤ s ≤ 5:  a local `log (s / 2)` surrogate
+  - s ≥ 5:  a further placeholder approximation
+
+This is **not** claimed to be the standard Jurkat--Richert/Buchstab lower
+sieve function (whose normalization and differential-delay recursion must be
+formalized separately).  It is used only in the fixed-parameter working
+interfaces below and must not be used to justify Chen's classical constants. -/
 noncomputable def sieveFunctionf (s : ℝ) : ℝ :=
   if s ≤ 3 then
     0
