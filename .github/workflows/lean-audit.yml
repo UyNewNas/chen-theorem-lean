@@ -42,7 +42,9 @@ jobs:
         run: |
           set -euo pipefail
           lake env lean Audit.lean | tee audit.log
-          if rg -n 'sorryAx' audit.log; then
+          # `grep` is part of the Ubuntu runner base image; do not rely on
+          # ripgrep being preinstalled merely to run this trust guard.
+          if grep -n -- 'sorryAx' audit.log; then
             echo 'The audited conditional Chen chain depends on sorryAx.' >&2
             exit 1
           fi
@@ -50,6 +52,6 @@ jobs:
       - name: Guard the explicit obligation inventory
         run: |
           set -euo pipefail
-          count="$(rg -n '^\s*sorry\s*$' MathlibNt --glob '*.lean' | wc -l | tr -d ' ')"
+          count="$(grep -R -n --include='*.lean' -E '^[[:space:]]*sorry[[:space:]]*$' MathlibNt | wc -l | tr -d ' ')"
           echo "executable_sorry_count=$count"
           test "$count" -le 3
