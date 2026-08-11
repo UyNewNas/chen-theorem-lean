@@ -42,16 +42,70 @@ jobs:
         run: |
           set -euo pipefail
           lake env lean Audit.lean | tee audit.log
-          # `grep` is part of the Ubuntu runner base image; do not rely on
-          # ripgrep being preinstalled merely to run this trust guard.
-          if grep -n -- 'sorryAx' audit.log; then
-            echo 'The audited conditional Chen chain depends on sorryAx.' >&2
-            exit 1
-          fi
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
 
-      - name: Guard the explicit obligation inventory
+          output = pathlib.Path('audit.log').read_text(encoding='utf-8')
+          reports = re.findall(r'depends on axioms:\s*\[(.*?)\]', output, re.S)
+          expected_reports = 6
+          allowed = {'propext', 'Classical.choice', 'Quot.sound'}
+          if len(reports) != expected_reports:
+              print(f'Expected {expected_reports} axiom reports, found {len(reports)}.', file=sys.stderr)
+              sys.exit(1)
+          used = {
+              axiom.strip()
+              for report in reports
+              for axiom in report.split(',')
+              if axiom.strip()
+          }
+          unexpected = used - allowed
+          if unexpected:
+              print('Non-whitelisted axioms: ' + ', '.join(sorted(unexpected)), file=sys.stderr)
+              sys.exit(1)
+          print('Axiom whitelist passed: ' + ', '.join(sorted(used)))
+          PY
+
+      - name: Guard the zero-placeholder invariant
         run: |
           set -euo pipefail
-          count="$(grep -R -n --include='*.lean' -E '^[[:space:]]*sorry[[:space:]]*$' MathlibNt | wc -l | tr -d ' ')"
-          echo "executable_sorry_count=$count"
-          test "$count" -eq 1
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import subprocess
+          import sys
+
+          paths = subprocess.check_output(['git', 'ls-files', '-z', '--', '*.lean']).decode().split('\0')
+          token = re.compile(r'\b(?:sorry|admit)\b')
+
+          def executable_text(source):
+              out, i, depth, string = [], 0, 0, False
+              while i < len(source):
+                  if depth:
+                      if source.startswith('/-', i): depth += 1; out.extend('  '); i += 2
+                      elif source.startswith('-/', i): depth -= 1; out.extend('  '); i += 2
+                      else: out.append('\n' if source[i] == '\n' else ' '); i += 1
+                  elif string:
+                      if source[i] == '\\' and i + 1 < len(source): out.extend('  '); i += 2
+                      elif source[i] == '"': string = False; out.append(' '); i += 1
+                      else: out.append('\n' if source[i] == '\n' else ' '); i += 1
+                  elif source.startswith('--', i):
+                      end = source.find('\n', i)
+                      if end < 0: out.extend(' ' * (len(source) - i)); break
+                      out.extend(' ' * (end - i)); i = end
+                  elif source.startswith('/-', i): depth = 1; out.extend('  '); i += 2
+                  elif source[i] == '"': string = True; out.append(' '); i += 1
+                  else: out.append(source[i]); i += 1
+              return ''.join(out)
+
+          failures = []
+          for name in filter(None, paths):
+              code = executable_text(pathlib.Path(name).read_text(encoding='utf-8'))
+              for match in token.finditer(code):
+                  failures.append(f'{name}:{code.count(chr(10), 0, match.start()) + 1}: {match.group(0)}')
+          if failures:
+              print('\n'.join(failures), file=sys.stderr)
+              sys.exit(1)
+          print('Tracked Lean sources contain no executable sorry/admit terms.')
+          PY

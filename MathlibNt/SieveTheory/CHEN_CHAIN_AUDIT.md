@@ -17,24 +17,27 @@ ChenAnalyticBounds + ChenCountingBridge
 ```
 
 The two assumptions are named, typed Lean propositions rather than hidden
-`sorry`s. The only remaining `sorry` in `MathlibNt` is the analytic
-number-theory result listed below.
+`sorry`s. The imported analytic foundation now discharges all three former
+PNT/Mertens obligations.
 
 ## Current `sorry` inventory
 
-As of 2026-08-10, `rg -n '^\s*sorry\s*$' MathlibNt --glob '*.lean'` reports:
+As of 2026-08-11, the tracked Lean sources contain no executable `sorry` or
+`admit` terms. In particular:
 
-| File | Declaration | Status | Why it matters |
+| File | Declaration | Status | Result |
 | --- | --- | --- | --- |
-| `MertensTheorem.lean` | `mertens_product_formula` | `sorry` | Precise Mertens product constant |
+| `MertensTheorem.lean` | `prime_number_theorem` | Complete | Natural-number PNT consumer |
+| `MertensTheorem.lean` | `mertens_second_theorem` | Complete | Mertens-II consumer |
+| `MertensTheorem.lean` | `mertens_product_formula` | Complete | Precise `exp (-γ)` product constant |
 
 No declaration in `ChensTheorem.lean`, `SwitchingPrinciple.lean`,
 `SelbergUpperBound.lean`, or `BombieriVinogradov.lean` currently has a
 `sorry`.
 
-The weaker theorem `primeProduct_asymptotic_order` is independently
+The weaker theorem `primeProduct_asymptotic_order` is also independently
 kernel-checked: it derives `primeProduct x = Θ(1 / log x)` from the audited
-Mertens-II interface. It is not the exact product formula listed above.
+Mertens-II interface.
 
 ## Checked conditional chain
 
@@ -120,22 +123,21 @@ genuine uniform estimates.
 3. Compile the chain, including dependencies, with the project toolchain.
 4. Do not label `chens_theorem` unconditional unless proofs of both explicit
    inputs are supplied.
-5. The imported `analytic-number-theory-lean` v0.1.0 PNT already discharges
-   the local `prime_number_theorem`; audit future analytic imports with
-   `#print axioms` before using them for the two remaining results.
+5. The imported `analytic-number-theory-lean` v0.3.0 discharges all local
+   PNT/Mertens obligations. `Audit.lean` checks the resulting consumers, and
+   CI enforces the exact standard-axiom whitelist.
 
 ## Next completion milestones
 
-1. Derive the two Mertens statements from the imported audited PNT foundation.
-2. Replace `ChenAnalyticBounds` by a uniform Jurkat--Richert/Selberg proof.
-3. Begin the switching bridge with a weak lemma: instantiate
+1. Replace `ChenAnalyticBounds` by a uniform Jurkat--Richert/Selberg proof.
+2. Begin the switching bridge with a weak lemma: instantiate
    `chenWeight_pos_implies_semiprime` at `N - p`, with the present
    `floor (N^(1/10))` and `floor (N^(1/3))` cutoffs, and formalize the needed
    membership/positivity translation.  Then strengthen it to a precise
    switching identity matching the present finite-set definitions and prove
    `ChenCountingBridge`.
-4. Re-run the inventory and strengthen `chens_theorem` by removing its two
-   explicit assumptions only after steps 2 and 3 are complete.
+3. Re-run the inventory and strengthen `chens_theorem` by removing its two
+   explicit assumptions only after steps 1 and 2 are complete.
 
 The public repository's related documentation is `PROOF_REFERENCE.md` and
 `EXTERNAL_DEPENDENCY_AUDIT.md`.  Project-wide scratch status files are

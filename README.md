@@ -3,7 +3,7 @@
 An auditable Lean formalization program for Chen's theorem and the sieve-theoretic
 and analytic-number-theory ingredients around it.
 
-## Project status — 2026-08-10
+## Project status — 2026-08-11
 
 This repository does **not** claim an unconditional, completed formal proof of
 Chen's theorem.  It is an auditable formalization program with a completed
@@ -33,23 +33,25 @@ The following are complete Lean proofs in this chain:
   prime factors” interpretation.
 
 `lake build` succeeds for the full public module root. `Audit.lean` verifies
-that `chens_theorem`, `key_inequality_implies_chen`, and the local
-`prime_number_theorem`, and `mertens_second_theorem` depend only on Lean's standard `propext`,
-`Classical.choice`, and `Quot.sound` axioms — not on `sorryAx`.
+that the conditional Chen chain and all three local PNT/Mertens interfaces
+depend only on Lean's standard `propext`, `Classical.choice`, and `Quot.sound`
+axioms — not on `sorryAx`.
 
-### Phase 2 — explicit open obligations
+### Phase 2 — analytic obligations completed
 
-There is currently exactly one executable `sorry`, in
-`MathlibNt/SieveTheory/MertensTheorem.lean`:
+There are no executable `sorry` or `admit` terms in the tracked Lean sources.
+The three former analytic obligations are now discharged through the audited
+`analytic-number-theory-lean` foundation:
 
-| Declaration | Work remaining |
+| Declaration | Status |
 | --- | --- |
-| `mertens_product_formula` | Mertens product formula with the stated constant and error term |
+| `prime_number_theorem` | Complete |
+| `mertens_second_theorem` | Complete |
+| `mertens_product_formula` | Complete, including the `exp (-γ)` constant and `O(log⁻² x)` error |
 
 The weaker product-order statement `primeProduct_asymptotic_order`, namely
-`primeProduct x = Θ(1 / log x)`, is complete and kernel-audited. The remaining
-gap is the identification of its leading constant with `exp (-γ)` together
-with the sharper `O(log⁻² x)` error.
+`primeProduct x = Θ(1 / log x)`, remains available as a separately
+kernel-audited corollary.
 
 The two inputs below are **not** hidden placeholders: they are named Lean
 propositions deliberately exposed in the type of `chens_theorem`.
@@ -66,7 +68,7 @@ from the stated inputs.
 ### Phase 3 — imported and audited PNT route
 
 The repository consumes
-[`analytic-number-theory-lean` v0.2.0](https://github.com/UyNewNas/analytic-number-theory-lean),
+[`analytic-number-theory-lean` v0.3.0](https://github.com/UyNewNas/analytic-number-theory-lean),
 whose audited public API ports the minimal PNTAnd closure to the same Lean and
 mathlib versions used here. It supplies a medium-strength Chebyshev-psi error
 estimate, the standard `pi_alt` asymptotic, and the natural-number interface
@@ -76,24 +78,22 @@ The local normalization bridge is complete: `primeCount_eq_primeCounting`
 identifies the project count with mathlib's `Nat.primeCounting`, and
 `primeCountingPNT_implies_prime_number_theorem` turns the imported
 natural-number PNT into this repository's epsilon-PNT statement. Thus
-`prime_number_theorem` is no longer an open obligation. Version 0.2.0 also
-supplies the natural-number Mertens-II interface consumed by
-`mertens_second_theorem`.
+`prime_number_theorem` is no longer an open obligation. Version 0.3.0 also
+supplies the natural-number Mertens-II and exact Mertens-product interfaces
+consumed by `mertens_second_theorem` and `mertens_product_formula`.
 
 ### Next milestones
 
-1. Derive the exact Mertens product statement from an audited sufficiently
-   strong analytic input.
-2. Formalize `ChenAnalyticBounds` with truly uniform constants.
-3. Formalize `ChenCountingBridge` for the present finite-set definitions.
-4. Remove the two explicit assumptions from `chens_theorem` only after steps
-   2 and 3 are complete.
+1. Formalize `ChenAnalyticBounds` with truly uniform constants.
+2. Formalize `ChenCountingBridge` for the present finite-set definitions.
+3. Remove the two explicit assumptions from `chens_theorem` only after steps
+   1 and 2 are complete.
 
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.
 The external dependency audit records historical alternatives; the active,
-imported PNT dependency is `analytic-number-theory-lean` v0.1.0.
+imported analytic dependency is `analytic-number-theory-lean` v0.3.0.
 
 ## Layout
 
@@ -110,14 +110,14 @@ lake env lean Audit.lean
 ```
 
 The project toolchain is pinned by `lean-toolchain`. `Audit.lean` prints the
-axioms used by the two conditional derivations and `prime_number_theorem`; its
-output must not contain `sorryAx`.
+axioms used by the two conditional derivations and the PNT/Mertens consumers;
+CI requires every report to use only the three standard axioms above.
 
 ## Continuous audit
 
 GitHub Actions runs the same build and axiom audit on pushes to `main`, pull
-requests, and manual dispatches. It requires the current inventory of exactly
-two executable `sorry`s. Lake dependencies and the Lean toolchain
+requests, and manual dispatches. It requires zero executable `sorry`/`admit`
+terms in tracked Lean sources. Lake dependencies and the Lean toolchain
 are cached only for speed; the job remains correct on a cache miss because it
 rebuilds from `lake-manifest.json`.
 
@@ -128,17 +128,24 @@ extends the audit output with:
 'MathlibNt.ChensTheorem.chens_theorem' depends on axioms: [propext, Classical.choice, Quot.sound]
 'MathlibNt.SieveTheory.SwitchingPrinciple.key_inequality_implies_chen' depends on axioms: [propext, Classical.choice, Quot.sound]
 'MathlibNt.SieveTheory.MertensTheorem.prime_number_theorem' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibNt.SieveTheory.MertensTheorem.mertens_second_theorem' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibNt.SieveTheory.MertensTheorem.mertens_product_formula' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-Thus the two conditional derivations and imported-PNT consumer contain no
-`sorryAx`; this record does not discharge the two explicit proposition inputs
-or the two separately listed Mertens obligations.
+The complete audit contains six reports: the two conditional derivations, the
+three analytic consumers, and `primeProduct_asymptotic_order`. CI rejects any
+axiom outside `propext`, `Classical.choice`, and `Quot.sound`. This record does
+not discharge the two explicit proposition inputs to the conditional theorem.
 
-## Verify the open obligations
+## Verify the zero-placeholder invariant
 
 ```sh
-rg -n '^\s*sorry\s*$' MathlibNt --glob '*.lean'
+rg -n '^\s*(sorry|admit)\s*$' --glob '*.lean'
 ```
+
+CI additionally strips comments and strings before scanning, so it also
+rejects inline forms such as `by sorry`.
 
 ## Scope
 

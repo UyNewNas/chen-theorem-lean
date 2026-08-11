@@ -87,8 +87,10 @@ theorem mertens_product_formula :
       ∀ x : ℕ, 2 ≤ x →
         |primeProduct x - exp (-eulerMascheroniConstant) / log x| ≤
           C / (log x) ^ 2 := by
-  -- 证明依赖 Mertens 第二定理及对数变换
-  sorry
+  obtain ⟨C, _hC, hbound⟩ :=
+    AnalyticNumberTheory.Mertens.primeProduct_mertens_nat
+  refine ⟨C, fun x hx => ?_⟩
+  simpa only [primeProduct_eq_analyticNumberTheory] using hbound x hx
 
 /-- 一般局部对数修正: 对 0 < t ≤ 1/2, |log(1 - t) + t| ≤ 2t².
 
@@ -1507,10 +1509,10 @@ theorem twinPrimeConstant_lt_one : twinPrimeConstant < 1 := by
    - `twinPrimeConstant_pos`: C₂ > 0 (正性)
    - `twinPrimeConstant_lt_one`: C₂ < 1
 
-4. **证明层** (待完成):
-   - 所有主要定理的证明依赖素数定理 PNT
-   - PNT 的完整形式化需要 ζ 函数理论 (数百页)
-   - 当前作为公理声明 (sorry), 后续可逐步补全
+4. **证明层** (已完成):
+   - 三个主要解析定理均由 `analytic-number-theory-lean` 的已审计接口导入
+   - 本仓库通过定义桥接得到本地陈述，并由 `Audit.lean` 检查公理依赖
+   - 跟踪的 Lean 源码中不存在可执行的 `sorry` 或 `admit`
 -/
 
 end MathlibNt.SieveTheory.MertensTheorem
