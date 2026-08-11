@@ -34,17 +34,16 @@ The following are complete Lean proofs in this chain:
 
 `lake build` succeeds for the full public module root. `Audit.lean` verifies
 that `chens_theorem`, `key_inequality_implies_chen`, and the local
-`prime_number_theorem` depend only on Lean's standard `propext`,
+`prime_number_theorem`, and `mertens_second_theorem` depend only on Lean's standard `propext`,
 `Classical.choice`, and `Quot.sound` axioms — not on `sorryAx`.
 
 ### Phase 2 — explicit open obligations
 
-There are currently exactly two executable `sorry`s, both in
+There is currently exactly one executable `sorry`, in
 `MathlibNt/SieveTheory/MertensTheorem.lean`:
 
 | Declaration | Work remaining |
 | --- | --- |
-| `mertens_second_theorem` | prime reciprocal-sum asymptotic with the stated error term |
 | `mertens_product_formula` | Mertens product formula with the stated constant and error term |
 
 The two inputs below are **not** hidden placeholders: they are named Lean
@@ -62,7 +61,7 @@ from the stated inputs.
 ### Phase 3 — imported and audited PNT route
 
 The repository consumes
-[`analytic-number-theory-lean` v0.1.0](https://github.com/UyNewNas/analytic-number-theory-lean),
+[`analytic-number-theory-lean` v0.2.0](https://github.com/UyNewNas/analytic-number-theory-lean),
 whose audited public API ports the minimal PNTAnd closure to the same Lean and
 mathlib versions used here. It supplies a medium-strength Chebyshev-psi error
 estimate, the standard `pi_alt` asymptotic, and the natural-number interface
@@ -72,12 +71,14 @@ The local normalization bridge is complete: `primeCount_eq_primeCounting`
 identifies the project count with mathlib's `Nat.primeCounting`, and
 `primeCountingPNT_implies_prime_number_theorem` turns the imported
 natural-number PNT into this repository's epsilon-PNT statement. Thus
-`prime_number_theorem` is no longer an open obligation.
+`prime_number_theorem` is no longer an open obligation. Version 0.2.0 also
+supplies the natural-number Mertens-II interface consumed by
+`mertens_second_theorem`.
 
 ### Next milestones
 
-1. Derive the two exact Mertens statements from an audited sufficiently strong
-   analytic input.
+1. Derive the exact Mertens product statement from an audited sufficiently
+   strong analytic input.
 2. Formalize `ChenAnalyticBounds` with truly uniform constants.
 3. Formalize `ChenCountingBridge` for the present finite-set definitions.
 4. Remove the two explicit assumptions from `chens_theorem` only after steps

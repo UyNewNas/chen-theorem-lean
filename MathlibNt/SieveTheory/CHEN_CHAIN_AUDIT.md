@@ -17,8 +17,8 @@ ChenAnalyticBounds + ChenCountingBridge
 ```
 
 The two assumptions are named, typed Lean propositions rather than hidden
-`sorry`s. The only remaining `sorry`s in `MathlibNt` are the two analytic
-number-theory results listed below.
+`sorry`s. The only remaining `sorry` in `MathlibNt` is the analytic
+number-theory result listed below.
 
 ## Current `sorry` inventory
 
@@ -26,7 +26,6 @@ As of 2026-08-10, `rg -n '^\s*sorry\s*$' MathlibNt --glob '*.lean'` reports:
 
 | File | Declaration | Status | Why it matters |
 | --- | --- | --- | --- |
-| `MertensTheorem.lean` | `mertens_second_theorem` | `sorry` | Prime reciprocal-sum asymptotic |
 | `MertensTheorem.lean` | `mertens_product_formula` | `sorry` | Precise Mertens product constant |
 
 No declaration in `ChensTheorem.lean`, `SwitchingPrinciple.lean`,

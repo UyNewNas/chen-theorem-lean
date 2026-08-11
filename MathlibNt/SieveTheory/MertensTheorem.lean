@@ -61,9 +61,11 @@ theorem mertens_second_theorem :
     ∃ B₁ : ℝ, ∃ C : ℝ,
       ∀ x : ℕ, 2 ≤ x →
         |primeReciprocalSum x - (log (log x) + B₁)| ≤ C / log x := by
-  -- 计划路线：由 PNT: π(x) ~ x/log x 加 Abel 分部求和导出。
-  -- 这只是充分路线；也存在不使用 PNT 的初等证明。
-  sorry
+  obtain ⟨C, hC, hbound⟩ :=
+    AnalyticNumberTheory.Mertens.mertensSecond_nat
+  refine ⟨AnalyticNumberTheory.Mertens.mertensSecondConstant, C, ?_⟩
+  intro x hx
+  simpa only [primeReciprocalSum_eq_analyticNumberTheory] using hbound x hx
 
 /-! ## 2. Mertens 乘积公式 (陈述) -/
 
