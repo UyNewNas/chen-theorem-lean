@@ -954,6 +954,35 @@ theorem corrected_counting_bridge_public_of_nine_le {N : ℕ} (hN : 9 ≤ N) :
       ((chenGoodRepresentations N).card : ℝ) :=
   corrected_counting_bridge_public (correctedChen_cutoffValid_of_nine_le hN)
 
+/-- A positive corrected sieve difference already yields a genuine Chen
+representation.  All finite switching, rounding, and boundary-fibre work is
+internal to this theorem; the only future input is an analytic proof that its
+left-hand side is positive. -/
+theorem corrected_key_inequality_implies_chen_at {N : ℕ} (hN : 9 ≤ N)
+    (hkey : 0 < ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2) :
+    ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧
+      Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q := by
+  have hpos : 0 < ((chenGoodRepresentations N).card : ℝ) :=
+    lt_of_lt_of_le hkey (corrected_counting_bridge_public_of_nine_le hN)
+  have hcard : 0 < (chenGoodRepresentations N).card := by exact_mod_cast hpos
+  obtain ⟨p, hp⟩ := Finset.card_pos.mp hcard
+  simp only [chenGoodRepresentations, Finset.mem_filter, Finset.mem_range] at hp
+  obtain ⟨hpN, hpprime, hq2, hqalmost⟩ := hp
+  exact ⟨p, N - p, hpprime, hq2, hqalmost, by omega⟩
+
+/-- The corrected analytic target implies Chen's theorem at the conventional
+threshold.  This replaces the historical `ChenCountingBridge` assumption by
+a single honest analytic positivity obligation for the new objects. -/
+theorem corrected_key_inequality_implies_chen
+    (hkey : ∀ N : ℕ, Even N → 1000 ≤ N →
+      0 < ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N ≥ N₀ → Even N →
+      ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧
+        Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q := by
+  refine ⟨1000, ?_⟩
+  intro N hN_large hN_even
+  exact corrected_key_inequality_implies_chen_at (by omega) (hkey N hN_even hN_large)
+
 /-- Historical conditional counting bridge for the present `chenW`/`Ω`.
 
 This proposition is retained so the conditional theorem has a stable, explicit

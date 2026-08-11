@@ -109,6 +109,11 @@ Given `ChenCountingBridge`, `key_inequality_implies_chen` turns positivity of
 the real cardinality bound into `Finset.card_pos`, extracts an element of
 `chenGoodRepresentations N`, and proves `N = p + (N - p)`.
 
+The active replacement theorem is
+`corrected_key_inequality_implies_chen`: it performs the same extraction from
+the corrected positivity target, using the now-unconditional-for-`N ≥ 9`
+public corrected bridge. It has no `ChenCountingBridge` parameter.
+
 `ChensTheorem.chens_theorem` packages that result using the project's
 `Semiprime q := 2 <= q /\ Nat.IsAtMostAlmostPrime 2 q` definition.
 
@@ -154,8 +159,10 @@ genuine uniform estimates.
    and a proven factor-multiplicity map.
 2. ✅ Prove the corrected finite switching bridge, with the cutoff arithmetic
    discharged uniformly for `N ≥ 9`.
-3. Replace `ChenAnalyticBounds` by a uniform Jurkat--Richert/Selberg proof for
-   the corrected objects, then remove the two explicit assumptions.
+3. Prove a uniform positive lower bound for
+   `correctedChenCandidates.card - correctedChenOmega / 2`; the corrected
+   extraction theorem then gives Chen directly.  The historical analytic and
+   counting assumptions are not inputs to that active path.
 
 The public repository's related documentation is `PROOF_REFERENCE.md` and
 `EXTERNAL_DEPENDENCY_AUDIT.md`.  Project-wide scratch status files are

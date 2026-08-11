@@ -29,3 +29,5 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChen_candidate_complement_lt_cube
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_counting_bridge_public
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_counting_bridge_public_of_nine_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_key_inequality_implies_chen_at
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_key_inequality_implies_chen

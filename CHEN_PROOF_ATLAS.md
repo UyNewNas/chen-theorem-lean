@@ -101,16 +101,26 @@ Summing that fibre theorem is also kernel-checked as
 card C(N) - correctedChenOmega(N) / 2 ≤ card G(N)
 ```
 
-under precisely the same cutoff assumptions. The remaining work on this line
-is therefore no longer a missing switching argument; it is to prove those
-cutoff assumptions uniformly and to establish analytic bounds for the new
-`correctedChenCandidates` and `correctedChenOmega` objects.
+under precisely the same cutoff assumptions. Since those cutoff assumptions
+are now uniform at `N ≥ 9`, the only remaining work on this line is to
+establish analytic bounds for the new `correctedChenCandidates` and
+`correctedChenOmega` objects.
 
 The public-facing corollary is now also kernel-checked as
 `corrected_counting_bridge_public_of_nine_le`. It derives `N - p < y(N)^3`
 for every candidate, embeds the corrected good fibre into
 `chenGoodRepresentations N`, and discharges all cutoff arithmetic at `N ≥ 9`.
 No finite counting or rounding conversion remains at that boundary.
+
+Finally, `corrected_key_inequality_implies_chen` consumes the single target
+
+```text
+0 < card C(N) - correctedChenOmega(N) / 2
+```
+
+for all sufficiently large even `N` and extracts the public Chen
+representation. The historical `ChenCountingBridge` is therefore no longer
+on the active proof path.
 
 ## Dependency sketch
 
