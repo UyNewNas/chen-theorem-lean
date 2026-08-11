@@ -702,6 +702,34 @@ noncomputable def correctedChenCandidates (N : ℕ) : Finset ℕ :=
     p.Prime ∧ 2 ≤ N - p ∧
       ∀ r : ℕ, r.Prime → r < correctedChenZ N → ¬ r ∣ N - p)
 
+/-- Complements used before the corrected sieve removes small primes not
+already forced away by parity or by a prime factor of `N`. -/
+noncomputable def correctedChenUnsiftedComplements (N : ℕ) : Finset ℕ :=
+  ((Finset.range N).filter (fun p =>
+    p.Prime ∧ 2 ≤ N - p ∧
+      ∀ r : ℕ, r.Prime → r < correctedChenZ N →
+        (r ≤ 2 ∨ r ∣ N) → ¬ r ∣ N - p)).image (fun p => N - p)
+
+/-- Product of the small primes which remain to be sieved from the corrected
+complement support. -/
+noncomputable def correctedChenSiftingProduct (N : ℕ) : ℕ :=
+  ((Finset.range (correctedChenZ N)).filter
+    (fun r => r.Prime ∧ 2 < r ∧ ¬ r ∣ N)).prod id
+
+/-- The corrected sifting product is squarefree because its factors are
+distinct primes. -/
+theorem correctedChenSiftingProduct_squarefree (N : ℕ) :
+    Squarefree (correctedChenSiftingProduct N) := by
+  unfold correctedChenSiftingProduct
+  refine Finset.squarefree_prod_of_pairwise_isCoprime ?_ ?_
+  · rintro p hp q hq hpq
+    simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_range] at hp hq
+    exact Nat.coprime_iff_isRelPrime.mp
+      ((Nat.coprime_primes hp.2.1 hq.2.1).mpr hpq)
+  · intro p hp
+    simp only [Finset.mem_filter, Finset.mem_range] at hp
+    exact hp.2.1.squarefree
+
 /-- The historical lower-sieve candidates transfer safely to the corrected
 candidate set once the unit boundary is removed.  This is a finite inclusion:
 it carries no historical switching or Omega estimate. -/

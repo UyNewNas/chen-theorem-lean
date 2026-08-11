@@ -150,6 +150,8 @@ This generic finite inequality is now kernel-checked in `LinearSieve.lean` as
 `mainSum_sub_errSum_le_siftedSum_of_lowerMoebius`. The remaining work is the
 object-specific construction of `correctedChenSieve`, its exact sifted-sum
 identification, and a genuinely uniform bound for that sieve's explicit error.
+Its squarefree sifting product is now separately kernel-checked as
+`correctedChenSiftingProduct_squarefree`.
 
 ## Dependency sketch
 
