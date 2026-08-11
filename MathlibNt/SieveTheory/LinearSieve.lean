@@ -33,6 +33,65 @@ open Real BoundingSieve
 
 open scoped Classical
 
+/-! ## 0. Finite lower-bound sieve interface -/
+
+/-- A sequence of coefficients is lower Möbius when its divisor sums lie below
+the coprimality indicator.  This is the exact finite dual of Mathlib's
+`BoundingSieve.IsUpperMoebius`. -/
+def IsLowerMoebius (muMinus : ℕ → ℝ) : Prop :=
+  ∀ n : ℕ, ∑ d ∈ n.divisors, muMinus d ≤ if n = 1 then 1 else 0
+
+/-- A lower Möbius sequence gives a lower bound for the sifted sum before any
+asymptotic estimate is introduced. -/
+theorem sum_of_lowerMoebius_le_siftedSum {S : BoundingSieve}
+    (muMinus : ℕ → ℝ) (hmu : IsLowerMoebius muMinus) :
+    ∑ d ∈ S.prodPrimes.divisors, muMinus d * S.multSum d ≤ S.siftedSum := by
+  calc
+    ∑ d ∈ S.prodPrimes.divisors, muMinus d * S.multSum d =
+        ∑ n ∈ S.support, ∑ d ∈ S.prodPrimes.divisors,
+          if d ∣ n then S.weights n * muMinus d else 0 := by
+      symm
+      rw [Finset.sum_comm]
+      simp_rw [BoundingSieve.multSum, ← Finset.sum_filter, Finset.mul_sum, mul_comm]
+    _ = ∑ n ∈ S.support, S.weights n *
+        ∑ d ∈ (Nat.gcd S.prodPrimes n).divisors, muMinus d := by
+      symm
+      simp_rw [Finset.mul_sum, ← Finset.sum_filter]
+      congr with n
+      congr
+      · rw [← Nat.divisors_filter_dvd_of_dvd S.prodPrimes_ne_zero
+          (Nat.gcd_dvd_left _ _)]
+        ext x
+        simp +contextual [Nat.dvd_gcd_iff]
+    _ ≤ S.siftedSum := by
+      rw [S.siftedSum_eq_sum_support_mul_ite]
+      gcongr with n
+      exact hmu (Nat.gcd S.prodPrimes n)
+
+/-- Explicit-error lower sieve inequality.  Unlike the historical pointwise
+interfaces, the loss is the concrete finite quantity `errSum muMinus`. -/
+theorem mainSum_sub_errSum_le_siftedSum_of_lowerMoebius {S : BoundingSieve}
+    (muMinus : ℕ → ℝ) (hmu : IsLowerMoebius muMinus) :
+    S.totalMass * S.mainSum muMinus - S.errSum muMinus ≤ S.siftedSum := by
+  have hrem : -S.errSum muMinus ≤
+      ∑ d ∈ S.prodPrimes.divisors, muMinus d * S.rem d := by
+    rw [BoundingSieve.errSum, ← Finset.sum_neg_distrib]
+    apply Finset.sum_le_sum
+    intro d hd
+    rw [← abs_mul]
+    exact neg_abs_le _
+  calc
+    S.totalMass * S.mainSum muMinus - S.errSum muMinus ≤
+        S.totalMass * S.mainSum muMinus +
+          ∑ d ∈ S.prodPrimes.divisors, muMinus d * S.rem d := by
+      linarith
+    _ = ∑ d ∈ S.prodPrimes.divisors, muMinus d * S.multSum d := by
+      rw [BoundingSieve.mainSum, Finset.mul_sum, ← Finset.sum_add_distrib]
+      congr with d
+      rw [BoundingSieve.rem]
+      ring
+    _ ≤ S.siftedSum := sum_of_lowerMoebius_le_siftedSum muMinus hmu
+
 /-! ## 1. Euler-Mascheroni 常数 -/
 
 /-- Euler-Mascheroni 常数 γ ≈ 0.5772...

@@ -146,6 +146,11 @@ form “there exists a constant after fixing N” is admissible. Only after that
 finite inequality is in place should the uniform order of quantifiers be
 proved for the error bound.
 
+This generic finite inequality is now kernel-checked in `LinearSieve.lean` as
+`mainSum_sub_errSum_le_siftedSum_of_lowerMoebius`. The remaining work is the
+object-specific construction of `correctedChenSieve`, its exact sifted-sum
+identification, and a genuinely uniform bound for that sieve's explicit error.
+
 ## Dependency sketch
 
 ```text

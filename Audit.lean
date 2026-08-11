@@ -16,6 +16,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chen_pointwise_analytic_bounds_at
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chen_key_inequality_of_error_budget
+#print axioms MathlibNt.SieveTheory.LinearSieve.sum_of_lowerMoebius_le_siftedSum
+#print axioms MathlibNt.SieveTheory.LinearSieve.mainSum_sub_errSum_le_siftedSum_of_lowerMoebius
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.range_sub_eq_one_card_le_one
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenUnitCandidates_card_le_one
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenWCandidate_mem_corrected_of_two_le

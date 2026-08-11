@@ -144,9 +144,9 @@ extends the audit output with:
 'MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-The complete audit contains twenty-seven reports: the two conditional derivations,
+The complete audit contains twenty-nine reports: the two conditional derivations,
 the three analytic consumers, `primeProduct_asymptotic_order`, the two
-pointwise error-budget interfaces, and nineteen finite bridge-foundation lemmas.
+pointwise error-budget interfaces, and twenty-one finite bridge-foundation lemmas.
 CI rejects any axiom outside `propext`, `Classical.choice`, and `Quot.sound`.
 This record does not discharge the two explicit proposition inputs to the
 conditional theorem.
