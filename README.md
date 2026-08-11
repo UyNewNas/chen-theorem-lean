@@ -60,7 +60,10 @@ propositions deliberately exposed in the type of `chens_theorem`.
   estimates needed by Chen's argument;
 - `ChenCountingBridge`: a historical finite switching/counting interface.  It
   is refuted by finite evaluation for the present `chenW`/`chenOmega`
-  definitions, so it must be replaced rather than proved.
+  definitions, so it must be replaced rather than proved.  The replacement is
+  complete: the corrected candidates, bad-fibre penalty, and finite counting
+  bridge are kernel-checked, with the rounding cutoffs discharged uniformly
+  for `N ≥ 9` (`corrected_counting_bridge_public_of_nine_le`).
 
 Consequently, the repository proves neither an unconditional Chen theorem nor
 the classical uniform sieve estimates.  It does prove exactly what follows
@@ -85,12 +88,10 @@ consumed by `mertens_second_theorem` and `mertens_product_formula`.
 
 ### Next milestones
 
-1. Redefine the finite switching objects and prove a
-   multiplicity-corrected counting bridge.
-2. Formalize `ChenAnalyticBounds` with truly uniform constants for those
-   corrected objects.
-3. Remove the two explicit assumptions from `chens_theorem` only after steps
-   1 and 2 are complete.
+1. Formalize `ChenAnalyticBounds` with truly uniform constants for the
+   corrected switching objects.
+2. Remove the two explicit assumptions from `chens_theorem` only after step
+   1 is complete.
 
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
@@ -139,9 +140,9 @@ extends the audit output with:
 'MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-The complete audit contains sixteen reports: the two conditional derivations,
+The complete audit contains twenty-one reports: the two conditional derivations,
 the three analytic consumers, `primeProduct_asymptotic_order`, the two
-pointwise error-budget interfaces, and eight finite bridge-foundation lemmas.
+pointwise error-budget interfaces, and thirteen finite bridge-foundation lemmas.
 CI rejects any axiom outside `propext`, `Classical.choice`, and `Quot.sound`.
 This record does not discharge the two explicit proposition inputs to the
 conditional theorem.

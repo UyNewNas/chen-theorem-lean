@@ -90,8 +90,9 @@ must be reproved; the historical `3.9404` constant cannot be reused.
 
 The first conditional fibre theorem is now kernel-checked as
 `correctedChenBad_penalty_ge_two`: it requires `z(N) < y(N)` and
-`N - p < y(N)^3`. Establishing those cutoff conditions at a uniform threshold
-is the next bounded arithmetic workline.
+`N - p < y(N)^3`. Both cutoff conditions are now discharged uniformly for
+`N ≥ 9`: ceiling rounding gives `y(N)^3 ≥ N`, and the real-power/floor/ceiling
+argument proves `z(N) < y(N)`.
 
 Summing that fibre theorem is also kernel-checked as
 `corrected_counting_bridge`:
@@ -106,12 +107,10 @@ cutoff assumptions uniformly and to establish analytic bounds for the new
 `correctedChenCandidates` and `correctedChenOmega` objects.
 
 The public-facing corollary is now also kernel-checked as
-`corrected_counting_bridge_public`.  It packages the two scale assumptions as
-`CorrectedChenCutoffValid N`, derives `N - p < y(N)^3` for every candidate
-from the global cube bound and primality of `p`, and then embeds the corrected
-good fibre into `chenGoodRepresentations N`.  Thus the remaining cutoff task
-is exactly to prove `CorrectedChenCutoffValid N` above an explicit threshold;
-no further finite counting conversion is hidden at that boundary.
+`corrected_counting_bridge_public_of_nine_le`. It derives `N - p < y(N)^3`
+for every candidate, embeds the corrected good fibre into
+`chenGoodRepresentations N`, and discharges all cutoff arithmetic at `N ≥ 9`.
+No finite counting or rounding conversion remains at that boundary.
 
 ## Dependency sketch
 

@@ -854,6 +854,70 @@ def CorrectedChenCutoffValid (N : ℕ) : Prop :=
   correctedChenZ N < correctedChenY N ∧
     (N : ℝ) ≤ (correctedChenY N : ℝ) ^ 3
 
+/-- Ceiling rounding alone supplies the cube-scale half of the corrected
+cutoff predicate, for every natural input. -/
+theorem correctedChen_cube_scale (N : ℕ) :
+    (N : ℝ) ≤ (correctedChenY N : ℝ) ^ 3 := by
+  have hceil : (N : ℝ) ^ (1 / 3 : ℝ) ≤ (correctedChenY N : ℝ) := by
+    simpa only [correctedChenY] using Nat.le_ceil ((N : ℝ) ^ (1 / 3 : ℝ))
+  have hbase : 0 ≤ (N : ℝ) ^ (1 / 3 : ℝ) :=
+    Real.rpow_nonneg (Nat.cast_nonneg N) _
+  calc
+    (N : ℝ) = ((N : ℝ) ^ (1 / 3 : ℝ)) ^ 3 := by
+      rw [← Real.rpow_natCast, ← Real.rpow_mul (Nat.cast_nonneg N)]
+      norm_num
+    _ ≤ (correctedChenY N : ℝ) ^ 3 := pow_le_pow_left₀ hbase hceil 3
+
+/-- Apart from the harmless `max 2`, the lower cutoff is strictly below the
+upper cutoff as soon as the base exceeds one. -/
+theorem correctedChen_floorZ_lt_y {N : ℕ} (hN : 1 < (N : ℝ)) :
+    Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ)) < correctedChenY N := by
+  have hpow : (N : ℝ) ^ (1 / 10 : ℝ) < (N : ℝ) ^ (1 / 3 : ℝ) := by
+    apply Real.rpow_lt_rpow_of_exponent_lt hN
+    norm_num
+  simpa only [correctedChenY] using
+    Nat.floor_lt_ceil_of_lt_of_pos hpow
+      (Real.rpow_pos_of_pos (by linarith : 0 < (N : ℝ)) _)
+
+/-- The corrected cutoff predicate follows from a single concrete lower-root
+condition.  The remaining threshold task is therefore the elementary claim
+`2 < N^(1/3)`, rather than any switching-counting statement. -/
+theorem correctedChen_cutoffValid_of_root_gt_two {N : ℕ}
+    (hroot : (2 : ℝ) < (N : ℝ) ^ (1 / 3 : ℝ)) :
+    CorrectedChenCutoffValid N := by
+  have hN : 1 < (N : ℝ) := by
+    have hroot_pos : 0 < (N : ℝ) ^ (1 / 3 : ℝ) := by linarith
+    by_contra h
+    have hN_nonpos : (N : ℝ) ≤ 1 := le_of_not_gt h
+    have hpow_le : (N : ℝ) ^ (1 / 3 : ℝ) ≤ 1 :=
+      Real.rpow_le_one (Nat.cast_nonneg N) hN_nonpos (by norm_num)
+    linarith
+  refine ⟨?_, correctedChen_cube_scale N⟩
+  unfold correctedChenZ
+  apply max_lt
+  · simpa only [correctedChenY] using (Nat.lt_ceil.mpr hroot)
+  · exact correctedChen_floorZ_lt_y hN
+
+/-- The remaining lower-root condition is already valid from the concrete
+threshold `N ≥ 9`.  Consequently the corrected finite counting bridge has no
+unproved cutoff side condition in the range relevant to Chen's theorem. -/
+theorem correctedChen_cutoffValid_of_nine_le {N : ℕ} (hN : 9 ≤ N) :
+    CorrectedChenCutoffValid N := by
+  apply correctedChen_cutoffValid_of_root_gt_two
+  have hbase : (8 : ℝ) < N := by exact_mod_cast (show 8 < N by omega)
+  have hpow := Real.rpow_lt_rpow (by norm_num : (0 : ℝ) ≤ 8) hbase
+    (by norm_num : (0 : ℝ) < 1 / 3)
+  have h8root : (8 : ℝ) ^ (1 / 3 : ℝ) = 2 := by
+    calc
+      (8 : ℝ) ^ (1 / 3 : ℝ) = ((2 : ℝ) ^ (3 : ℕ)) ^ (1 / 3 : ℝ) := by norm_num
+      _ = ((2 : ℝ) ^ (3 : ℝ)) ^ (1 / 3 : ℝ) := by
+        congr 1
+        exact (Real.rpow_natCast 2 3).symm
+      _ = (2 : ℝ) ^ ((3 : ℝ) * (1 / 3 : ℝ)) := by
+        rw [Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2)]
+      _ = 2 := by norm_num
+  linarith
+
 /-- The global cube-scale part of `CorrectedChenCutoffValid` supplies the
 strict complementary bound for every corrected candidate, because its prime
 component is positive. -/
@@ -882,6 +946,13 @@ theorem corrected_counting_bridge_public {N : ℕ}
   exact hbridge.trans (by
     exact_mod_cast Finset.card_le_card
       (correctedChenGoodCandidates_subset_goodRepresentations N))
+
+/-- The corrected finite bridge in the public representation space, with its
+cutoffs discharged for every `N ≥ 9`. -/
+theorem corrected_counting_bridge_public_of_nine_le {N : ℕ} (hN : 9 ≤ N) :
+    ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 ≤
+      ((chenGoodRepresentations N).card : ℝ) :=
+  corrected_counting_bridge_public (correctedChen_cutoffValid_of_nine_le hN)
 
 /-- Historical conditional counting bridge for the present `chenW`/`Ω`.
 
