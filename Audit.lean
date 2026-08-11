@@ -22,3 +22,5 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenGoodCandidates_subset_goodRepresentations
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenBad_penalty_ge_two
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_counting_bridge
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChen_candidate_complement_lt_cube
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_counting_bridge_public

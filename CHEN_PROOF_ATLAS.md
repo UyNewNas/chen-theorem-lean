@@ -105,6 +105,14 @@ is therefore no longer a missing switching argument; it is to prove those
 cutoff assumptions uniformly and to establish analytic bounds for the new
 `correctedChenCandidates` and `correctedChenOmega` objects.
 
+The public-facing corollary is now also kernel-checked as
+`corrected_counting_bridge_public`.  It packages the two scale assumptions as
+`CorrectedChenCutoffValid N`, derives `N - p < y(N)^3` for every candidate
+from the global cube bound and primality of `p`, and then embeds the corrected
+good fibre into `chenGoodRepresentations N`.  Thus the remaining cutoff task
+is exactly to prove `CorrectedChenCutoffValid N` above an explicit threshold;
+no further finite counting conversion is hidden at that boundary.
+
 ## Dependency sketch
 
 ```text

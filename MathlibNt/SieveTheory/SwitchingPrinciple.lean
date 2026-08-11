@@ -847,6 +847,42 @@ theorem correctedChenGoodCandidates_subset_goodRepresentations (N : ℕ) :
   simp only [chenGoodRepresentations, Finset.mem_filter, Finset.mem_range]
   exact ⟨hcandidate.1, hcandidate.2.1, hcandidate.2.2.1, halmost⟩
 
+/-- The two elementary scale facts required by the corrected finite switching
+bridge.  Keeping them as a named predicate cleanly separates rounding/cutoff
+analysis from the purely finite multiplicity argument. -/
+def CorrectedChenCutoffValid (N : ℕ) : Prop :=
+  correctedChenZ N < correctedChenY N ∧
+    (N : ℝ) ≤ (correctedChenY N : ℝ) ^ 3
+
+/-- The global cube-scale part of `CorrectedChenCutoffValid` supplies the
+strict complementary bound for every corrected candidate, because its prime
+component is positive. -/
+theorem correctedChen_candidate_complement_lt_cube {N p : ℕ}
+    (hscale : (N : ℝ) ≤ (correctedChenY N : ℝ) ^ 3)
+    (hp : p ∈ correctedChenCandidates N) :
+    (N - p : ℝ) < (correctedChenY N : ℝ) ^ 3 := by
+  simp only [correctedChenCandidates, Finset.mem_filter, Finset.mem_range] at hp
+  obtain ⟨hp_lt, hp_prime, -, -⟩ := hp
+  have hp_pos : (0 : ℝ) < p := by exact_mod_cast hp_prime.pos
+  linarith
+
+/-- The corrected bridge in the public Chen representation space.  It is a
+fully kernel-checked replacement for the refuted historical counting bridge,
+conditional only on the cutoff predicate whose eventual validity remains an
+explicit analytic/rounding task. -/
+theorem corrected_counting_bridge_public {N : ℕ}
+    (hcutoff : CorrectedChenCutoffValid N) :
+    ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 ≤
+      ((chenGoodRepresentations N).card : ℝ) := by
+  have hbridge :
+      ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 ≤
+        ((correctedChenGoodCandidates N).card : ℝ) :=
+    corrected_counting_bridge N hcutoff.1
+      (fun p hp => correctedChen_candidate_complement_lt_cube hcutoff.2 hp)
+  exact hbridge.trans (by
+    exact_mod_cast Finset.card_le_card
+      (correctedChenGoodCandidates_subset_goodRepresentations N))
+
 /-- Historical conditional counting bridge for the present `chenW`/`Ω`.
 
 This proposition is retained so the conditional theorem has a stable, explicit
