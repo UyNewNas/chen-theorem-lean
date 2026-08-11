@@ -770,6 +770,63 @@ theorem correctedChenBad_penalty_ge_two {N p : ℕ}
     rw [hproduct]
     exact ha.mul_isAlmostPrime_two hb |>.isAtMost (by decide : (2 : ℕ) ≤ 2)
 
+/-- The corrected finite switching bridge, conditional only on the elementary
+cutoff facts needed by the weight lemma.  Its `/ 2` is justified by the
+explicit bad-fibre penalty, not by the obsolete historical Omega count. -/
+theorem corrected_counting_bridge (N : ℕ)
+    (hzy : correctedChenZ N < correctedChenY N)
+    (hcube : ∀ p ∈ correctedChenCandidates N,
+      (N - p : ℝ) < (correctedChenY N : ℝ) ^ 3) :
+    ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 ≤
+      ((correctedChenGoodCandidates N).card : ℝ) := by
+  let C := correctedChenCandidates N
+  let G := correctedChenGoodCandidates N
+  let B := correctedChenBadCandidates N
+  have hpoint : ∀ p ∈ C,
+      chenWeight (N - p) (correctedChenZ N) (correctedChenY N) ≤
+        if p ∈ G then 1 else 0 := by
+    intro p hp
+    by_cases hgood : p ∈ G
+    · simp only [hgood, ite_true]
+      rw [chenWeight_eq_one_sub_correctedChenPenalty]
+      have hpen : 0 ≤ correctedChenPenalty N p := by
+        unfold correctedChenPenalty primePowerSum tripleFactorCount
+        apply add_nonneg
+        · exact Finset.sum_nonneg fun _ _ => Nat.cast_nonneg _
+        · exact Nat.cast_nonneg _
+      linarith
+    · simp only [hgood, ite_false]
+      have hbad : p ∈ B := by
+        apply Finset.mem_filter.mpr
+        refine ⟨hp, ?_⟩
+        intro halmost
+        apply hgood
+        exact Finset.mem_filter.mpr ⟨hp, halmost⟩
+      have hpen : (2 : ℝ) ≤ correctedChenPenalty N p := by
+        simpa only [B, C] using correctedChenBad_penalty_ge_two hbad hzy (hcube p hp)
+      rw [chenWeight_eq_one_sub_correctedChenPenalty]
+      linarith
+  have hsum := Finset.sum_le_sum (fun p hp => hpoint p hp)
+  have hfilter : C.filter (fun p => p ∈ G) = G := by
+    ext p
+    simp only [Finset.mem_filter]
+    constructor
+    · intro hp
+      exact hp.2
+    · intro hp
+      exact ⟨Finset.filter_subset _ _ hp, hp⟩
+  have hgood_sum : C.sum (fun p => if p ∈ G then (1 : ℝ) else 0) = G.card := by
+    rw [← Finset.sum_filter, hfilter]
+    simp
+  have hweight_sum :
+      C.sum (fun p => chenWeight (N - p) (correctedChenZ N) (correctedChenY N)) =
+        (C.card : ℝ) - correctedChenOmega N / 2 := by
+    simp only [chenWeight_eq_one_sub_correctedChenPenalty]
+    rw [Finset.sum_sub_distrib, ← Finset.sum_div]
+    simp [C, correctedChenOmega]
+  rw [hweight_sum] at hsum
+  simpa only [hgood_sum] using hsum
+
 /-- Every corrected candidate lies in exactly one of the good and bad fibres.
 This is the finite partition on which the replacement counting bridge will be
 built. -/

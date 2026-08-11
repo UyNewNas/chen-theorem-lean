@@ -93,6 +93,18 @@ The first conditional fibre theorem is now kernel-checked as
 `N - p < y(N)^3`. Establishing those cutoff conditions at a uniform threshold
 is the next bounded arithmetic workline.
 
+Summing that fibre theorem is also kernel-checked as
+`corrected_counting_bridge`:
+
+```text
+card C(N) - correctedChenOmega(N) / 2 ≤ card G(N)
+```
+
+under precisely the same cutoff assumptions. The remaining work on this line
+is therefore no longer a missing switching argument; it is to prove those
+cutoff assumptions uniformly and to establish analytic bounds for the new
+`correctedChenCandidates` and `correctedChenOmega` objects.
+
 ## Dependency sketch
 
 ```text
