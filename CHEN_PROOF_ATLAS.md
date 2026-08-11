@@ -88,6 +88,11 @@ be stated.  The `/2` is thus justified by a lower bound on an explicit fibre,
 not by an informal symmetry argument.  Any analytic estimate for `Omega*`
 must be reproved; the historical `3.9404` constant cannot be reused.
 
+The first conditional fibre theorem is now kernel-checked as
+`correctedChenBad_penalty_ge_two`: it requires `z(N) < y(N)` and
+`N - p < y(N)^3`. Establishing those cutoff conditions at a uniform threshold
+is the next bounded arithmetic workline.
+
 ## Dependency sketch
 
 ```text

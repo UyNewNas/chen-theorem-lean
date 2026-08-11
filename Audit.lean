@@ -20,3 +20,4 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenUnitCandidates_card_le_one
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.mem_correctedChenGood_or_bad
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenGoodCandidates_subset_goodRepresentations
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenBad_penalty_ge_two

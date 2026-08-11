@@ -715,6 +715,61 @@ noncomputable def correctedChenBadCandidates (N : ℕ) : Finset ℕ :=
   (correctedChenCandidates N).filter
     (fun p => ¬ Nat.IsAtMostAlmostPrime 2 (N - p))
 
+/-- The explicit penalty attached to a corrected candidate.  It records both
+prime-factor multiplicities in the medium interval and canonical
+medium/large/large triple witnesses. -/
+noncomputable def correctedChenPenalty (N p : ℕ) : ℝ :=
+  primePowerSum (N - p) (correctedChenZ N) (correctedChenY N) +
+    tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N)
+
+/-- The replacement switching sum associated with the corrected candidates.
+Unlike the historical `chenOmega`, its factor multiplicity is explicit.  No
+analytic upper bound or counting bridge is claimed for it yet. -/
+noncomputable def correctedChenOmega (N : ℕ) : ℝ :=
+  (correctedChenCandidates N).sum (correctedChenPenalty N)
+
+/-- The corrected penalty is exactly the amount subtracted by the existing
+Chen weight.  This gives a concrete interpretation to the future `/ 2` in a
+switching bridge. -/
+theorem chenWeight_eq_one_sub_correctedChenPenalty (N p : ℕ) :
+    chenWeight (N - p) (correctedChenZ N) (correctedChenY N) =
+      1 - correctedChenPenalty N p / 2 := by
+  unfold chenWeight correctedChenPenalty
+  ring
+
+/-- A bad corrected candidate has penalty at least two, provided the cutoff
+parameters cover its complementary number below the cube scale.  This is the
+finite multiplicity fact that will justify `/ 2` in the replacement switching
+bridge. -/
+theorem correctedChenBad_penalty_ge_two {N p : ℕ}
+    (hp : p ∈ correctedChenBadCandidates N)
+    (hzy : correctedChenZ N < correctedChenY N)
+    (hcube : (N - p : ℝ) < (correctedChenY N : ℝ) ^ 3) :
+    (2 : ℝ) ≤ correctedChenPenalty N p := by
+  rcases Finset.mem_filter.mp hp with ⟨hcandidate, hbad⟩
+  simp only [correctedChenCandidates, Finset.mem_filter, Finset.mem_range] at hcandidate
+  obtain ⟨hp_lt, _, hq_two, hcoprime⟩ := hcandidate
+  have hcube' : ((N - p : ℕ) : ℝ) < (correctedChenY N : ℝ) ^ 3 := by
+    rw [Nat.cast_sub (by omega : p ≤ N)]
+    exact hcube
+  have hz : 2 ≤ correctedChenZ N := by
+    simp only [correctedChenZ]
+    exact le_max_left _ _
+  by_contra hpen
+  have hpen_lt : correctedChenPenalty N p < 2 := by linarith
+  have hweight :
+      0 < chenWeight (N - p) (correctedChenZ N) (correctedChenY N) := by
+    rw [chenWeight_eq_one_sub_correctedChenPenalty]
+    linarith
+  rcases chenWeight_pos_implies_semiprime (N - p)
+      (correctedChenZ N) (correctedChenY N) hz hzy (by omega) hcube' hcoprime hweight with
+    hunit | hprime | ⟨a, b, ha, hb, -, -, hproduct⟩
+  · omega
+  · exact hbad (hprime.isAlmostPrime_one.isAtMost (by decide : (1 : ℕ) ≤ 2))
+  · apply hbad
+    rw [hproduct]
+    exact ha.mul_isAlmostPrime_two hb |>.isAtMost (by decide : (2 : ℕ) ≤ 2)
+
 /-- Every corrected candidate lies in exactly one of the good and bad fibres.
 This is the finite partition on which the replacement counting bridge will be
 built. -/
