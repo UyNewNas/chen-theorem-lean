@@ -46,6 +46,11 @@ There is currently exactly one executable `sorry`, in
 | --- | --- |
 | `mertens_product_formula` | Mertens product formula with the stated constant and error term |
 
+The weaker product-order statement `primeProduct_asymptotic_order`, namely
+`primeProduct x = Θ(1 / log x)`, is complete and kernel-audited. The remaining
+gap is the identification of its leading constant with `exp (-γ)` together
+with the sharper `O(log⁻² x)` error.
+
 The two inputs below are **not** hidden placeholders: they are named Lean
 propositions deliberately exposed in the type of `chens_theorem`.
 

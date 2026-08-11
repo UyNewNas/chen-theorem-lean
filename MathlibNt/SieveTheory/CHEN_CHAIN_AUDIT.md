@@ -32,6 +32,10 @@ No declaration in `ChensTheorem.lean`, `SwitchingPrinciple.lean`,
 `SelbergUpperBound.lean`, or `BombieriVinogradov.lean` currently has a
 `sorry`.
 
+The weaker theorem `primeProduct_asymptotic_order` is independently
+kernel-checked: it derives `primeProduct x = Θ(1 / log x)` from the audited
+Mertens-II interface. It is not the exact product formula listed above.
+
 ## Checked conditional chain
 
 ### 1. Analytic input

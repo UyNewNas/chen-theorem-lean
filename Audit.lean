@@ -12,3 +12,4 @@ imported PNT and Mertens-II interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.key_inequality_implies_chen
 #print axioms MathlibNt.SieveTheory.MertensTheorem.prime_number_theorem
 #print axioms MathlibNt.SieveTheory.MertensTheorem.mertens_second_theorem
+#print axioms MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order
