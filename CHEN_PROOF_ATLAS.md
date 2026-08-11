@@ -48,6 +48,46 @@ around the barrier to Goldbach.
 | Uniform sieve bounds | A single threshold and constants closing the error budget for every even `N` above it | conditional | Key inequality | Reject any version whose constants are quantified after `N`. |
 | Contradiction | Positive corrected count contradicts an empty good fibre after the finite bridge | conditional | Universal target | Requires both prior hypothesis/conditional nodes. |
 
+## Corrected finite model
+
+The current implementation has begun the definition seam proposed by the
+red-team review:
+
+```text
+z(N) = max(2, floor(N^(1/10)))
+y(N) = ceil(N^(1/3))
+C(N) = {p < N : p prime, 2 ≤ N-p, no prime r < z(N) divides N-p}
+G(N) = {p in C(N) : N-p is at-most-2-almost-prime}
+B(N) = C(N) \ G(N)
+```
+
+`correctedChenCandidates`, `correctedChenGoodCandidates`, and
+`correctedChenBadCandidates` implement these finite sets.  The proven
+partition and the inclusion `G(N) ⊆ chenGoodRepresentations(N)` are only the
+safe combinatorial base; they do not establish a switching estimate.
+
+The next proposed object is a **new** weighted penalty rather than the old
+`chenOmega`:
+
+```text
+penalty(q) = multiplicity of medium prime divisors of q
+             + number of canonical (medium, large, large) prime triples for q
+Omega*(N) = sum_{p in C(N)} penalty(N-p)
+```
+
+The required finite theorem is `p ∈ B(N) → 2 ≤ penalty(N-p)`.  Its intended
+proof route is a contrapositive of the existing positive-weight-to-`P₂` lemma,
+after proving that the new penalty equals the corresponding weight.  Only then
+may the bridge
+
+```text
+card C(N) - Omega*(N) / 2 ≤ card G(N)
+```
+
+be stated.  The `/2` is thus justified by a lower bound on an explicit fibre,
+not by an informal symmetry argument.  Any analytic estimate for `Omega*`
+must be reproved; the historical `3.9404` constant cannot be reused.
+
 ## Dependency sketch
 
 ```text

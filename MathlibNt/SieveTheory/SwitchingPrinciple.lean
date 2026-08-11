@@ -485,19 +485,25 @@ theorem chenWeight_pos_implies_semiprime
 
 /-! ## 2. W(N) 的定义 -/
 
+/-- The finite candidate set underlying the working W-count.  It is named so
+that a corrected switching argument can partition its good, bad, and boundary
+fibres without changing the analytic-facing count all at once. -/
+noncomputable def chenWCandidates (N : ℕ) : Finset ℕ :=
+  let z := Nat.floor ((N : ℝ) ^ (1/10 : ℝ))
+  let y := Nat.floor ((N : ℝ) ^ (1/3 : ℝ))
+  (Finset.range N).filter (fun p =>
+    p.Prime ∧
+    (∀ q : ℕ, q.Prime → q ≤ z → ¬ q ∣ (N - p)) ∧
+    (Finset.card ((Finset.range (y + 1)).filter (fun q =>
+      q.Prime ∧ z < q ∧ q ≤ y ∧ q ∣ (N - p))) ≤ 1))
+
 /-- **W(N)**: 满足筛法条件的素数 p 的计数.
 
 W(N) = |{p 素数 : N - p 无 ≤ N^(1/10) 的素因子, 且 (N^(1/10), N^(1/3)] 中至多一个素因子}|
 
 由 Jurkat-Richert 下界: W(N) ≥ 2.6408 𝔖(N) N/log²N -/
 noncomputable def chenW (N : ℕ) : ℝ :=
-  let z := Nat.floor ((N : ℝ) ^ (1/10 : ℝ))
-  let y := Nat.floor ((N : ℝ) ^ (1/3 : ℝ))
-  (Finset.card ((Finset.range N).filter (fun p =>
-    p.Prime ∧
-    (∀ q : ℕ, q.Prime → q ≤ z → ¬ q ∣ (N - p)) ∧
-    (Finset.card ((Finset.range (y + 1)).filter (fun q =>
-      q.Prime ∧ z < q ∧ q ≤ y ∧ q ∣ (N - p))) ≤ 1))) : ℝ)
+  (chenWCandidates N).card
 
 /-- **W(N) 下界的逐点余项接口**.
 
@@ -527,7 +533,7 @@ This is only the filter-inclusion `chenW ≤ π(N - 1)`.  It is not a lower
 bound for Chen representations and is not used by the conditional Chen chain. -/
 theorem chenW_le_primeCount (N : ℕ) :
     chenW N ≤ ((Finset.card ((range N).filter Nat.Prime) : ℕ) : ℝ) := by
-  unfold chenW
+  unfold chenW chenWCandidates
   apply Nat.cast_le.mpr
   apply Finset.card_le_card
   intro p hp
@@ -653,6 +659,10 @@ noncomputable def chenGoodRepresentations (N : ℕ) : Finset ℕ :=
   (Finset.range N).filter (fun p =>
     p.Prime ∧ 2 ≤ N - p ∧ Nat.IsAtMostAlmostPrime 2 (N - p))
 
+/-- The unit boundary fibre of the W-candidates. -/
+noncomputable def chenUnitCandidates (N : ℕ) : Finset ℕ :=
+  (chenWCandidates N).filter (fun p => N - p = 1)
+
 /-- The exceptional candidate with `N - p = 1` occurs at most once.  A
 corrected switching count must either remove this fibre from `chenW` or carry
 this explicit boundary term. -/
@@ -662,6 +672,68 @@ theorem range_sub_eq_one_card_le_one (N : ℕ) :
   intro a ha b hb
   simp only [Finset.mem_filter, Finset.mem_range] at ha hb
   omega
+
+/-- The unit fibre inside the named W-candidate set also has cardinality at
+most one. -/
+theorem chenUnitCandidates_card_le_one (N : ℕ) :
+    (chenUnitCandidates N).card ≤ 1 := by
+  apply le_trans (Finset.card_le_card ?_) (range_sub_eq_one_card_le_one N)
+  intro p hp
+  simp only [chenUnitCandidates, Finset.mem_filter] at hp
+  refine Finset.mem_filter.mpr ⟨?_, hp.2⟩
+  simpa [chenWCandidates] using (Finset.mem_filter.mp hp.1).1
+
+/-- Corrected lower sieve cutoff.  The `max 2` removes the small-`N`
+degeneracy of the historical floor cutoff. -/
+noncomputable def correctedChenZ (N : ℕ) : ℕ :=
+  max 2 (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ)))
+
+/-- Corrected upper switching cutoff.  Using a ceiling makes the intended
+cube-scale coverage an explicit parameter condition rather than a rounding
+accident. -/
+noncomputable def correctedChenY (N : ℕ) : ℕ :=
+  Nat.ceil ((N : ℝ) ^ (1 / 3 : ℝ))
+
+/-- The base candidates for a replacement switching argument.  Unlike the
+historical W-candidates, the unit fibre is excluded at the definition level.
+The future analytic lower bound must be proved anew for this object. -/
+noncomputable def correctedChenCandidates (N : ℕ) : Finset ℕ :=
+  (Finset.range N).filter (fun p =>
+    p.Prime ∧ 2 ≤ N - p ∧
+      ∀ r : ℕ, r.Prime → r < correctedChenZ N → ¬ r ∣ N - p)
+
+/-- Corrected candidates that already give a prime-plus-at-most-two-almost-
+prime representation. -/
+noncomputable def correctedChenGoodCandidates (N : ℕ) : Finset ℕ :=
+  (correctedChenCandidates N).filter
+    (fun p => Nat.IsAtMostAlmostPrime 2 (N - p))
+
+/-- The bad fibre of the corrected candidate set.  The planned replacement
+Omega must supply a multiplicity-correct penalty for every member of this
+set. -/
+noncomputable def correctedChenBadCandidates (N : ℕ) : Finset ℕ :=
+  (correctedChenCandidates N).filter
+    (fun p => ¬ Nat.IsAtMostAlmostPrime 2 (N - p))
+
+/-- Every corrected candidate lies in exactly one of the good and bad fibres.
+This is the finite partition on which the replacement counting bridge will be
+built. -/
+theorem mem_correctedChenGood_or_bad {N p : ℕ}
+    (hp : p ∈ correctedChenCandidates N) :
+    p ∈ correctedChenGoodCandidates N ∨ p ∈ correctedChenBadCandidates N := by
+  by_cases hgood : Nat.IsAtMostAlmostPrime 2 (N - p)
+  · exact Or.inl <| Finset.mem_filter.mpr ⟨hp, hgood⟩
+  · exact Or.inr <| Finset.mem_filter.mpr ⟨hp, hgood⟩
+
+/-- Corrected good candidates are genuine good representations in the public
+Chen statement. -/
+theorem correctedChenGoodCandidates_subset_goodRepresentations (N : ℕ) :
+    correctedChenGoodCandidates N ⊆ chenGoodRepresentations N := by
+  intro p hp
+  rcases Finset.mem_filter.mp hp with ⟨hcandidate, halmost⟩
+  simp only [correctedChenCandidates, Finset.mem_filter, Finset.mem_range] at hcandidate
+  simp only [chenGoodRepresentations, Finset.mem_filter, Finset.mem_range]
+  exact ⟨hcandidate.1, hcandidate.2.1, hcandidate.2.2.1, halmost⟩
 
 /-- Historical conditional counting bridge for the present `chenW`/`Ω`.
 
