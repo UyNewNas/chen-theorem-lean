@@ -122,6 +122,9 @@ for all sufficiently large even `N` and extracts the public Chen
 representation. The historical `ChenCountingBridge` is therefore no longer
 on the active proof path.
 
+`CorrectedChenAnalyticPositivity` names exactly this sole remaining assumption,
+and `corrected_chens_theorem` is the corresponding conditional theorem.
+
 ## Dependency sketch
 
 ```text

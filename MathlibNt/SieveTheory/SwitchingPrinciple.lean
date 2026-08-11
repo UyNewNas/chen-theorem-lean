@@ -983,6 +983,22 @@ theorem corrected_key_inequality_implies_chen
   intro N hN_large hN_even
   exact corrected_key_inequality_implies_chen_at (by omega) (hkey N hN_even hN_large)
 
+/-- The sole active analytic obligation for the corrected Chen development.
+It deliberately speaks only about the new candidate and penalty objects; no
+constant or bound from the refuted historical switching model is imported. -/
+def CorrectedChenAnalyticPositivity : Prop :=
+  ∀ N : ℕ, Even N → 1000 ≤ N →
+    0 < ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2
+
+/-- Conditional Chen theorem for the corrected development.  Its unique
+assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge
+and representation extraction have been discharged above. -/
+theorem corrected_chens_theorem (h : CorrectedChenAnalyticPositivity) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N ≥ N₀ → Even N →
+      ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧
+        Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q :=
+  corrected_key_inequality_implies_chen h
+
 /-- Historical conditional counting bridge for the present `chenW`/`Ω`.
 
 This proposition is retained so the conditional theorem has a stable, explicit

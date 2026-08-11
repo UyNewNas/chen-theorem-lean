@@ -66,6 +66,8 @@ propositions deliberately exposed in the type of `chens_theorem`.
   for `N ≥ 9` (`corrected_counting_bridge_public_of_nine_le`).  Moreover
   `corrected_key_inequality_implies_chen` turns the new analytic positivity
   target directly into a Chen representation, without this historical input.
+  `corrected_chens_theorem` exposes that active route under its one named
+  input, `CorrectedChenAnalyticPositivity`.
 
 Consequently, the repository proves neither an unconditional Chen theorem nor
 the classical uniform sieve estimates.  It does prove exactly what follows
@@ -142,9 +144,9 @@ extends the audit output with:
 'MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-The complete audit contains twenty-three reports: the two conditional derivations,
+The complete audit contains twenty-four reports: the two conditional derivations,
 the three analytic consumers, `primeProduct_asymptotic_order`, the two
-pointwise error-budget interfaces, and fifteen finite bridge-foundation lemmas.
+pointwise error-budget interfaces, and sixteen finite bridge-foundation lemmas.
 CI rejects any axiom outside `propext`, `Classical.choice`, and `Quot.sound`.
 This record does not discharge the two explicit proposition inputs to the
 conditional theorem.
