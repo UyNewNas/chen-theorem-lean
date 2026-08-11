@@ -3,7 +3,7 @@
 An auditable Lean formalization program for Chen's theorem and the sieve-theoretic
 and analytic-number-theory ingredients around it.
 
-## Project status — 2026-08-11
+## Project status — 2026-08-12
 
 This repository does **not** claim an unconditional, completed formal proof of
 Chen's theorem.  It is an auditable formalization program with a completed

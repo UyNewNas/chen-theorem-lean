@@ -20,11 +20,12 @@ The two assumptions are named, typed Lean propositions rather than hidden
 `sorry`s. The imported analytic foundation now discharges all three former
 PNT/Mertens obligations. `ChenCountingBridge` is a historical conditional
 interface that finite evaluation refutes for the present counting definitions;
-it must be replaced, not proved.
+its replacement, the corrected finite counting bridge on the corrected
+candidates, is complete and kernel-checked (see section 3).
 
 ## Current `sorry` inventory
 
-As of 2026-08-11, the tracked Lean sources contain no executable `sorry` or
+As of 2026-08-12, the tracked Lean sources contain no executable `sorry` or
 `admit` terms. In particular:
 
 | File | Declaration | Status | Result |
@@ -84,8 +85,23 @@ finite evaluation at `N = 1000` gives `chenW = 153`, `chenOmega = 17`, and
 `chenGoodRepresentations.card = 122`, contradicting the stated inequality.
 The issue is not a missing Lean tactic: `chenW` is an unweighted filter count,
 whereas `chenOmega` uses a different factor-pair index and does not establish
-the claimed `/ 2` multiplicity. See `CHEN_PROOF_ATLAS.md` for the corrected
-workline and falsification conditions.
+the claimed `/ 2` multiplicity.
+
+The replacement is complete on the corrected objects
+(`CHEN_PROOF_ATLAS.md`): `correctedChenCandidates`, the named unit boundary,
+and the factor-multiplicity-aware bad fibre are defined in
+`SwitchingPrinciple.lean`. The partition and the fibre theorem
+`correctedChenBad_penalty_ge_two` are kernel-checked, the summed bridge
+`corrected_counting_bridge` holds under the two cutoff conditions, and the
+public corollary `corrected_counting_bridge_public_of_nine_le` discharges
+both cutoffs uniformly for `N ≥ 9`:
+
+```lean
+((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 ≤
+  ((chenGoodRepresentations N).card : ℝ)
+```
+
+No finite counting or rounding conversion remains at that boundary.
 
 ### 4. Extraction of the representation
 
@@ -134,10 +150,10 @@ genuine uniform estimates.
 
 ## Next completion milestones
 
-1. Define corrected W/Omega counting objects, including the unit boundary and
-   a proven factor-multiplicity map.
-2. Prove the corrected finite switching bridge, with finite counterexample
-   checks before attaching any analytic input.
+1. ✅ Define corrected W/Omega counting objects, including the unit boundary
+   and a proven factor-multiplicity map.
+2. ✅ Prove the corrected finite switching bridge, with the cutoff arithmetic
+   discharged uniformly for `N ≥ 9`.
 3. Replace `ChenAnalyticBounds` by a uniform Jurkat--Richert/Selberg proof for
    the corrected objects, then remove the two explicit assumptions.
 
