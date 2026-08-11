@@ -564,6 +564,48 @@ theorem chenOmega_upper_bound (N : ℕ) (hN : Even N) (hN_large : 1000 ≤ N) :
   simpa [chenOmega, chenF] using
     SelbergUpperBound.chenOmega_simple_bound N hN hN_large
 
+/-- The two analytic estimates currently available at one fixed `N`, with
+their remainders made explicit.  This is deliberately weaker than the uniform
+Jurkat--Richert/Selberg input needed for Chen's theorem: the errors may still
+depend on `N`. -/
+def ChenPointwiseAnalyticBoundsAt (N : ℕ) : Prop :=
+  ∃ errorW errorOmega : ℝ,
+    2.6408 * chenW N ≥
+      2.6408 * 2.6408 * (1 : ℝ) * (N : ℝ) / (log N) ^ 2 - errorW
+      ∧ chenOmega N ≤
+        3.9404 * (1 : ℝ) * (N : ℝ) / (log N) ^ 2 + errorOmega
+
+/-- Package the existing pointwise remainder interfaces into an explicit error
+budget.  No uniformity in `N` is claimed here. -/
+theorem chen_pointwise_analytic_bounds_at (N : ℕ) (hN : Even N)
+    (hN_large : 1000 ≤ N) : ChenPointwiseAnalyticBoundsAt N := by
+  obtain ⟨CW, hW⟩ := chenW_lower_bound N hN hN_large
+  obtain ⟨CO, hO⟩ := chenOmega_upper_bound N hN hN_large
+  exact ⟨CW * (N : ℝ) / (log N) ^ 10,
+    CO * (N : ℝ) / (log N) ^ 10, hW, hO⟩
+
+/-- A closed pointwise error budget forces Chen's numerical key inequality.
+
+This isolates the precise analytic work still needed for a uniform theorem:
+prove that the two remainders fit this strict budget uniformly for all
+sufficiently large even `N`. -/
+theorem chen_key_inequality_of_error_budget {N : ℕ} {errorW errorOmega : ℝ}
+    (hW :
+      2.6408 * chenW N ≥
+        2.6408 * 2.6408 * (1 : ℝ) * (N : ℝ) / (log N) ^ 2 - errorW)
+    (hO :
+      chenOmega N ≤
+        3.9404 * (1 : ℝ) * (N : ℝ) / (log N) ^ 2 + errorOmega)
+    (hbudget :
+      0 <
+        (2.6408 * 2.6408 - 2.6408 * 3.9404 / 2) *
+            ((N : ℝ) / (log N) ^ 2) - errorW -
+          2.6408 * errorOmega / 2) :
+    chenW N - chenOmega N / 2 > 0 := by
+  have hcoeff : (0 : ℝ) < 2.6408 := by norm_num
+  ring_nf at hW hO hbudget ⊢
+  nlinarith
+
 /-- 陈氏定理中真正需要的、对所有充分大 `N` 统一的两个解析估计。 -/
 def ChenAnalyticBounds : Prop :=
   ∀ N : ℕ, Even N → 1000 ≤ N →
@@ -610,6 +652,16 @@ theorem chen_key_inequality (h_analytic : ChenAnalyticBounds)
 noncomputable def chenGoodRepresentations (N : ℕ) : Finset ℕ :=
   (Finset.range N).filter (fun p =>
     p.Prime ∧ 2 ≤ N - p ∧ Nat.IsAtMostAlmostPrime 2 (N - p))
+
+/-- The exceptional candidate with `N - p = 1` occurs at most once.  A
+corrected switching count must either remove this fibre from `chenW` or carry
+this explicit boundary term. -/
+theorem range_sub_eq_one_card_le_one (N : ℕ) :
+    ((Finset.range N).filter (fun p => N - p = 1)).card ≤ 1 := by
+  refine Finset.card_le_one.mpr ?_
+  intro a ha b hb
+  simp only [Finset.mem_filter, Finset.mem_range] at ha hb
+  omega
 
 /-- `chenW`/`Ω` 与好表示计数之间所需的精确组合桥接。
 

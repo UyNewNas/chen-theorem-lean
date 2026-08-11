@@ -92,6 +92,9 @@ consumed by `mertens_second_theorem` and `mertens_product_formula`.
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.
+The separate [proof atlas](CHEN_PROOF_ATLAS.md) records the finite
+counterexample to the current counting bridge and the required reconstruction
+workline.
 The external dependency audit records historical alternatives; the active,
 imported analytic dependency is `analytic-number-theory-lean` v0.3.0.
 
@@ -133,10 +136,11 @@ extends the audit output with:
 'MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-The complete audit contains six reports: the two conditional derivations, the
-three analytic consumers, and `primeProduct_asymptotic_order`. CI rejects any
-axiom outside `propext`, `Classical.choice`, and `Quot.sound`. This record does
-not discharge the two explicit proposition inputs to the conditional theorem.
+The complete audit contains eight reports: the two conditional derivations,
+the three analytic consumers, `primeProduct_asymptotic_order`, and the two
+pointwise error-budget interfaces. CI rejects any axiom outside `propext`,
+`Classical.choice`, and `Quot.sound`. This record does not discharge the two
+explicit proposition inputs to the conditional theorem.
 
 ## Verify the zero-placeholder invariant
 

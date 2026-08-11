@@ -14,3 +14,5 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.MertensTheorem.mertens_second_theorem
 #print axioms MathlibNt.SieveTheory.MertensTheorem.mertens_product_formula
 #print axioms MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chen_pointwise_analytic_bounds_at
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chen_key_inequality_of_error_budget
