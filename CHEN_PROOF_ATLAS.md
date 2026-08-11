@@ -125,6 +125,13 @@ on the active proof path.
 `CorrectedChenAnalyticPositivity` names exactly this sole remaining assumption,
 and `corrected_chens_theorem` is the corresponding conditional theorem.
 
+The first analytic-side transport lemma is also kernel-checked:
+`chenWCandidate_mem_corrected_of_two_le` embeds every historical lower-sieve
+candidate with complementary value at least two into the corrected candidate
+set.  This permits a future uniform lower bound for the old lower-sieve
+candidate count to transfer with only the already-isolated unit boundary; it
+does not transfer the invalid historical Omega estimate.
+
 ## Dependency sketch
 
 ```text

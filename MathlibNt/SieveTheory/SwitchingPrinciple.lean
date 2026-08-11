@@ -702,6 +702,30 @@ noncomputable def correctedChenCandidates (N : ℕ) : Finset ℕ :=
     p.Prime ∧ 2 ≤ N - p ∧
       ∀ r : ℕ, r.Prime → r < correctedChenZ N → ¬ r ∣ N - p)
 
+/-- The historical lower-sieve candidates transfer safely to the corrected
+candidate set once the unit boundary is removed.  This is a finite inclusion:
+it carries no historical switching or Omega estimate. -/
+theorem chenWCandidate_mem_corrected_of_two_le {N p : ℕ}
+    (hp : p ∈ chenWCandidates N) (hcomp : 2 ≤ N - p) :
+    p ∈ correctedChenCandidates N := by
+  simp only [chenWCandidates, Finset.mem_filter, Finset.mem_range] at hp
+  obtain ⟨hp_lt, hp_prime, hsmall, -⟩ := hp
+  refine Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hp_lt, hp_prime, hcomp, ?_⟩
+  intro r hr_prime hr_lt
+  let z := Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ))
+  by_cases hz_small : z ≤ 2
+  · have hmax : max 2 z = 2 := max_eq_left hz_small
+    have hr_lt_two : r < 2 := by
+      simpa only [correctedChenZ, z, hmax] using hr_lt
+    exfalso
+    exact (not_lt_of_ge hr_prime.two_le) hr_lt_two
+  · have hz_two : 2 < z := by omega
+    have hmax : max 2 z = z := max_eq_right (by omega)
+    apply hsmall r hr_prime
+    have hr_lt_z : r < z := by
+      simpa only [correctedChenZ, z, hmax] using hr_lt
+    omega
+
 /-- Corrected candidates that already give a prime-plus-at-most-two-almost-
 prime representation. -/
 noncomputable def correctedChenGoodCandidates (N : ℕ) : Finset ℕ :=
