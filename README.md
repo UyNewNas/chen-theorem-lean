@@ -58,8 +58,9 @@ propositions deliberately exposed in the type of `chens_theorem`.
 
 - `ChenAnalyticBounds`: the genuinely uniform Jurkat--Richert/Selberg-style
   estimates needed by Chen's argument;
-- `ChenCountingBridge`: the exact finite switching/counting inequality linking
-  the working definitions of `chenW`, `chenOmega`, and good representations.
+- `ChenCountingBridge`: a historical finite switching/counting interface.  It
+  is refuted by finite evaluation for the present `chenW`/`chenOmega`
+  definitions, so it must be replaced rather than proved.
 
 Consequently, the repository proves neither an unconditional Chen theorem nor
 the classical uniform sieve estimates.  It does prove exactly what follows
@@ -84,8 +85,10 @@ consumed by `mertens_second_theorem` and `mertens_product_formula`.
 
 ### Next milestones
 
-1. Formalize `ChenAnalyticBounds` with truly uniform constants.
-2. Formalize `ChenCountingBridge` for the present finite-set definitions.
+1. Redefine the finite switching objects and prove a
+   multiplicity-corrected counting bridge.
+2. Formalize `ChenAnalyticBounds` with truly uniform constants for those
+   corrected objects.
 3. Remove the two explicit assumptions from `chens_theorem` only after steps
    1 and 2 are complete.
 

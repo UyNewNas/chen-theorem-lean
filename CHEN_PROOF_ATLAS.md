@@ -63,7 +63,8 @@ The old edge
 chenW - chenOmega / 2 <= good.card
 ```
 
-is **refuted for the current definitions** by finite evaluation at `N = 1000`:
+is **refuted for the current definitions** by an external finite evaluation at
+`N = 1000` (not yet a Lean kernel certificate):
 `chenW = 153`, `chenOmega = 17`, and `good.card = 122`, so the left side is
 `144.5`, larger than `122`.
 

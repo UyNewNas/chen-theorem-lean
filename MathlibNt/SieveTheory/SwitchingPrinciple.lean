@@ -663,10 +663,13 @@ theorem range_sub_eq_one_card_le_one (N : ℕ) :
   simp only [Finset.mem_filter, Finset.mem_range] at ha hb
   omega
 
-/-- `chenW`/`Ω` 与好表示计数之间所需的精确组合桥接。
+/-- Historical conditional counting bridge for the present `chenW`/`Ω`.
 
-当前 `chenW` 是未加权的 filter 基数，而 `chenOmega` 是以 `a = p₁p₂`
-索引的切换和；它们的工作定义本身没有给出下面的计数不等式。 -/
+This proposition is retained so the conditional theorem has a stable, explicit
+interface, but it is not an open proof obligation: finite evaluation refutes
+it for the current definitions (see `CHEN_PROOF_ATLAS.md`).  A future
+unconditional development must replace both this statement and, where needed,
+the counting objects with a multiplicity-corrected switching bridge. -/
 def ChenCountingBridge : Prop :=
   ∀ N : ℕ, Even N → 1000 ≤ N →
     chenW N - chenOmega N / 2 ≤ ((chenGoodRepresentations N).card : ℝ)
