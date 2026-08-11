@@ -730,6 +730,20 @@ theorem correctedChenSiftingProduct_squarefree (N : ℕ) :
     simp only [Finset.mem_filter, Finset.mem_range] at hp
     exact hp.2.1.squarefree
 
+/-- Goldbach local density for the corrected sieve. -/
+noncomputable def correctedChenNu : ArithmeticFunction ℝ :=
+  ArithmeticFunction.prodPrimeFactors (fun r => 1 / ((r : ℝ) - 1))
+
+/-- The corrected density has the expected value on a prime. -/
+theorem correctedChenNu_apply_prime {p : ℕ} (hp : p.Prime) :
+    correctedChenNu p = 1 / ((p : ℝ) - 1) := by
+  simp [correctedChenNu, ArithmeticFunction.prodPrimeFactors_apply hp.ne_zero,
+    Nat.Prime.primeFactors hp]
+
+/-- The corrected Goldbach density is multiplicative. -/
+theorem correctedChenNu_isMultiplicative : correctedChenNu.IsMultiplicative := by
+  exact ArithmeticFunction.IsMultiplicative.prodPrimeFactors _
+
 /-- The historical lower-sieve candidates transfer safely to the corrected
 candidate set once the unit boundary is removed.  This is a finite inclusion:
 it carries no historical switching or Omega estimate. -/
