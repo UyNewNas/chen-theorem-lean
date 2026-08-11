@@ -726,6 +726,41 @@ theorem chenWCandidate_mem_corrected_of_two_le {N p : ℕ}
       simpa only [correctedChenZ, z, hmax] using hr_lt
     omega
 
+/-- Historical lower-sieve candidates away from the unit boundary. -/
+noncomputable def chenWNonUnitCandidates (N : ℕ) : Finset ℕ :=
+  (chenWCandidates N).filter (fun p => 2 ≤ N - p)
+
+/-- The non-unit historical lower-sieve fibre is contained in the corrected
+candidate set. -/
+theorem chenWNonUnitCandidates_subset_correctedChenCandidates (N : ℕ) :
+    chenWNonUnitCandidates N ⊆ correctedChenCandidates N := by
+  intro p hp
+  exact chenWCandidate_mem_corrected_of_two_le
+    (Finset.mem_filter.mp hp).1 (Finset.mem_filter.mp hp).2
+
+/-- The historical W-count differs from a corrected-candidate lower bound by
+at most its explicitly isolated unit fibre. -/
+theorem chenWCandidates_card_le_correctedChenCandidates_card_add_one (N : ℕ) :
+    (chenWCandidates N).card ≤ (correctedChenCandidates N).card + 1 := by
+  have hcover : chenWCandidates N ⊆ chenWNonUnitCandidates N ∪ chenUnitCandidates N := by
+    intro p hp
+    have hp_range : p < N := by
+      simpa only [chenWCandidates, Finset.mem_filter, Finset.mem_range] using
+        (Finset.mem_filter.mp hp).1
+    have hcomp_pos : 0 < N - p := by omega
+    by_cases hunit : N - p = 1
+    · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨hp, hunit⟩)
+    · exact Finset.mem_union_left _ (Finset.mem_filter.mpr ⟨hp, by omega⟩)
+  calc
+    (chenWCandidates N).card ≤ (chenWNonUnitCandidates N ∪ chenUnitCandidates N).card :=
+      Finset.card_le_card hcover
+    _ ≤ (chenWNonUnitCandidates N).card + (chenUnitCandidates N).card :=
+      Finset.card_union_le _ _
+    _ ≤ (correctedChenCandidates N).card + 1 :=
+      Nat.add_le_add
+        (Finset.card_le_card (chenWNonUnitCandidates_subset_correctedChenCandidates N))
+        (chenUnitCandidates_card_le_one N)
+
 /-- Corrected candidates that already give a prime-plus-at-most-two-almost-
 prime representation. -/
 noncomputable def correctedChenGoodCandidates (N : ℕ) : Finset ℕ :=

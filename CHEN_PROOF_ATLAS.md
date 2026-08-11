@@ -132,6 +132,20 @@ set.  This permits a future uniform lower bound for the old lower-sieve
 candidate count to transfer with only the already-isolated unit boundary; it
 does not transfer the invalid historical Omega estimate.
 
+The next bounded analytic workline is now fixed: construct a
+`BoundingSieve` whose support is the corrected complements, prove its
+`siftedSum` equals `correctedChenCandidates.card`, and add the mirror-image
+lower Möbius inequality
+
+```text
+totalMass * mainSum μminus - errSum μminus ≤ siftedSum.
+```
+
+The error term must remain this concrete finite `errSum`; no statement of the
+form “there exists a constant after fixing N” is admissible. Only after that
+finite inequality is in place should the uniform order of quantifiers be
+proved for the error bound.
+
 ## Dependency sketch
 
 ```text
