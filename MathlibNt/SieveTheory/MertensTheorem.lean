@@ -325,6 +325,18 @@ private lemma primeReciprocalSum_zero_of_le_one {u : ℕ} (hu : u ≤ 1) :
   · rw [Finset.sum_filter]
     norm_num [Finset.sum_range_succ, Nat.not_prime_one]
 
+/-- **Mertens 乘积下界** (chen issue #4): 存在 `cpp > 0` 使得对所有 `m ≥ 3`,
+  `cpp / log m ≤ primeProduct m`.
+
+由已内核核验的阶形式 `primeProduct_asymptotic_order`
+(`c₁/log x ≤ primeProduct x` 对所有 `x ≥ 2`) 直接给出, 是
+`CorrectedChenMainTermLower` 主项下界的标准输入之二. -/
+theorem primeProduct_lower_bound :
+    ∃ cpp : ℝ, 0 < cpp ∧ ∀ m : ℕ, 3 ≤ m → cpp / log m ≤ primeProduct m := by
+  obtain ⟨c₁, _c₂, hc₁, hbound⟩ := primeProduct_asymptotic_order
+  refine ⟨c₁, hc₁, fun m hm => ?_⟩
+  exact (hbound m (by omega)).1
+
 /-- **Lemma 1 (Liu 2022)**: 对固定 0 < α < β, 和 Σ_{x^α < p ≤ x^β} 1/p 有界.
 
 证明: 由 Mertens 第二定理,

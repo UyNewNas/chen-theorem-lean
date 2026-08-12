@@ -106,6 +106,12 @@ ant `AnalyticNumberTheory.Sieve.WeightedPanCondition` instance
 on that input.  What remains for the Pan-BV workline is the analytic theorem
 itself (`PanMeanValueUniform` in ant), not the interface.
 
+Two of the three `CorrectedChenMainTermLower` inputs are also kernel-checked:
+`primeProduct_lower_bound` (chen #4: `cpp/log m ≤ primeProduct m` for `m ≥ 3`,
+from the order-form Mertens product) and `correctedChenLogZ_upper_bound`
+(chen #5: `log (z(N) − 1) ≤ Clog·log N` with `Clog = 1/10`).  The remaining
+main-term input is the truncated singular-series lower bound (chen #3).
+
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.
