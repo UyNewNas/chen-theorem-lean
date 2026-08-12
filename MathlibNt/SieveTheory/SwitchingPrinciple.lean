@@ -1536,7 +1536,9 @@ theorem corrected_counting_bridge (N : ℕ)
       C.sum (fun p => chenWeight (N - p) (correctedChenZ N) (correctedChenY N)) =
         (C.card : ℝ) - correctedChenOmega N / 2 := by
     simp only [chenWeight_eq_one_sub_correctedChenPenalty]
-    rw [Finset.sum_sub_distrib, ← Finset.sum_div]
+    rw [Finset.sum_sub_distrib]
+    simp_rw [div_eq_mul_inv]
+    rw [← Finset.sum_mul]
     simp [C, correctedChenOmega]
   rw [hweight_sum] at hsum
   simpa only [hgood_sum] using hsum
