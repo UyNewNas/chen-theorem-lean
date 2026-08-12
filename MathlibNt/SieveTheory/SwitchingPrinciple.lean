@@ -845,6 +845,90 @@ noncomputable def correctedChenBoundingSieve (N : ℕ) : BoundingSieve where
     intro p hp hdiv
     exact correctedChenNu_lt_one_of_prime hp hdiv
 
+/-- An element is coprime to the corrected sifting product exactly when no
+sieved prime (that is, no prime `2 < r < z` with `r ∤ N`) divides it. -/
+theorem coprime_correctedChenSiftingProduct_iff {N a : ℕ} :
+    Nat.Coprime (correctedChenSiftingProduct N) a ↔
+      ∀ r : ℕ, r.Prime → r < correctedChenZ N → 2 < r → ¬ r ∣ N → ¬ r ∣ a := by
+  constructor
+  · intro hcop r hr hr_z hr_gt2 hr_ndvd hr_dvd
+    have hr_dvd_P : r ∣ correctedChenSiftingProduct N :=
+      (prime_dvd_correctedChenSiftingProduct hr).mpr ⟨hr_z, hr_gt2, hr_ndvd⟩
+    exact Nat.not_coprime_of_dvd_of_dvd hr.one_lt hr_dvd_P hr_dvd hcop
+  · intro hno
+    apply Nat.coprime_of_dvd'
+    intro r hr hr_dvd_P hr_dvd
+    rcases (prime_dvd_correctedChenSiftingProduct hr).mp hr_dvd_P with ⟨hr_z, hr_gt2, hr_ndvd⟩
+    exact False.elim (hno r hr hr_z hr_gt2 hr_ndvd hr_dvd)
+
+/-- The small-prime sieve leaves exactly the corrected candidates: an
+unsifted complement survives the sieve precisely when its prime partner lies
+in the corrected candidate set. -/
+theorem correctedChenSiftedComplements_eq_correctedCandidate_image (N : ℕ) :
+    (correctedChenUnsiftedComplements N).filter
+        (fun a => Nat.Coprime (correctedChenSiftingProduct N) a) =
+      (correctedChenCandidates N).image (fun p => N - p) := by
+  ext a
+  constructor
+  · intro ha
+    rcases Finset.mem_filter.mp ha with ⟨ha_sup, hacop⟩
+    rcases Finset.mem_image.mp ha_sup with ⟨p, hp_base, hpa⟩
+    refine Finset.mem_image.mpr ⟨p, ?_, hpa⟩
+    rcases Finset.mem_filter.mp hp_base with ⟨hp_range, hp_prime, hp_two, hp_small⟩
+    refine Finset.mem_filter.mpr ⟨hp_range, ⟨hp_prime, hp_two, ?_⟩⟩
+    intro r hr hr_z hr_dvd
+    by_cases hr_le2 : r ≤ 2
+    · exact False.elim (hp_small r hr hr_z (Or.inl hr_le2) hr_dvd)
+    · by_cases hrN : r ∣ N
+      · exact False.elim (hp_small r hr hr_z (Or.inr hrN) hr_dvd)
+      · have hr_gt2 : 2 < r := by omega
+        have hnot : ¬ r ∣ a :=
+          (coprime_correctedChenSiftingProduct_iff.mp hacop) r hr hr_z hr_gt2 hrN
+        have hnot' : ¬ r ∣ N - p := by
+          rw [hpa]
+          exact hnot
+        exact False.elim (hnot' hr_dvd)
+  · intro ha
+    rcases Finset.mem_image.mp ha with ⟨p, hp_cand, hpa⟩
+    refine Finset.mem_filter.mpr ⟨?_, ?_⟩
+    · rw [hpa.symm]
+      rcases Finset.mem_filter.mp hp_cand with ⟨hp_range, hp_prime, hp_two, hstrong⟩
+      refine Finset.mem_image.mpr ⟨p, ?_, rfl⟩
+      refine Finset.mem_filter.mpr ⟨hp_range, ⟨hp_prime, hp_two, ?_⟩⟩
+      intro r hr hr_z hcond
+      exact hstrong r hr hr_z
+    · rw [hpa.symm]
+      apply coprime_correctedChenSiftingProduct_iff.mpr
+      intro r hr hr_z hr_gt2 hrN hr_dvd
+      rcases Finset.mem_filter.mp hp_cand with ⟨hp_range, hp_prime, hp_two, hstrong⟩
+      exact hstrong r hr hr_z hr_dvd
+
+/-- The number of unsifted complements that survive the corrected sieve is
+exactly the number of corrected candidates. -/
+theorem correctedChenSiftedCard_eq_correctedCandidateCard (N : ℕ) :
+    ((correctedChenUnsiftedComplements N).filter
+        (fun a => Nat.Coprime (correctedChenSiftingProduct N) a)).card =
+      (correctedChenCandidates N).card := by
+  rw [correctedChenSiftedComplements_eq_correctedCandidate_image]
+  apply Finset.card_image_of_injOn
+  intro p hp q hq hpq
+  rcases Finset.mem_filter.mp hp with ⟨hp_range, _⟩
+  rcases Finset.mem_filter.mp hq with ⟨hq_range, _⟩
+  have hp_lt : p < N := by simpa using hp_range
+  have hq_lt : q < N := by simpa using hq_range
+  change N - p = N - q at hpq
+  omega
+
+/-- The `BoundingSieve` sifted sum for the corrected Chen sieve is exactly the
+corrected candidate count. -/
+theorem correctedChenBoundingSieve_siftedSum_eq_card (N : ℕ) :
+    (correctedChenBoundingSieve N).siftedSum = (correctedChenCandidates N).card := by
+  change (∑ d ∈ correctedChenUnsiftedComplements N,
+      if Nat.Coprime (correctedChenSiftingProduct N) d then (1 : ℝ) else 0) =
+    ↑(correctedChenCandidates N).card
+  rw [Finset.sum_boole]
+  exact_mod_cast correctedChenSiftedCard_eq_correctedCandidateCard N
+
 /-- The historical lower-sieve candidates transfer safely to the corrected
 candidate set once the unit boundary is removed.  This is a finite inclusion:
 it carries no historical switching or Omega estimate. -/

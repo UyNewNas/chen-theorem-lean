@@ -162,6 +162,13 @@ total mass is still the exact support cardinality; replacing it with the
 analytic main term and proving a uniform remainder bound remain the
 `ChenAnalyticBounds` workline.
 
+The exact sifted-sum identification is also kernel-checked:
+`correctedChenBoundingSieve_siftedSum_eq_card` proves
+`(correctedChenBoundingSieve N).siftedSum = correctedChenCandidates N`.card,
+so the surviving sieve count is literally the corrected candidate count.  The
+remaining analytic step on this line is the uniform `errSum` bound for the
+corrected sieve; no further finite conversion is hidden at that boundary.
+
 ## Dependency sketch
 
 ```text
