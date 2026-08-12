@@ -205,6 +205,17 @@ SelbergSum(N) = Θ(log(z−1) / 𝔖(N, z−1))
 The only remaining main-term-adjacent work is the uniform `errSum` bound
 (BV/Pan workline).
 
+On the error side, the distribution seam is now explicit and kernel-checked.
+For the corrected sieve, `correctedChenMultSum_eq_multiples_card` identifies
+`multSum d` with the number of support elements divisible by `d`,
+`correctedChenMultiples_card_eq_primeSupport` transfers that count to the
+prime-support partners with `d ∣ N − p`, and
+`correctedChenMultSum_eq_modEq_count` re-expresses it as the number of
+prime-support primes congruent to `N` modulo `d`.  A Bombieri--Vinogradov/Pan
+input therefore bounds `multSum` (and hence the concrete `errSum`) as an
+arithmetic-progression count; no hidden finite conversion remains at that
+seam.
+
 ## Dependency sketch
 
 ```text

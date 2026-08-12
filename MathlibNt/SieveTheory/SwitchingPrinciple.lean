@@ -35,6 +35,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Prime.Infinite
 import Mathlib.Data.Nat.Factorization.Basic
+import Mathlib.Data.Nat.ModEq
 import Mathlib.NumberTheory.AlmostPrime
 import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 import Mathlib.Algebra.Ring.Parity
@@ -929,6 +930,75 @@ theorem correctedChenBoundingSieve_siftedSum_eq_card (N : ℕ) :
     ↑(correctedChenCandidates N).card
   rw [Finset.sum_boole]
   exact_mod_cast correctedChenSiftedCard_eq_correctedCandidateCard N
+
+/-- The prime support of the unsifted complements: primes `p < N` whose
+complement is at least two and carries no `r ≤ 2` or `r | N` prime divisor
+below `z`.  It is the preimage of the sieve support under `p ↦ N - p`. -/
+noncomputable def correctedChenUnsiftedPrimeSupport (N : ℕ) : Finset ℕ :=
+  (Finset.range N).filter (fun p =>
+    p.Prime ∧ 2 ≤ N - p ∧
+      ∀ r : ℕ, r.Prime → r < correctedChenZ N →
+        (r ≤ 2 ∨ r ∣ N) → ¬ r ∣ N - p)
+
+/-- The unsifted complement support is definitionally the image of the prime
+support under `p ↦ N - p`. -/
+theorem correctedChenUnsiftedComplements_eq_image (N : ℕ) :
+    correctedChenUnsiftedComplements N =
+      (correctedChenUnsiftedPrimeSupport N).image (fun p => N - p) := by
+  rfl
+
+/-- The corrected sieve `multSum` is the number of support elements divisible
+by `d`. -/
+theorem correctedChenMultSum_eq_multiples_card (N d : ℕ) :
+    (correctedChenBoundingSieve N).multSum d =
+      ((correctedChenUnsiftedComplements N).filter (fun a => d ∣ a)).card := by
+  unfold BoundingSieve.multSum
+  change (∑ a ∈ correctedChenUnsiftedComplements N,
+      if d ∣ a then (1 : ℝ) else 0) =
+    ↑((correctedChenUnsiftedComplements N).filter (fun a => d ∣ a)).card
+  rw [Finset.sum_boole]
+
+/-- Counting the multiples of `d` in the sieve support is the same as
+counting the prime-support partners with `d ∣ N - p`. -/
+theorem correctedChenMultiples_card_eq_primeSupport (N d : ℕ) :
+    ((correctedChenUnsiftedComplements N).filter (fun a => d ∣ a)).card =
+      ((correctedChenUnsiftedPrimeSupport N).filter (fun p => d ∣ N - p)).card := by
+  rw [correctedChenUnsiftedComplements_eq_image, Finset.filter_image]
+  apply Finset.card_image_of_injOn
+  intro p hp q hq hpq
+  change N - p = N - q at hpq
+  have hp_full : (p < N ∧ p.Prime ∧ 2 ≤ N - p ∧
+      ∀ r : ℕ, r.Prime → r < correctedChenZ N → (r ≤ 2 ∨ r ∣ N) → ¬ r ∣ N - p) ∧
+        d ∣ N - p := by
+    simpa [correctedChenUnsiftedPrimeSupport] using hp
+  have hq_full : (q < N ∧ q.Prime ∧ 2 ≤ N - q ∧
+      ∀ r : ℕ, r.Prime → r < correctedChenZ N → (r ≤ 2 ∨ r ∣ N) → ¬ r ∣ N - q) ∧
+        d ∣ N - q := by
+    simpa [correctedChenUnsiftedPrimeSupport] using hq
+  have hp_lt : p < N := hp_full.1.1
+  have hq_lt : q < N := hq_full.1.1
+  omega
+
+/-- For `p < N`, divisibility `d ∣ N - p` is the congruence `p ≡ N [MOD d]`. -/
+theorem prime_dvd_complement_iff_modEq {N p d : ℕ} (hp_lt : p < N) :
+    d ∣ N - p ↔ p ≡ N [MOD d] := by
+  exact (Nat.modEq_iff_dvd' (le_of_lt hp_lt)).symm
+
+/-- The corrected sieve distribution count is the number of prime-support
+partners congruent to `N` modulo `d`.  This is the finite seam at which a
+Bombieri--Vinogradov/Pan input bounds `multSum` and hence `errSum`. -/
+theorem correctedChenMultSum_eq_modEq_count (N d : ℕ) :
+    (correctedChenBoundingSieve N).multSum d =
+      ((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card := by
+  rw [correctedChenMultSum_eq_multiples_card, correctedChenMultiples_card_eq_primeSupport]
+  have hf :
+      (correctedChenUnsiftedPrimeSupport N).filter (fun p => d ∣ N - p) =
+        (correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d]) := by
+    apply Finset.filter_congr
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨hp_range, _⟩
+    exact prime_dvd_complement_iff_modEq (by simpa using hp_range)
+  rw [hf]
 
 /-- The Selberg term of the corrected sieve at a prime is
 `ν(p) · (1 - ν(p))⁻¹`. -/
