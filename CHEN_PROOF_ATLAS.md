@@ -238,6 +238,15 @@ squarefree `d` (via `totient_eq_prod_primeFactors_of_squarefree`), so
 `li(N)/φ(d)`.  The BV input can therefore be applied verbatim to the
 repackaged `errSum`.
 
+The `BoundingSieve` total mass is now the analytic main term `N/log N`
+(`correctedChenTotalMass_eq`), so `rem d` is exactly the congruence-count
+error `multSum d − ν(d)·N/log N` that the averaged Pan condition controls.
+The difference between `N/log N` and the true support cardinality is absorbed
+by the main-term constants of the analytic workline rather than by the
+`errSum`, which is the classical sieve normalization.  The `errSum` line now
+has exactly one remaining analytic input: `CorrectedChenDistributionCondition`
+(the averaged Pan estimate).
+
 ## Dependency sketch
 
 ```text

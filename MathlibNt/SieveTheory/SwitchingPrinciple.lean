@@ -905,16 +905,20 @@ unsifted complements as support, the surviving small-prime product as
 `prodPrimes`, unit weights, and the Goldbach local density
 `ν(p) = 1/(p-1)`.
 
-The total mass is currently the exact finite cardinality of the support.
-Replacing it by the analytic `N / log N` main term, together with a uniform
-remainder bound, is exactly the `ChenAnalyticBounds` workline. -/
+The total mass is the analytic main term `N / log N`.  With the density
+identification `ν(d) = 1/φ(d)` for squarefree `d`, the remainder
+`rem d = multSum d − ν(d)·N/log N` is exactly the congruence-count error that
+the averaged Pan-type distribution condition (`CorrectedChenDistributionCondition`)
+controls; the difference between `N/log N` and the true support cardinality is
+absorbed by the main-term constants of the analytic workline, not by the
+`errSum`. -/
 noncomputable def correctedChenBoundingSieve (N : ℕ) : BoundingSieve where
   support := correctedChenUnsiftedComplements N
   prodPrimes := correctedChenSiftingProduct N
   prodPrimes_squarefree := correctedChenSiftingProduct_squarefree N
   weights := fun _ => 1
   weights_nonneg := by intro n; norm_num
-  totalMass := (correctedChenUnsiftedComplements N).card
+  totalMass := (N : ℝ) / log (N : ℝ)
   nu := correctedChenNu
   nu_mult := correctedChenNu_isMultiplicative
   nu_pos_of_prime := by
@@ -923,6 +927,10 @@ noncomputable def correctedChenBoundingSieve (N : ℕ) : BoundingSieve where
   nu_lt_one_of_prime := by
     intro p hp hdiv
     exact correctedChenNu_lt_one_of_prime hp hdiv
+
+/-- The corrected sieve total mass is the analytic main term `N / log N`. -/
+theorem correctedChenTotalMass_eq (N : ℕ) :
+    (correctedChenBoundingSieve N).totalMass = (N : ℝ) / log (N : ℝ) := rfl
 
 /-- An element is coprime to the corrected sifting product exactly when no
 sieved prime (that is, no prime `2 < r < z` with `r ∤ N`) divides it. -/
