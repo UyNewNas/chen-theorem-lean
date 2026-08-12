@@ -27,6 +27,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenSiftingProduct_squarefree
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_apply_prime
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_isMultiplicative
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.totient_eq_prod_primeFactors_of_squarefree
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_squarefree_eq_inv_totient
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.prime_dvd_correctedChenSiftingProduct
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_pos_of_prime
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_lt_one_of_prime

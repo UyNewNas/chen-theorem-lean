@@ -227,6 +227,13 @@ that condition (from the classical Bombieri--Vinogradov/Pan estimates, with
 the `totalMass` main term replaced by `N/log N`) is the remaining work of the
 `errSum` line.
 
+The density side of that main term is now identified in closed form:
+`correctedChenNu_squarefree_eq_inv_totient` proves `ν(d) = 1/φ(d)` for
+squarefree `d` (via `totient_eq_prod_primeFactors_of_squarefree`), so
+`ν(d) · N/log N` is literally the standard Bombieri--Vinogradov main term
+`li(N)/φ(d)`.  The BV input can therefore be applied verbatim to the
+repackaged `errSum`.
+
 ## Dependency sketch
 
 ```text

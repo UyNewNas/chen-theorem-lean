@@ -36,6 +36,8 @@ import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Prime.Infinite
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.ModEq
+import Mathlib.Data.Nat.Totient
+import Mathlib.Data.Nat.Squarefree
 import Mathlib.NumberTheory.AlmostPrime
 import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 import Mathlib.Algebra.Ring.Parity
@@ -745,6 +747,81 @@ theorem correctedChenNu_apply_prime {p : ℕ} (hp : p.Prime) :
 /-- The corrected Goldbach density is multiplicative. -/
 theorem correctedChenNu_isMultiplicative : correctedChenNu.IsMultiplicative := by
   exact ArithmeticFunction.IsMultiplicative.prodPrimeFactors _
+
+/-- The totient of a product of distinct primes is the product of their
+shifted values. -/
+private theorem totient_prod_eq_prod_sub_one (S : Finset ℕ)
+    (hS : ∀ p ∈ S, p.Prime) :
+    Nat.totient (∏ p ∈ S, p) = ∏ p ∈ S, (p - 1) := by
+  induction S using Finset.induction_on with
+  | empty => simp
+  | insert p S hp ih =>
+      have hp' : p.Prime := hS p (Finset.mem_insert_self _ _)
+      have hS' : ∀ q ∈ S, q.Prime := fun q hq => hS q (Finset.mem_insert_of_mem hq)
+      have hcop : p.Coprime (∏ q ∈ S, q) := by
+        rw [Nat.coprime_prod_right_iff]
+        intro q hq
+        exact (Nat.coprime_primes hp' (hS' q hq)).mpr (by
+          intro hpq
+          subst q
+          exact hp hq)
+      calc
+        Nat.totient (∏ x ∈ insert p S, x)
+            = Nat.totient (p * ∏ q ∈ S, q) := by rw [Finset.prod_insert hp]
+        _ = Nat.totient p * Nat.totient (∏ q ∈ S, q) := by rw [Nat.totient_mul hcop]
+        _ = (p - 1) * ∏ q ∈ S, (q - 1) := by rw [Nat.totient_prime hp', ih hS']
+        _ = ∏ q ∈ insert p S, (q - 1) := by rw [Finset.prod_insert hp]
+
+/-- The totient of a squarefree natural is the product of `p - 1` over its
+prime factors. -/
+theorem totient_eq_prod_primeFactors_of_squarefree {n : ℕ} (hn : Squarefree n) :
+    Nat.totient n = ∏ p ∈ n.primeFactors, (p - 1) := by
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact not_squarefree_zero hn
+  have hprod : n = ∏ p ∈ n.primeFactors, p ^ n.factorization p :=
+    Nat.prod_primeFactors_pow_factorization hn0
+  have hsq : ∀ p ∈ n.primeFactors, n.factorization p = 1 := by
+    intro p hp
+    exact Nat.factorization_eq_one_of_squarefree hn (Nat.prime_of_mem_primeFactors hp)
+      (Nat.dvd_of_mem_primeFactors hp)
+  have hpow : (∏ p ∈ n.primeFactors, p ^ n.factorization p) = ∏ p ∈ n.primeFactors, p := by
+    apply Finset.prod_congr rfl
+    intro p hp
+    rw [hsq p hp, pow_one]
+  have hφ : Nat.totient n = Nat.totient (∏ p ∈ n.primeFactors, p ^ n.factorization p) := by
+    exact congrArg Nat.totient hprod
+  calc
+    Nat.totient n = Nat.totient (∏ p ∈ n.primeFactors, p ^ n.factorization p) := hφ
+    _ = Nat.totient (∏ p ∈ n.primeFactors, p) := congrArg Nat.totient hpow
+    _ = ∏ p ∈ n.primeFactors, (p - 1) :=
+      totient_prod_eq_prod_sub_one n.primeFactors (fun p hp => Nat.prime_of_mem_primeFactors hp)
+
+/-- The corrected Goldbach density of a squarefree modulus is exactly the
+reciprocal totient: `ν(d) = 1/φ(d)`.  This identifies the distribution main
+term `ν(d) · N/log N` with the standard Bombieri--Vinogradov main term
+`li(N)/φ(d)`. -/
+theorem correctedChenNu_squarefree_eq_inv_totient {d : ℕ} (hd : Squarefree d) :
+    correctedChenNu d = (1 : ℝ) / (Nat.totient d : ℝ) := by
+  have hd0 : d ≠ 0 := by
+    rintro rfl
+    exact not_squarefree_zero hd
+  have hnu : correctedChenNu d = ∏ p ∈ d.primeFactors, (1 : ℝ) / ((p : ℝ) - 1) := by
+    unfold correctedChenNu
+    rw [ArithmeticFunction.prodPrimeFactors_apply hd0]
+  rw [hnu]
+  have htot_nat : Nat.totient d = ∏ p ∈ d.primeFactors, (p - 1) :=
+    totient_eq_prod_primeFactors_of_squarefree hd
+  rw [htot_nat]
+  simp_rw [Nat.cast_prod]
+  simp_rw [one_div]
+  rw [Finset.prod_inv_distrib]
+  congr 1
+  apply Finset.prod_congr rfl
+  intro p hp
+  have hp1 : (1 : ℕ) ≤ p := (Nat.prime_of_mem_primeFactors hp).one_lt.le
+  rw [Nat.cast_sub hp1]
+  norm_num
 
 /-- The prime factors of a product of distinct primes are exactly the set of
 those primes. -/
