@@ -44,6 +44,7 @@ import Mathlib.Algebra.Ring.Parity
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 import MathlibNt.SieveTheory.SingularSeries
+import MathlibNt.SieveTheory.LinearSieve
 import MathlibNt.SieveTheory.SelbergUpperBound
 
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
@@ -1156,6 +1157,26 @@ theorem correctedChenErrSum_uniform_of_distribution {A : ℝ} (hA : 0 < A)
   rcases hdist A hA with ⟨C, hC, hbound⟩
   refine ⟨C, hC, ?_⟩
   exact le_trans (correctedChenErrSum_le_panWeighted N) (hbound N hN hEven)
+
+/-- The corrected candidate count is at least the lower-sieve main term minus
+the explicit `errSum`: the finite seam through which a uniform
+Jurkat--Richert lower bound for `mainSum μ⁻` (with the closed `N / log N`
+total mass) proves `CorrectedChenAnalyticPositivity`. -/
+theorem correctedChenCandidates_card_ge_mainSum_sub_errSum (N : ℕ)
+    (muMinus : ℕ → ℝ) (hmu : MathlibNt.SieveTheory.LinearSieve.IsLowerMoebius muMinus) :
+    (correctedChenBoundingSieve N).totalMass *
+        (correctedChenBoundingSieve N).mainSum muMinus -
+      (correctedChenBoundingSieve N).errSum muMinus ≤
+      (correctedChenCandidates N).card := by
+  calc
+    (correctedChenBoundingSieve N).totalMass *
+          (correctedChenBoundingSieve N).mainSum muMinus -
+        (correctedChenBoundingSieve N).errSum muMinus
+        ≤ (correctedChenBoundingSieve N).siftedSum :=
+          MathlibNt.SieveTheory.LinearSieve.mainSum_sub_errSum_le_siftedSum_of_lowerMoebius
+            muMinus hmu
+    _ = (correctedChenCandidates N).card :=
+      correctedChenBoundingSieve_siftedSum_eq_card N
 
 /-- The Selberg term of the corrected sieve at a prime is
 `ν(p) · (1 - ν(p))⁻¹`. -/

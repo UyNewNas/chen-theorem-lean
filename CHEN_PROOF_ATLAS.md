@@ -253,6 +253,14 @@ Conditionally on that single input, the `errSum` line is closed:
 `correctedChenErrSum_le_panWeighted`), so no further finite conversion or
 error bookkeeping remains below the uniform analytic input.
 
+On the lower side, the corrected candidate count is now attached to the sieve
+machinery by `correctedChenCandidates_card_ge_mainSum_sub_errSum`:
+`X·mainSum(μ⁻) − errSum(μ⁻) ≤ card(correctedChenCandidates N)` for every
+lower-Möbius sequence, with `X = N/log N`.  A uniform Jurkat--Richert lower
+bound for `mainSum(μ⁻)` (the corrected sieve analogue of
+`2.6408·2.6408·N/log² N`) is therefore the single remaining input on the
+lower side of `CorrectedChenAnalyticPositivity`.
+
 ## Dependency sketch
 
 ```text
