@@ -43,8 +43,7 @@ import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 import Mathlib.Algebra.Ring.Parity
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
-import MathlibNt.SieveTheory.SingularSeries
-import MathlibNt.SieveTheory.LinearSieve
+import AnalyticNumberTheory
 import MathlibNt.SieveTheory.SelbergUpperBound
 
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
@@ -735,94 +734,10 @@ theorem correctedChenSiftingProduct_squarefree (N : ℕ) :
     simp only [Finset.mem_filter, Finset.mem_range] at hp
     exact hp.2.1.squarefree
 
-/-- Goldbach local density for the corrected sieve. -/
-noncomputable def correctedChenNu : ArithmeticFunction ℝ :=
-  ArithmeticFunction.prodPrimeFactors (fun r => 1 / ((r : ℝ) - 1))
-
-/-- The corrected density has the expected value on a prime. -/
-theorem correctedChenNu_apply_prime {p : ℕ} (hp : p.Prime) :
-    correctedChenNu p = 1 / ((p : ℝ) - 1) := by
-  simp [correctedChenNu, ArithmeticFunction.prodPrimeFactors_apply hp.ne_zero,
-    Nat.Prime.primeFactors hp]
-
-/-- The corrected Goldbach density is multiplicative. -/
-theorem correctedChenNu_isMultiplicative : correctedChenNu.IsMultiplicative := by
-  exact ArithmeticFunction.IsMultiplicative.prodPrimeFactors _
-
-/-- The totient of a product of distinct primes is the product of their
-shifted values. -/
-private theorem totient_prod_eq_prod_sub_one (S : Finset ℕ)
-    (hS : ∀ p ∈ S, p.Prime) :
-    Nat.totient (∏ p ∈ S, p) = ∏ p ∈ S, (p - 1) := by
-  induction S using Finset.induction_on with
-  | empty => simp
-  | insert p S hp ih =>
-      have hp' : p.Prime := hS p (Finset.mem_insert_self _ _)
-      have hS' : ∀ q ∈ S, q.Prime := fun q hq => hS q (Finset.mem_insert_of_mem hq)
-      have hcop : p.Coprime (∏ q ∈ S, q) := by
-        rw [Nat.coprime_prod_right_iff]
-        intro q hq
-        exact (Nat.coprime_primes hp' (hS' q hq)).mpr (by
-          intro hpq
-          subst q
-          exact hp hq)
-      calc
-        Nat.totient (∏ x ∈ insert p S, x)
-            = Nat.totient (p * ∏ q ∈ S, q) := by rw [Finset.prod_insert hp]
-        _ = Nat.totient p * Nat.totient (∏ q ∈ S, q) := by rw [Nat.totient_mul hcop]
-        _ = (p - 1) * ∏ q ∈ S, (q - 1) := by rw [Nat.totient_prime hp', ih hS']
-        _ = ∏ q ∈ insert p S, (q - 1) := by rw [Finset.prod_insert hp]
-
-/-- The totient of a squarefree natural is the product of `p - 1` over its
-prime factors. -/
-theorem totient_eq_prod_primeFactors_of_squarefree {n : ℕ} (hn : Squarefree n) :
-    Nat.totient n = ∏ p ∈ n.primeFactors, (p - 1) := by
-  have hn0 : n ≠ 0 := by
-    rintro rfl
-    exact not_squarefree_zero hn
-  have hprod : n = ∏ p ∈ n.primeFactors, p ^ n.factorization p :=
-    Nat.prod_primeFactors_pow_factorization hn0
-  have hsq : ∀ p ∈ n.primeFactors, n.factorization p = 1 := by
-    intro p hp
-    exact Nat.factorization_eq_one_of_squarefree hn (Nat.prime_of_mem_primeFactors hp)
-      (Nat.dvd_of_mem_primeFactors hp)
-  have hpow : (∏ p ∈ n.primeFactors, p ^ n.factorization p) = ∏ p ∈ n.primeFactors, p := by
-    apply Finset.prod_congr rfl
-    intro p hp
-    rw [hsq p hp, pow_one]
-  have hφ : Nat.totient n = Nat.totient (∏ p ∈ n.primeFactors, p ^ n.factorization p) := by
-    exact congrArg Nat.totient hprod
-  calc
-    Nat.totient n = Nat.totient (∏ p ∈ n.primeFactors, p ^ n.factorization p) := hφ
-    _ = Nat.totient (∏ p ∈ n.primeFactors, p) := congrArg Nat.totient hpow
-    _ = ∏ p ∈ n.primeFactors, (p - 1) :=
-      totient_prod_eq_prod_sub_one n.primeFactors (fun p hp => Nat.prime_of_mem_primeFactors hp)
-
-/-- The corrected Goldbach density of a squarefree modulus is exactly the
-reciprocal totient: `ν(d) = 1/φ(d)`.  This identifies the distribution main
-term `ν(d) · N/log N` with the standard Bombieri--Vinogradov main term
-`li(N)/φ(d)`. -/
-theorem correctedChenNu_squarefree_eq_inv_totient {d : ℕ} (hd : Squarefree d) :
-    correctedChenNu d = (1 : ℝ) / (Nat.totient d : ℝ) := by
-  have hd0 : d ≠ 0 := by
-    rintro rfl
-    exact not_squarefree_zero hd
-  have hnu : correctedChenNu d = ∏ p ∈ d.primeFactors, (1 : ℝ) / ((p : ℝ) - 1) := by
-    unfold correctedChenNu
-    rw [ArithmeticFunction.prodPrimeFactors_apply hd0]
-  rw [hnu]
-  have htot_nat : Nat.totient d = ∏ p ∈ d.primeFactors, (p - 1) :=
-    totient_eq_prod_primeFactors_of_squarefree hd
-  rw [htot_nat]
-  simp_rw [Nat.cast_prod]
-  simp_rw [one_div]
-  rw [Finset.prod_inv_distrib]
-  congr 1
-  apply Finset.prod_congr rfl
-  intro p hp
-  have hp1 : (1 : ℕ) ≤ p := (Nat.prime_of_mem_primeFactors hp).one_lt.le
-  rw [Nat.cast_sub hp1]
-  norm_num
+/-- Goldbach local density for the corrected sieve: the reusable ant density
+`ν(d) = ∏_{p | d} 1/(p-1)` (`AnalyticNumberTheory.Sieve.goldbachNu`). -/
+noncomputable abbrev correctedChenNu : ArithmeticFunction ℝ :=
+  AnalyticNumberTheory.Sieve.goldbachNu
 
 /-- The prime factors of a product of distinct primes are exactly the set of
 those primes. -/
@@ -881,26 +796,6 @@ theorem prime_dvd_correctedChenSiftingProduct {N p : ℕ} (hp : p.Prime) :
       exact Finset.mem_filter.mpr ⟨by simpa using hmem.1, ⟨hp, hmem.2.1, hmem.2.2⟩⟩
     exact (Nat.mem_primeFactors_of_ne_zero (correctedChenSiftingProduct_ne_zero N)).mp hmem' |>.2
 
-/-- The corrected Goldbach density is positive at every sieved prime. -/
-theorem correctedChenNu_pos_of_prime {N p : ℕ} (hp : p.Prime)
-    (hdiv : p ∣ correctedChenSiftingProduct N) : 0 < correctedChenNu p := by
-  rw [correctedChenNu_apply_prime hp]
-  have hpgt : 2 < p := (prime_dvd_correctedChenSiftingProduct hp).mp hdiv |>.2.1
-  exact one_div_pos.mpr (by
-    have hp1 : (1 : ℝ) < p := by exact_mod_cast (show 1 < p by omega)
-    linarith)
-
-/-- The corrected Goldbach density is bounded by one at every sieved prime. -/
-theorem correctedChenNu_lt_one_of_prime {N p : ℕ} (hp : p.Prime)
-    (hdiv : p ∣ correctedChenSiftingProduct N) : correctedChenNu p < 1 := by
-  rw [correctedChenNu_apply_prime hp]
-  have hpgt : 2 < p := (prime_dvd_correctedChenSiftingProduct hp).mp hdiv |>.2.1
-  have hp1 : (1 : ℝ) < p := by exact_mod_cast (show 1 < p by omega)
-  have hp2 : (2 : ℝ) < p := by exact_mod_cast hpgt
-  have hden_pos : 0 < (p : ℝ) - 1 := by linarith
-  rw [div_lt_iff₀ hden_pos, one_mul]
-  linarith
-
 /-- The corrected Chen sieve as a mathlib `BoundingSieve` record: the
 unsifted complements as support, the surviving small-prime product as
 `prodPrimes`, unit weights, and the Goldbach local density
@@ -921,13 +816,14 @@ noncomputable def correctedChenBoundingSieve (N : ℕ) : BoundingSieve where
   weights_nonneg := by intro n; norm_num
   totalMass := (N : ℝ) / log (N : ℝ)
   nu := correctedChenNu
-  nu_mult := correctedChenNu_isMultiplicative
+  nu_mult := AnalyticNumberTheory.Sieve.goldbachNu_isMultiplicative
   nu_pos_of_prime := by
     intro p hp hdiv
-    exact correctedChenNu_pos_of_prime hp hdiv
+    exact AnalyticNumberTheory.Sieve.goldbachNu_pos_of_prime hp
   nu_lt_one_of_prime := by
     intro p hp hdiv
-    exact correctedChenNu_lt_one_of_prime hp hdiv
+    have hpcond := (prime_dvd_correctedChenSiftingProduct hp).mp hdiv
+    exact AnalyticNumberTheory.Sieve.goldbachNu_lt_one_of_prime hp hpcond.2.1
 
 /-- The corrected sieve total mass is the analytic main term `N / log N`. -/
 theorem correctedChenTotalMass_eq (N : ℕ) :
@@ -1065,11 +961,6 @@ theorem correctedChenMultiples_card_eq_primeSupport (N d : ℕ) :
   have hq_lt : q < N := hq_full.1.1
   omega
 
-/-- For `p < N`, divisibility `d ∣ N - p` is the congruence `p ≡ N [MOD d]`. -/
-theorem prime_dvd_complement_iff_modEq {N p d : ℕ} (hp_lt : p < N) :
-    d ∣ N - p ↔ p ≡ N [MOD d] := by
-  exact (Nat.modEq_iff_dvd' (le_of_lt hp_lt)).symm
-
 /-- The corrected sieve distribution count is the number of prime-support
 partners congruent to `N` modulo `d`.  This is the finite seam at which a
 Bombieri--Vinogradov/Pan input bounds `multSum` and hence `errSum`. -/
@@ -1083,7 +974,7 @@ theorem correctedChenMultSum_eq_modEq_count (N d : ℕ) :
     apply Finset.filter_congr
     intro p hp
     rcases Finset.mem_filter.mp hp with ⟨hp_range, _⟩
-    exact prime_dvd_complement_iff_modEq (by simpa using hp_range)
+    exact AnalyticNumberTheory.Sieve.prime_dvd_complement_iff_modEq (by simpa using hp_range)
   rw [hf]
 
 /-- The corrected sieve remainder at `d` is the prime-support congruence
@@ -1163,7 +1054,7 @@ the explicit `errSum`: the finite seam through which a uniform
 Jurkat--Richert lower bound for `mainSum μ⁻` (with the closed `N / log N`
 total mass) proves `CorrectedChenAnalyticPositivity`. -/
 theorem correctedChenCandidates_card_ge_mainSum_sub_errSum (N : ℕ)
-    (muMinus : ℕ → ℝ) (hmu : MathlibNt.SieveTheory.LinearSieve.IsLowerMoebius muMinus) :
+    (muMinus : ℕ → ℝ) (hmu : AnalyticNumberTheory.Sieve.IsLowerMoebius muMinus) :
     (correctedChenBoundingSieve N).totalMass *
         (correctedChenBoundingSieve N).mainSum muMinus -
       (correctedChenBoundingSieve N).errSum muMinus ≤
@@ -1173,24 +1064,16 @@ theorem correctedChenCandidates_card_ge_mainSum_sub_errSum (N : ℕ)
           (correctedChenBoundingSieve N).mainSum muMinus -
         (correctedChenBoundingSieve N).errSum muMinus
         ≤ (correctedChenBoundingSieve N).siftedSum :=
-          MathlibNt.SieveTheory.LinearSieve.mainSum_sub_errSum_le_siftedSum_of_lowerMoebius
+          AnalyticNumberTheory.Sieve.mainSum_sub_errSum_le_siftedSum_of_lowerMoebius
             muMinus hmu
     _ = (correctedChenCandidates N).card :=
       correctedChenBoundingSieve_siftedSum_eq_card N
-
-/-- The Selberg term of the corrected sieve at a prime is
-`ν(p) · (1 - ν(p))⁻¹`. -/
-theorem correctedChenSelbergTerm_prime (N : ℕ) {p : ℕ} (hp : p.Prime) :
-    (correctedChenBoundingSieve N).selbergTerms p =
-      correctedChenNu p * (1 - correctedChenNu p)⁻¹ := by
-  rw [BoundingSieve.selbergTerms_apply, Nat.Prime.primeFactors hp]
-  simp [correctedChenBoundingSieve]
 
 /-- At a sieved prime `2 < p < z` with `p ∤ N`, the corrected Goldbach
 density factor satisfies `(1 - ν(p))⁻¹ = (p-1)/(p-2)`. -/
 theorem correctedChenNu_inv_prime {N p : ℕ} (hp : p.Prime) (hp2 : 2 < p) :
     (1 - correctedChenNu p)⁻¹ = ((p : ℝ) - 1) / ((p : ℝ) - 2) := by
-  rw [correctedChenNu_apply_prime hp]
+  rw [AnalyticNumberTheory.Sieve.goldbachNu_apply_prime hp]
   have hp2r : (2 : ℝ) < p := by exact_mod_cast hp2
   have hpm1 : (p : ℝ) - 1 ≠ 0 := by linarith
   have hpm2 : (p : ℝ) - 2 ≠ 0 := by linarith
@@ -1201,35 +1084,13 @@ theorem correctedChenNu_inv_prime {N p : ℕ} (hp : p.Prime) (hp2 : 2 < p) :
   ring_nf at hcancel ⊢
   exact hcancel
 
-/-- The Selberg divisor sum for the corrected sieve factors over the sieved
-primes: `∑_{d | P} g(d) = ∏_{p | P} (1 - ν(p))⁻¹`.  This is the finite
-algebraic core of the Selberg main term; the asymptotic evaluation of the
-right-hand side is the Mertens-type workline. -/
-theorem correctedChenSelbergSum_eq_prod_inv (N : ℕ) :
-    ∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
-      (correctedChenBoundingSieve N).selbergTerms d =
-      ∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (1 - correctedChenNu p)⁻¹ := by
-  rw [← ArithmeticFunction.IsMultiplicative.prodPrimeFactors_one_add_of_squarefree
-    (correctedChenBoundingSieve N).selbergTerms_isMultiplicative
-    (correctedChenBoundingSieve N).prodPrimes_squarefree]
-  apply Finset.prod_congr rfl
-  intro p hp
-  have hp_prime : p.Prime := Nat.prime_of_mem_primeFactors hp
-  rw [correctedChenSelbergTerm_prime N hp_prime]
-  have hp_dvd : p ∣ (correctedChenBoundingSieve N).prodPrimes := Nat.dvd_of_mem_primeFactors hp
-  have hlt : correctedChenNu p < 1 :=
-    (correctedChenBoundingSieve N).nu_lt_one_of_prime p hp_prime hp_dvd
-  have hne : (1 : ℝ) - correctedChenNu p ≠ 0 := by linarith
-  field_simp [hne]
-  ring
-
 /-- At a sieved prime, the corrected density factor splits into the
 Mertens-type `p/(p-1)` and the reciprocal singular-series local factor. -/
 theorem correctedChenNu_inv_prime_localFactor {N p : ℕ} (hp : p.Prime)
     (hp2 : 2 < p) (hpn : ¬ p ∣ N) :
     (1 - correctedChenNu p)⁻¹ =
-      (p : ℝ) / (p - 1) * (SingularSeries.localFactor p N)⁻¹ := by
-  rw [SingularSeries.localFactor_of_not_dvd hp hp2 hpn]
+      (p : ℝ) / (p - 1) * (AnalyticNumberTheory.Sieve.localFactor p N)⁻¹ := by
+  rw [AnalyticNumberTheory.Sieve.localFactor_of_not_dvd hp hp2 hpn]
   have hp2r : (2 : ℝ) < p := by exact_mod_cast hp2
   have hpm1 : (p : ℝ) - 1 ≠ 0 := by linarith
   have hpm2 : (p : ℝ) - 2 ≠ 0 := by linarith
@@ -1248,8 +1109,8 @@ theorem correctedChenSelbergSum_eq_mertens_mul_localFactor_inv (N : ℕ) :
       (correctedChenBoundingSieve N).selbergTerms d =
       (∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (p : ℝ) / (p - 1)) *
       (∏ p ∈ (correctedChenSiftingProduct N).primeFactors,
-          SingularSeries.localFactor p N)⁻¹ := by
-  rw [correctedChenSelbergSum_eq_prod_inv]
+          AnalyticNumberTheory.Sieve.localFactor p N)⁻¹ := by
+  rw [AnalyticNumberTheory.Sieve.selbergSum_eq_prod_inv]
   rw [← Finset.prod_inv_distrib]
   rw [← Finset.prod_mul_distrib]
   apply Finset.prod_congr rfl
@@ -1268,7 +1129,9 @@ private theorem correctedChenSelbergSum_eq_prod_ratio (N : ℕ) :
       (correctedChenBoundingSieve N).selbergTerms d) =
       ∏ p ∈ ((Finset.range (correctedChenZ N)).filter
         (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)), ((p : ℝ) - 1) / ((p : ℝ) - 2) := by
-  rw [correctedChenSelbergSum_eq_prod_inv, correctedChenSiftingProduct_primeFactors]
+  rw [AnalyticNumberTheory.Sieve.selbergSum_eq_prod_inv]
+  simp only [correctedChenBoundingSieve]
+  rw [correctedChenSiftingProduct_primeFactors]
   apply Finset.prod_congr rfl
   intro p hp
   rcases Finset.mem_filter.mp hp with ⟨hpz, hpP, hp2, hpn⟩
@@ -1348,24 +1211,24 @@ private theorem sievedPrimeDisjoint_ab_c (N : ℕ) :
 
 /-- Local factor at `p = 2` equals `p/(p-1)` for even `N`. -/
 private theorem localFactor_eq_mertensTypeFactor_p2 (N : ℕ) (hN : Even N) :
-    SingularSeries.localFactor 2 N = mertensTypeFactor 2 := by
-  rw [SingularSeries.localFactor_two hN]
+    AnalyticNumberTheory.Sieve.localFactor 2 N = mertensTypeFactor 2 := by
+  rw [AnalyticNumberTheory.Sieve.localFactor_two hN]
   norm_num [mertensTypeFactor]
 
 /-- Local factor at a dividing odd prime equals `p/(p-1)`. -/
 private theorem localFactor_eq_mertensTypeFactor_dvd {N p : ℕ} (hp : p.Prime)
     (hlt : 2 < p) (hpd : p ∣ N) :
-    SingularSeries.localFactor p N = mertensTypeFactor p := by
-  rw [SingularSeries.localFactor_of_dvd hp hlt hpd]
+    AnalyticNumberTheory.Sieve.localFactor p N = mertensTypeFactor p := by
+  rw [AnalyticNumberTheory.Sieve.localFactor_of_dvd hp hlt hpd]
   rfl
 
 /-- At a non-dividing odd prime, `(p-1)/(p-2)` times the local factor equals
 `p/(p-1)`. -/
 private theorem localFactor_ratio_not_dvd {N p : ℕ} (hp : p.Prime) (hlt : 2 < p)
     (hpn : ¬ p ∣ N) :
-    ((p : ℝ) - 1) / ((p : ℝ) - 2) * SingularSeries.localFactor p N =
+    ((p : ℝ) - 1) / ((p : ℝ) - 2) * AnalyticNumberTheory.Sieve.localFactor p N =
       mertensTypeFactor p := by
-  rw [SingularSeries.localFactor_of_not_dvd hp hlt hpn]
+  rw [AnalyticNumberTheory.Sieve.localFactor_of_not_dvd hp hlt hpn]
   have hp1 : (2 : ℝ) < p := by exact_mod_cast hlt
   have hpm1 : (p : ℝ) - 1 ≠ 0 := by linarith
   have hpm2 : (p : ℝ) - 2 ≠ 0 := by linarith
@@ -1380,7 +1243,7 @@ private theorem correctedChenSelbergSum_mul_singularSeries_eq_mertensProd
     (N : ℕ) (hN : Even N) :
     (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
       (correctedChenBoundingSieve N).selbergTerms d) *
-      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) =
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) =
       ∏ p ∈ ((Finset.range (correctedChenZ N)).filter Nat.Prime), mertensTypeFactor p := by
   let z := correctedChenZ N
   let R : Finset ℕ := (Finset.range z).filter Nat.Prime
@@ -1401,34 +1264,34 @@ private theorem correctedChenSelbergSum_mul_singularSeries_eq_mertensProd
       ∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) := by
     dsimp [C, z]
     exact correctedChenSelbergSum_eq_prod_ratio N
-  have hSplit : (∏ p ∈ R, SingularSeries.localFactor p N) =
-      (∏ p ∈ A, SingularSeries.localFactor p N) *
-      (∏ p ∈ B, SingularSeries.localFactor p N) *
-      (∏ p ∈ C, SingularSeries.localFactor p N) := by
+  have hSplit : (∏ p ∈ R, AnalyticNumberTheory.Sieve.localFactor p N) =
+      (∏ p ∈ A, AnalyticNumberTheory.Sieve.localFactor p N) *
+      (∏ p ∈ B, AnalyticNumberTheory.Sieve.localFactor p N) *
+      (∏ p ∈ C, AnalyticNumberTheory.Sieve.localFactor p N) := by
     rw [hR]
     rw [Finset.prod_union (sievedPrimeDisjoint_ab_c N)]
     rw [Finset.prod_union (sievedPrimeDisjoint_a_b N)]
-  have h𝔖 : SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) =
-      ∏ p ∈ R, SingularSeries.localFactor p N := by
-    simp [SingularSeries.singularSeriesTruncated, R, z, hrange]
+  have h𝔖 : AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) =
+      ∏ p ∈ R, AnalyticNumberTheory.Sieve.localFactor p N := by
+    simp [AnalyticNumberTheory.Sieve.singularSeriesTruncated, R, z, hrange]
   have hSplitMf : (∏ p ∈ R, mertensTypeFactor p) =
       (∏ p ∈ A, mertensTypeFactor p) * (∏ p ∈ B, mertensTypeFactor p) *
       (∏ p ∈ C, mertensTypeFactor p) := by
     rw [hR]
     rw [Finset.prod_union (sievedPrimeDisjoint_ab_c N)]
     rw [Finset.prod_union (sievedPrimeDisjoint_a_b N)]
-  have hA : (∏ p ∈ A, SingularSeries.localFactor p N) = (∏ p ∈ A, mertensTypeFactor p) := by
+  have hA : (∏ p ∈ A, AnalyticNumberTheory.Sieve.localFactor p N) = (∏ p ∈ A, mertensTypeFactor p) := by
     apply Finset.prod_congr rfl
     intro p hp
     rcases Finset.mem_filter.mp hp with ⟨_, _, hpeq⟩
     subst p
     exact localFactor_eq_mertensTypeFactor_p2 N hN
-  have hB : (∏ p ∈ B, SingularSeries.localFactor p N) = (∏ p ∈ B, mertensTypeFactor p) := by
+  have hB : (∏ p ∈ B, AnalyticNumberTheory.Sieve.localFactor p N) = (∏ p ∈ B, mertensTypeFactor p) := by
     apply Finset.prod_congr rfl
     intro p hp
     rcases Finset.mem_filter.mp hp with ⟨_, hpP, hlt, hpd⟩
     exact localFactor_eq_mertensTypeFactor_dvd hpP hlt hpd
-  have hC : (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) * SingularSeries.localFactor p N) =
+  have hC : (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) * AnalyticNumberTheory.Sieve.localFactor p N) =
       (∏ p ∈ C, mertensTypeFactor p) := by
     apply Finset.prod_congr rfl
     intro p hp
@@ -1437,20 +1300,20 @@ private theorem correctedChenSelbergSum_mul_singularSeries_eq_mertensProd
   calc
     (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
       (correctedChenBoundingSieve N).selbergTerms d) *
-      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1)
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1)
         = (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2)) *
-          (∏ p ∈ A, SingularSeries.localFactor p N) *
-          (∏ p ∈ B, SingularSeries.localFactor p N) *
-          (∏ p ∈ C, SingularSeries.localFactor p N) := by
+          (∏ p ∈ A, AnalyticNumberTheory.Sieve.localFactor p N) *
+          (∏ p ∈ B, AnalyticNumberTheory.Sieve.localFactor p N) *
+          (∏ p ∈ C, AnalyticNumberTheory.Sieve.localFactor p N) := by
           rw [hS, h𝔖, hSplit]
           ring
-    _ = (∏ p ∈ A, SingularSeries.localFactor p N) *
-        (∏ p ∈ B, SingularSeries.localFactor p N) *
+    _ = (∏ p ∈ A, AnalyticNumberTheory.Sieve.localFactor p N) *
+        (∏ p ∈ B, AnalyticNumberTheory.Sieve.localFactor p N) *
         ((∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2)) *
-          (∏ p ∈ C, SingularSeries.localFactor p N)) := by ring
-    _ = (∏ p ∈ A, SingularSeries.localFactor p N) *
-        (∏ p ∈ B, SingularSeries.localFactor p N) *
-        (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) * SingularSeries.localFactor p N) := by
+          (∏ p ∈ C, AnalyticNumberTheory.Sieve.localFactor p N)) := by ring
+    _ = (∏ p ∈ A, AnalyticNumberTheory.Sieve.localFactor p N) *
+        (∏ p ∈ B, AnalyticNumberTheory.Sieve.localFactor p N) *
+        (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) * AnalyticNumberTheory.Sieve.localFactor p N) := by
         rw [← Finset.prod_mul_distrib]
     _ = (∏ p ∈ A, mertensTypeFactor p) * (∏ p ∈ B, mertensTypeFactor p) *
         (∏ p ∈ C, mertensTypeFactor p) := by
@@ -1492,7 +1355,7 @@ Selberg product to the full Mertens-type prime product `∏_{p<z} p/(p-1)`. -/
 theorem correctedChenSelbergSum_mul_singularSeriesTruncated (N : ℕ) (hN : Even N) :
     (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
       (correctedChenBoundingSieve N).selbergTerms d) *
-      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) =
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) =
       (MertensTheorem.primeProduct (correctedChenZ N - 1))⁻¹ := by
   rw [correctedChenSelbergSum_mul_singularSeries_eq_mertensProd N hN]
   exact mertensProd_eq_primeProduct_inv N
@@ -1506,13 +1369,13 @@ This applies the exact Mertens product formula
 theorem correctedChenSelbergSum_asymptotic_order :
     ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ ∀ N : ℕ, Even N → 4 ≤ N → 3 ≤ correctedChenZ N →
       c₁ * log ((correctedChenZ N - 1 : ℕ) : ℝ) /
-        SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) ≤
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) ≤
         (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
           (correctedChenBoundingSieve N).selbergTerms d) ∧
       (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
           (correctedChenBoundingSieve N).selbergTerms d) ≤
         c₂ * log ((correctedChenZ N - 1 : ℕ) : ℝ) /
-        SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) := by
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) := by
   obtain ⟨c₁₀, c₂₀, hc₁₀, hPP⟩ := MertensTheorem.primeProduct_asymptotic_order
   have hP2 : MertensTheorem.primeProduct 2 = (1 / 2 : ℝ) := by
     unfold MertensTheorem.primeProduct
@@ -1551,9 +1414,9 @@ theorem correctedChenSelbergSum_asymptotic_order :
   have hlog : 0 < log (x : ℝ) := by
     have : (1 : ℝ) < x := by exact_mod_cast (show 1 < x by omega)
     exact Real.log_pos this
-  have hSpos : 0 < SingularSeries.singularSeriesTruncated N x :=
-    SingularSeries.singularSeriesTruncated_pos N x hx1
-  have hSne : SingularSeries.singularSeriesTruncated N x ≠ 0 := ne_of_gt hSpos
+  have hSpos : 0 < AnalyticNumberTheory.Sieve.singularSeriesTruncated N x :=
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos N x hx1
+  have hSne : AnalyticNumberTheory.Sieve.singularSeriesTruncated N x ≠ 0 := ne_of_gt hSpos
   have hP := hPP x hx2
   have hPpos : 0 < MertensTheorem.primeProduct x := by
     unfold MertensTheorem.primeProduct
@@ -1567,8 +1430,8 @@ theorem correctedChenSelbergSum_asymptotic_order :
   have hSel : (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
         (correctedChenBoundingSieve N).selbergTerms d) =
       (MertensTheorem.primeProduct x)⁻¹ *
-        (SingularSeries.singularSeriesTruncated N x)⁻¹ := by
-    have h := congrArg (fun t : ℝ => t * (SingularSeries.singularSeriesTruncated N x)⁻¹) hid
+        (AnalyticNumberTheory.Sieve.singularSeriesTruncated N x)⁻¹ := by
+    have h := congrArg (fun t : ℝ => t * (AnalyticNumberTheory.Sieve.singularSeriesTruncated N x)⁻¹) hid
     rw [mul_assoc, mul_inv_cancel₀ hSne, mul_one] at h
     exact h
   have hrec_lo : log (x : ℝ) / c₂₀ ≤ (MertensTheorem.primeProduct x)⁻¹ := by
@@ -1583,21 +1446,21 @@ theorem correctedChenSelbergSum_asymptotic_order :
     have hrew : (c₁₀ / log (x : ℝ))⁻¹ = log (x : ℝ) / c₁₀ := by
       field_simp [hc₁₀.ne', hlog.ne']
     rwa [hrew] at h1
-  have hA : log (x : ℝ) / c₂₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ ≤
+  have hA : log (x : ℝ) / c₂₀ * (AnalyticNumberTheory.Sieve.singularSeriesTruncated N x)⁻¹ ≤
       (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
         (correctedChenBoundingSieve N).selbergTerms d) := by
     rw [hSel]
     exact mul_le_mul_of_nonneg_right hrec_lo (inv_nonneg.mpr (le_of_lt hSpos))
   have hB : (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
         (correctedChenBoundingSieve N).selbergTerms d) ≤
-      log (x : ℝ) / c₁₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ := by
+      log (x : ℝ) / c₁₀ * (AnalyticNumberTheory.Sieve.singularSeriesTruncated N x)⁻¹ := by
     rw [hSel]
     exact mul_le_mul_of_nonneg_right hrec_up (inv_nonneg.mpr (le_of_lt hSpos))
-  have hnormA : log (x : ℝ) / c₂₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ =
-      (1 / c₂₀) * log (x : ℝ) / SingularSeries.singularSeriesTruncated N x := by
+  have hnormA : log (x : ℝ) / c₂₀ * (AnalyticNumberTheory.Sieve.singularSeriesTruncated N x)⁻¹ =
+      (1 / c₂₀) * log (x : ℝ) / AnalyticNumberTheory.Sieve.singularSeriesTruncated N x := by
     field_simp [hSne, hc₂₀.ne']
-  have hnormB : log (x : ℝ) / c₁₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ =
-      (1 / c₁₀) * log (x : ℝ) / SingularSeries.singularSeriesTruncated N x := by
+  have hnormB : log (x : ℝ) / c₁₀ * (AnalyticNumberTheory.Sieve.singularSeriesTruncated N x)⁻¹ =
+      (1 / c₁₀) * log (x : ℝ) / AnalyticNumberTheory.Sieve.singularSeriesTruncated N x := by
     field_simp [hSne, hc₁₀.ne']
   constructor
   · rw [← hnormA]
@@ -2229,17 +2092,17 @@ theorem switching_identity (N z y : ℕ) (_hz : 2 ≤ z) (_hy : y ≤ N) :
           │   │   ├── 分布条件 (Bombieri-Vinogradov)
           │   │   ├── V(z) ≈ 𝔖(N) e^(-γ)/log z (Mertens)
           │   │   └── f(5) = 2e^γ log(5/2)/5 (筛函数)
-          │   └── 𝔖(N) > 0 (SingularSeries.lean)
+          │   └── 𝔖(N) > 0 (AnalyticNumberTheory.Sieve.lean)
           └── Ω ≤ 3.9404 𝔖(N) N/log²N
               ├── Selberg 筛上界 (SelbergUpperBound.lean)
               │   ├── Lemma 3: Σ λ²/φ([d₁,d₂]) ≈ 8 𝔖(N)/log N
               │   └── Lemma 4: Σ f(a)/(a log(N/a)) ≤ 0.49254/log N
               ├── Pan 均值定理 (BombieriVinogradov.lean)
               │   └── R ≪ N/log^A N (误差项)
-              └── 𝔖(N) > 0 (SingularSeries.lean)
+              └── 𝔖(N) > 0 (AnalyticNumberTheory.Sieve.lean)
 
 **模块依赖关系**:
-  - SingularSeries.lean: 𝔖(N) 定义和正性
+  - AnalyticNumberTheory.Sieve.lean: 𝔖(N) 定义和正性
   - LinearSieve.lean: Jurkat-Richert 定理, F(s)/f(s)
   - MertensTheorem.lean: V(z) 渐近, Mertens 定理
   - BombieriVinogradov.lean: 分布条件, Pan 均值定理

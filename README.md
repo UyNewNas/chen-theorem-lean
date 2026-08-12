@@ -109,7 +109,11 @@ imported analytic dependency is `analytic-number-theory-lean` v0.3.0.
 ## Layout
 
 - `MathlibNt/ChensTheorem.lean`: conditional Chen theorem and the semiprime API.
-- `MathlibNt/SieveTheory/`: sieve, switching, Mertens, and distribution modules.
+- `MathlibNt/SieveTheory/`: Chen-specific switching, Mertens consumers, and
+  the corrected sieve objects.  The reusable sieve layer (Goldbach density,
+  Selberg main-term identities, singular series, linear sieve, and
+  Bombieri--Vinogradov interfaces) lives in the
+  `analytic-number-theory-lean` `AnalyticNumberTheory/Sieve` modules.
 - `MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md`: review-oriented trust boundary.
 - `lakefile.toml`, `lean-toolchain`, `lake-manifest.json`: reproducible Lean/Lake setup.
 
@@ -144,9 +148,9 @@ extends the audit output with:
 'MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-The complete audit contains fifty-eight reports: the two conditional derivations,
+The complete audit contains forty-seven reports: the two conditional derivations,
 the three analytic consumers, `primeProduct_asymptotic_order`, the two
-pointwise error-budget interfaces, and fifty finite bridge-foundation lemmas.
+pointwise error-budget interfaces, and thirty-nine finite bridge-foundation lemmas.
 The two newest reports are the main-term seam identity
 `correctedChenSelbergSum_mul_singularSeriesTruncated` and the resulting
 `Θ(log z / 𝔖)` order `correctedChenSelbergSum_asymptotic_order`.

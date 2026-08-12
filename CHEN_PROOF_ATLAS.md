@@ -2,6 +2,13 @@
 
 ## Target and boundary
 
+The reusable analytic sieve layer (Goldbach density, Selberg main-term
+identities, singular series, linear sieve, Bombieri--Vinogradov interfaces)
+has been migrated to the `analytic-number-theory-lean`
+`AnalyticNumberTheory/Sieve/` modules; this repository keeps only the
+Chen-specific application and consumers.  `CLASSICAL_MAPPING.md` maps every
+classical proof step to its project interface.
+
 - Target statement: an unconditional Lean proof that every sufficiently large
   even natural number is a prime plus an integer with at most two prime factors.
 - Claim type: universal.  The present kernel-checked result is conditional on
