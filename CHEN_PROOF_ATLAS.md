@@ -344,6 +344,29 @@ Remaining inputs for `CorrectedChenAnalyticPositivity` are exactly #6
 (`correctedChenOmega` Selberg upper bound) and #7 (weighted Pan errSum
 control); the final assembly is sub-issue #8.
 
+**2026-08-12 update — the final assembly is a theorem.**  The chain is now:
+
+- `primeProduct_lower_explicit`: Mertens lower bound with the explicit
+  constant `1/3` (from the exact ant Mertens and `e^{-γ} > 1/3`);
+- `correctedChenZ_log_le_logN_div_ten`: `log(z−1) ≤ (1/10)·log N`;
+- `CorrectedChenMainTermLower_singularSeries_units`: the main term in
+  singular-series units, `(10/3)·𝔖_trunc·N/log²N ≤ X·V(N)`, for large even
+  `N` (exact seam + Mertens + parameter estimate);
+- `CorrectedChenOmegaUpperBound`: the issue-#7 target (uniform
+  `Ω ≤ cΩ·𝔖_trunc·N/log²N` with `(10/3) > cΩ/2`);
+- `CorrectedChenPositivity_large_of_inputs`: **main term + Ω upper bound +
+  weighted Pan errSum control ⇒ positivity for all sufficiently large even
+  `N`** (the error budget `C/log N < d/2` closes via `𝔖_trunc ≥ 1/2`);
+- `corrected_chens_theorem_of_inputs`: the **unconditional Chen theorem
+  modulo the two analytic inputs** (`ChenWeightedPanInput` and
+  `CorrectedChenOmegaUpperBound`).
+
+Remaining open inputs are exactly: the Pan theorem proof (ant issue #7
+statement, consumed as `ChenWeightedPanInput`) and the Ω upper-bound proof
+(chen issue #7). Everything structural — the finite sieve, the
+singular-series main term, the error budget, and the final reduction — is
+kernel-checked.
+
 ## Dependency sketch
 
 ```text

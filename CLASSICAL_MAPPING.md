@@ -40,7 +40,8 @@
 - **通用层归属**：表中标记为 `ant` 的条目位于 `analytic-number-theory-lean` 的
   `AnalyticNumberTheory/Sieve/`（Goldbach 型筛法可复用）；chen 仓库只保留陈氏专属
   应用与消费接口。
-- **研究级开放输入**（"待证"行）：一致 JR 下界、修正 Selberg 上界、加权 Pan/BV
-  分布条件的**定理证明**（输入接口本身已由 ant #7 形式化并被 Chen 消费，见
-  `correctedChenDistributionCondition_iff_chenWeightedPanInput`）。三者补上后
-  `CorrectedChenAnalyticPositivity` 即可闭环。
+  - **最终组装已成定理**：`corrected_chens_theorem_of_inputs` 把无条件陈氏定理
+    化约到两个解析输入——加权 Pan 定理证明（ant #7 陈述，消费为
+    `ChenWeightedPanInput`）与 `correctedChenOmega` 一致上界（chen #7，
+    `CorrectedChenOmegaUpperBound`）。主项侧（奇异级数连接、Mertens、参数估计、
+    `𝔖_trunc ≥ 1/2`）与误差预算全部内核核验。
