@@ -692,6 +692,58 @@ degeneracy of the historical floor cutoff. -/
 noncomputable def correctedChenZ (N : ℕ) : ℕ :=
   max 2 (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ)))
 
+/-- **Sieve-level log-parameter estimate** (chen issue #5): 存在 `Clog > 0`
+使得对所有 `N ≥ 2`, `log (z(N) − 1) ≤ Clog · log N`, 其中
+`z(N) = max 2 ⌊N^{1/10}⌋`.
+
+常数可取 `Clog = 1/10`: `z(N) − 1 ≤ N^{1/10}` (floor ≤ 与 `max` 的简单估计),
+再配合对数单调性与 `log(N^{1/10}) = (1/10)·log N`. -/
+theorem correctedChenLogZ_upper_bound :
+    ∃ Clog : ℝ, 0 < Clog ∧
+      ∀ N : ℕ, 2 ≤ N → log (correctedChenZ N - 1 : ℝ) ≤ Clog * log (N : ℝ) := by
+  refine ⟨1 / 10, by norm_num, ?_⟩
+  intro N hN
+  have hN2 : (2 : ℝ) ≤ N := by exact_mod_cast hN
+  have hNpos : 0 < (N : ℝ) := by linarith
+  have hN1 : (1 : ℝ) < N := by linarith
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have hxpow1 : (1 : ℝ) ≤ x := by
+    dsimp [x]
+    have hpow : (1 : ℝ) ^ (1 / 10 : ℝ) ≤ (N : ℝ) ^ (1 / 10 : ℝ) :=
+      Real.rpow_le_rpow (by norm_num) (le_trans (by norm_num : (1 : ℝ) ≤ 2) hN2)
+        (by norm_num)
+    simpa using hpow
+  have hxpos : 0 < x := by
+    dsimp [x]
+    exact Real.rpow_pos_of_pos hNpos _
+  have hfloor : (Nat.floor x : ℝ) ≤ x := by
+    dsimp [x]
+    exact Nat.floor_le (Real.rpow_nonneg (by exact_mod_cast (by omega : 0 ≤ N)) _)
+  have hzle : (correctedChenZ N : ℝ) ≤ x + 1 := by
+    unfold correctedChenZ
+    rw [Nat.cast_max]
+    calc
+      max (2 : ℝ) ↑(Nat.floor x) ≤ max (2 : ℝ) (x + 1) := by
+        exact max_le_max le_rfl (le_trans hfloor (by linarith))
+      _ = x + 1 := by
+        have h2 : (2 : ℝ) ≤ x + 1 := by linarith
+        exact max_eq_right h2
+  have hz1 : (correctedChenZ N - 1 : ℝ) ≤ x := by
+    linarith
+  have hz1pos : 0 < (correctedChenZ N - 1 : ℝ) := by
+    have hzge2 : 2 ≤ correctedChenZ N := by
+      unfold correctedChenZ
+      exact le_max_left _ _
+    have hz2r : (2 : ℝ) ≤ (correctedChenZ N : ℝ) := by exact_mod_cast hzge2
+    linarith
+  have hlogle : log (correctedChenZ N - 1 : ℝ) ≤ log x :=
+    (Real.log_le_log_iff hz1pos hxpos).2 hz1
+  calc
+    log (correctedChenZ N - 1 : ℝ) ≤ log x := hlogle
+    _ = (1 / 10 : ℝ) * log (N : ℝ) := by
+      dsimp [x]
+      rw [Real.log_rpow hNpos]
+
 /-- Corrected upper switching cutoff.  Using a ceiling makes the intended
 cube-scale coverage an explicit parameter condition rather than a rounding
 accident. -/
