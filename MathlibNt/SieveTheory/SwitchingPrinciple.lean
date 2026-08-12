@@ -40,6 +40,7 @@ import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 import Mathlib.Algebra.Ring.Parity
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import MathlibNt.SieveTheory.SingularSeries
 import MathlibNt.SieveTheory.SelbergUpperBound
 
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
@@ -973,6 +974,42 @@ theorem correctedChenSelbergSum_eq_prod_inv (N : ℕ) :
   have hne : (1 : ℝ) - correctedChenNu p ≠ 0 := by linarith
   field_simp [hne]
   ring
+
+/-- At a sieved prime, the corrected density factor splits into the
+Mertens-type `p/(p-1)` and the reciprocal singular-series local factor. -/
+theorem correctedChenNu_inv_prime_localFactor {N p : ℕ} (hp : p.Prime)
+    (hp2 : 2 < p) (hpn : ¬ p ∣ N) :
+    (1 - correctedChenNu p)⁻¹ =
+      (p : ℝ) / (p - 1) * (SingularSeries.localFactor p N)⁻¹ := by
+  rw [SingularSeries.localFactor_of_not_dvd hp hp2 hpn]
+  have hp2r : (2 : ℝ) < p := by exact_mod_cast hp2
+  have hpm1 : (p : ℝ) - 1 ≠ 0 := by linarith
+  have hpm2 : (p : ℝ) - 2 ≠ 0 := by linarith
+  have hrhs : (p : ℝ) / (p - 1) * ((p : ℝ) * (p - 2) / (p - 1) ^ 2)⁻¹ =
+      (p - 1) / (p - 2) := by
+    field_simp [hpm1, hpm2]
+  rw [hrhs]
+  exact correctedChenNu_inv_prime (N := N) hp hp2
+
+/-- The corrected Selberg divisor sum splits into the Mertens-type prime
+product over the sieved primes and the reciprocal of their singular-series
+local-factor product.  This is the finite seam at which the exact Mertens
+product formula and the singular series enter the main term. -/
+theorem correctedChenSelbergSum_eq_mertens_mul_localFactor_inv (N : ℕ) :
+    ∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d =
+      (∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (p : ℝ) / (p - 1)) *
+      (∏ p ∈ (correctedChenSiftingProduct N).primeFactors,
+          SingularSeries.localFactor p N)⁻¹ := by
+  rw [correctedChenSelbergSum_eq_prod_inv]
+  rw [← Finset.prod_inv_distrib]
+  rw [← Finset.prod_mul_distrib]
+  apply Finset.prod_congr rfl
+  intro p hp
+  have hp_prime : p.Prime := Nat.prime_of_mem_primeFactors hp
+  have hpcond := (prime_dvd_correctedChenSiftingProduct hp_prime).mp
+    (Nat.dvd_of_mem_primeFactors hp)
+  exact correctedChenNu_inv_prime_localFactor hp_prime hpcond.2.1 hpcond.2.2
 
 /-- The historical lower-sieve candidates transfer safely to the corrected
 candidate set once the unit boundary is removed.  This is a finite inclusion:

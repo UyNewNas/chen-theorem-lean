@@ -37,6 +37,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenSelbergTerm_prime
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_inv_prime
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenSelbergSum_eq_prod_inv
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_inv_prime_localFactor
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenSelbergSum_eq_mertens_mul_localFactor_inv
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.mem_correctedChenGood_or_bad
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenGoodCandidates_subset_goodRepresentations
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenBad_penalty_ge_two

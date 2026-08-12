@@ -178,6 +178,16 @@ factored in closed form as
 via the exact Mertens product formula and the singular series — is the next
 main-term step on the analytic workline.
 
+That seam is now made explicit: each sieved-prime factor splits as
+`(1 − ν(p))⁻¹ = (p/(p−1)) · localFactor(p, N)⁻¹`
+(`correctedChenNu_inv_prime_localFactor`), so the whole Selberg sum factors as
+`∏_{p | P} p/(p−1)` times the reciprocal of the singular-series local-factor
+product (`correctedChenSelbergSum_eq_mertens_mul_localFactor_inv`).  The
+remaining main-term work is the asymptotic evaluation of `∏_{p | P} p/(p−1)`
+by the exact Mertens product formula (with the missing `p | N` and `p = 2`
+factors restored through the singular series), plus the uniform `errSum`
+bound.
+
 ## Dependency sketch
 
 ```text
