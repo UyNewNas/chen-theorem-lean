@@ -290,6 +290,28 @@ The remaining lower-side analytic inputs are now exactly:
 `correctedChenPositivity_of_mainTerm_beats_error` reduces all three to the
 single explicit real inequality `X·V(N) > errSum(1) + Ω/2`.
 
+**2026-08-12 update — the main term is now an exact singular-series seam.**
+`correctedChenSieveProduct_eq_singularSeries_mul_primeProduct` proves
+
+`V(N) = 𝔖_trunc(N, z−1) · primeProduct(z−1)`
+
+from the Selberg sum identity (`selbergSum · 𝔖 = primeProduct⁻¹`) and
+`selbergSum = V⁻¹`.  So `X·V(N)` is exactly
+`X·𝔖_trunc(N, z−1)·primeProduct(z−1)`, and the uniform lower bound
+`CorrectedChenMainTermLower` (`∃ c > 0, ∃ N₀, ∀ N ≥ N₀ Even: c·N/log²N ≤ X·V(N)`)
+is assembled (`correctedChenMainTerm_lower_of_estimates`,
+`CorrectedChenMainTermLower_of_uniform_estimates`) from three standard inputs:
+
+1. a uniform lower bound on the truncated singular series `𝔖_trunc ≥ c𝔖`
+   (finite-product/tail argument, `2C₂`-level);
+2. the Mertens lower bound `primeProduct(m) ≥ cpp/log m`
+   (from the exact Mertens product formula);
+3. the parameter estimate `log(z−1) ≤ Clog·log N`
+   (`z = ⌈N^{1/10}⌉`).
+
+Each of the three is an independent, standard estimate; the algebraic
+assembly around them is fully kernel-checked.
+
 ## Dependency sketch
 
 ```text

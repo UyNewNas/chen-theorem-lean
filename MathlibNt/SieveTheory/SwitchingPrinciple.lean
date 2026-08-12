@@ -1543,6 +1543,182 @@ theorem correctedChenSelbergSum_mul_singularSeriesTruncated (N : ℕ) (hN : Even
   rw [correctedChenSelbergSum_mul_singularSeries_eq_mertensProd N hN]
   exact mertensProd_eq_primeProduct_inv N
 
+/-! ## 4.7 主项下界: 奇异级数连接与一致主项 (issue #5 的解析核心) -/
+
+/-- Mertens 素数乘积为正: `∏_{p ≤ x}(1 - 1/p) > 0`. -/
+theorem primeProduct_pos (x : ℕ) : 0 < MertensTheorem.primeProduct x := by
+  unfold MertensTheorem.primeProduct
+  exact Finset.prod_pos (fun p hp => by
+    have hpP : p.Prime := (Finset.mem_filter.mp hp).2
+    have hp0 : (0 : ℝ) < p := by exact_mod_cast hpP.pos
+    have hle : (1 : ℝ) < p := by exact_mod_cast hpP.one_lt
+    have hlt1 : 1 / (p : ℝ) < 1 := (div_lt_iff₀ hp0).mpr (by simpa using hle)
+    linarith)
+
+/-- `selbergSum = 1 / V(N)`: Selberg 除数和的"一减分解"取倒数. -/
+theorem correctedChenSelbergSum_eq_sieveProduct_inv (N : ℕ) :
+    (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d) =
+      (correctedChenSieveProduct N)⁻¹ := by
+  rw [AnalyticNumberTheory.Sieve.selbergSum_eq_prod_inv]
+  change (∏ p ∈ (correctedChenSiftingProduct N).primeFactors,
+      (1 - correctedChenNu p)⁻¹) = (correctedChenSieveProduct N)⁻¹
+  rw [correctedChenSieveProduct]
+  rw [← Finset.prod_inv_distrib]
+
+/-- **主项恒等式 (奇异级数连接)**: 修正筛积等于截断奇异级数乘以精确
+Mertens 积:
+
+  V(N) = 𝔖_trunc(N, z-1) · primeProduct(z-1)
+
+这是把 `X·V(N)` 变成 `X·𝔖·primeProduct(z-1)` 型主项的精确接缝: 由
+`correctedChenSelbergSum_mul_singularSeriesTruncated`
+(`selbergSum·𝔖 = primeProduct⁻¹`) 与 `selbergSum = V⁻¹` 取倒数即得. -/
+theorem correctedChenSieveProduct_eq_singularSeries_mul_primeProduct (N : ℕ) (hN : Even N) :
+    correctedChenSieveProduct N =
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) := by
+  have h1 := correctedChenSelbergSum_mul_singularSeriesTruncated N hN
+  have hsel := correctedChenSelbergSum_eq_sieveProduct_inv N
+  rw [hsel] at h1
+  have hVnz : correctedChenSieveProduct N ≠ 0 := by
+    unfold correctedChenSieveProduct
+    exact ne_of_gt (Finset.prod_pos (fun p hp => by
+      have hpP : p.Prime := Nat.prime_of_mem_primeFactors hp
+      have hpcond := (prime_dvd_correctedChenSiftingProduct hpP).mp
+        (Nat.dvd_of_mem_primeFactors hp)
+      have hlt : correctedChenNu p < 1 :=
+        AnalyticNumberTheory.Sieve.goldbachNu_lt_one_of_prime hpP hpcond.2.1
+      linarith))
+  have h𝔖nz : AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) ≠ 0 := by
+    apply ne_of_gt
+    apply AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos
+    unfold correctedChenZ
+    have hmax : 2 ≤ max 2 (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ))) := le_max_left _ _
+    omega
+  have hppnz : MertensTheorem.primeProduct (correctedChenZ N - 1) ≠ 0 :=
+    ne_of_gt (primeProduct_pos (correctedChenZ N - 1))
+  have h3 : (correctedChenSieveProduct N)⁻¹ =
+      (MertensTheorem.primeProduct (correctedChenZ N - 1) *
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))⁻¹ := by
+    have h := congrArg (fun t : ℝ =>
+        t * (AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))⁻¹) h1
+    rw [mul_assoc, mul_inv_cancel₀ h𝔖nz, mul_one] at h
+    -- h : V⁻¹ = primeProduct⁻¹ * 𝔖⁻¹ ; 目标: V⁻¹ = (primeProduct * 𝔖)⁻¹
+    rw [mul_inv]
+    ring_nf
+    exact h
+  calc
+    correctedChenSieveProduct N
+        = ((correctedChenSieveProduct N)⁻¹)⁻¹ := by simp
+    _ = (MertensTheorem.primeProduct (correctedChenZ N - 1) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))⁻¹⁻¹ := by
+          rw [h3]
+    _ = MertensTheorem.primeProduct (correctedChenZ N - 1) *
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) := by
+          simp
+    _ = AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) := by
+          ring
+
+/-- **一致主项下界 (chen 侧)**: 存在 `c > 0` 与阈值 `N₀`, 使得对所有
+`N ≥ N₀` 的偶数 `N`, `X·V(N) ≥ c·N/log²N`.
+
+量词顺序: `c`、`N₀` 先于 `∀ N` (一致版本, 常数不得依赖 `N`). 由
+`correctedChenMainTerm_lower_of_estimates` 从三个标准解析输入推出:
+(1) `𝔖_trunc` 的一致下界; (2) `primeProduct` 的 Mertens 下界;
+(3) `log(z-1) ≤ C·log N` 的参数估计. -/
+def CorrectedChenMainTermLower : Prop :=
+  ∃ c : ℝ, 0 < c ∧ ∃ N₀ : ℕ,
+    ∀ N : ℕ, N₀ ≤ N → Even N →
+      c * (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+        (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N
+
+/-- **主项下界 (逐点组装)**: 给定 (1) 截断奇异级数下界 `c𝔖 ≤ 𝔖_trunc`,
+(2) Mertens 下界 `cpp/log(z-1) ≤ primeProduct(z-1)`, (3) 参数估计
+`log(z-1) ≤ Clog·log N`, 则
+
+  `c𝔖·cpp/Clog · N/log²N ≤ X·V(N)`.
+
+证明只用 `V = 𝔖_trunc·primeProduct(z-1)` 精确恒等式与正性/倒数算术. -/
+theorem correctedChenMainTerm_lower_of_estimates (N : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
+    (hz : 2 ≤ correctedChenZ N - 1)
+    {c𝔖 cpp Clog : ℝ} (hc𝔖 : 0 < c𝔖) (hcpp : 0 < cpp) (hClog : 0 < Clog)
+    (h𝔖 : c𝔖 ≤ AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))
+    (hpp : cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤
+      MertensTheorem.primeProduct (correctedChenZ N - 1))
+    (hlog : log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ Clog * log (N : ℝ)) :
+    c𝔖 * cpp / Clog * (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+      (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N := by
+  have hV : correctedChenSieveProduct N =
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) :=
+    correctedChenSieveProduct_eq_singularSeries_mul_primeProduct N hN
+  have hlogN : 0 < log (N : ℝ) := by
+    have : (1 : ℝ) < N := by exact_mod_cast (by omega : 1 < N)
+    exact Real.log_pos this
+  have hlogz : 0 < log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
+    have : (1 : ℝ) < (correctedChenZ N - 1 : ℕ) := by exact_mod_cast (by omega : 1 < correctedChenZ N - 1)
+    exact Real.log_pos this
+  have h𝔖pos : 0 < AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos N (correctedChenZ N - 1) (by omega)
+  have hX : (correctedChenBoundingSieve N).totalMass = (N : ℝ) / log (N : ℝ) := rfl
+  have h𝔖pp : c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ)) ≤
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) := by
+    exact mul_le_mul h𝔖 hpp (le_of_lt (div_pos hcpp hlogz)) (le_of_lt h𝔖pos)
+  have hle : c𝔖 * cpp / (Clog * log (N : ℝ)) ≤
+      c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ)) := by
+    have hone : (Clog * log (N : ℝ))⁻¹ ≤ (log ((correctedChenZ N - 1 : ℕ) : ℝ))⁻¹ :=
+      (inv_le_inv₀ (mul_pos hClog hlogN) hlogz).mpr hlog
+    have hnonneg : 0 ≤ c𝔖 * cpp := mul_nonneg (le_of_lt hc𝔖) (le_of_lt hcpp)
+    calc
+      c𝔖 * cpp / (Clog * log (N : ℝ)) =
+          c𝔖 * cpp * (Clog * log (N : ℝ))⁻¹ := by
+            field_simp [ne_of_gt (mul_pos hClog hlogN)]
+      _ ≤ c𝔖 * cpp * (log ((correctedChenZ N - 1 : ℕ) : ℝ))⁻¹ := by
+            exact mul_le_mul_of_nonneg_left hone hnonneg
+      _ = c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ)) := by
+            field_simp [hlogz.ne']
+  calc
+    c𝔖 * cpp / Clog * (N : ℝ) / (log (N : ℝ)) ^ 2
+        = (N : ℝ) / log (N : ℝ) * (c𝔖 * cpp / (Clog * log (N : ℝ))) := by
+          field_simp [hlogN.ne']
+    _ ≤ (N : ℝ) / log (N : ℝ) * (c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ))) := by
+          exact mul_le_mul_of_nonneg_left hle (div_nonneg (by positivity) (le_of_lt hlogN))
+    _ ≤ (correctedChenBoundingSieve N).totalMass *
+          (AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            MertensTheorem.primeProduct (correctedChenZ N - 1)) := by
+          rw [hX]
+          exact mul_le_mul_of_nonneg_left h𝔖pp (div_nonneg (by positivity) (le_of_lt hlogN))
+    _ = (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N := by
+          rw [hV]
+
+/-- 三个一致解析输入打包成 `CorrectedChenMainTermLower`:
+(1) `𝔖_trunc` 一致下界; (2) `primeProduct` 的 Mertens 一致下界;
+(3) `log(z-1) ≤ Clog·log N` 参数估计; 外加 (4) 参数条件
+(`2 ≤ N`、`2 ≤ z-1`、`M₀ ≤ z-1`). -/
+theorem CorrectedChenMainTermLower_of_uniform_estimates
+    {c𝔖 cpp Clog : ℝ} {M₀ N₀'' : ℕ}
+    (hc𝔖 : 0 < c𝔖) (hcpp : 0 < cpp) (hClog : 0 < Clog)
+    (h𝔖 : ∀ N : ℕ, ∀ z : ℕ, 2 ≤ z →
+      c𝔖 ≤ AnalyticNumberTheory.Sieve.singularSeriesTruncated N z)
+    (hpp : ∀ m : ℕ, M₀ ≤ m → 2 ≤ m →
+      cpp / log (m : ℝ) ≤ MertensTheorem.primeProduct m)
+    (hlog : ∀ N : ℕ, 2 ≤ N →
+      log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ Clog * log (N : ℝ))
+    (hparams : ∀ N : ℕ, N₀'' ≤ N →
+      2 ≤ N ∧ 2 ≤ correctedChenZ N - 1 ∧ M₀ ≤ correctedChenZ N - 1) :
+    CorrectedChenMainTermLower := by
+  refine ⟨c𝔖 * cpp / Clog, ?_, ⟨N₀'', ?_⟩⟩
+  · positivity
+  · intro N hN hEven
+    rcases hparams N hN with ⟨hN2, hz, hM⟩
+    exact correctedChenMainTerm_lower_of_estimates N hEven hN2 hz hc𝔖 hcpp hClog
+      (h𝔖 N (correctedChenZ N - 1) hz)
+      (hpp (correctedChenZ N - 1) hM hz)
+      (hlog N hN2)
+
 /-- **主项渐近阶**: the corrected Selberg divisor sum for the corrected sieve
 is `Θ(log (z-1) / 𝔖(N, z-1))`.
 
