@@ -247,6 +247,12 @@ by the main-term constants of the analytic workline rather than by the
 has exactly one remaining analytic input: `CorrectedChenDistributionCondition`
 (the averaged Pan estimate).
 
+Conditionally on that single input, the `errSum` line is closed:
+`correctedChenErrSum_uniform_of_distribution` derives
+`errSum = O(N / log^A N)` from the averaged Pan bound (via
+`correctedChenErrSum_le_panWeighted`), so no further finite conversion or
+error bookkeeping remains below the uniform analytic input.
+
 ## Dependency sketch
 
 ```text

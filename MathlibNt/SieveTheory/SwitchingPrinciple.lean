@@ -1120,7 +1120,7 @@ interface in `BombieriVinogradov.lean` is only its fixed-parameter remainder
 form; this averaged target is what actually bounds the corrected sieve's
 `errSum` (see `correctedChenErrSum_le_panWeighted`). -/
 def CorrectedChenDistributionCondition : Prop :=
-  ∀ A : ℝ, 0 < A → ∃ C : ℝ, 0 < C →
+  ∀ A : ℝ, 0 < A → ∃ C : ℝ, 0 < C ∧
     ∀ N : ℕ, 1000 ≤ N → Even N →
       ∑ d ∈ (correctedChenSiftingProduct N).divisors,
         (3 : ℝ) ^ d.primeFactors.card *
@@ -1142,6 +1142,20 @@ theorem correctedChenErrSum_le_panWeighted (N : ℕ) :
   have hw : (1 : ℝ) ≤ (3 : ℝ) ^ d.primeFactors.card := by
     exact one_le_pow₀ (by norm_num : (1 : ℝ) ≤ 3)
   simpa using le_mul_of_one_le_left (abs_nonneg _) hw
+
+/-- Given the averaged Pan-type distribution condition, the counting-sieve
+`errSum` of the corrected sieve is uniformly `O(N / log^A N)`.  This closes
+the `errSum` line conditionally on the single analytic input
+`CorrectedChenDistributionCondition`. -/
+theorem correctedChenErrSum_uniform_of_distribution {A : ℝ} (hA : 0 < A)
+    (N : ℕ) (hN : 1000 ≤ N) (hEven : Even N)
+    (hdist : CorrectedChenDistributionCondition) :
+    ∃ C : ℝ, 0 < C ∧
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+        C * (N : ℝ) / (log (N : ℝ)) ^ A := by
+  rcases hdist A hA with ⟨C, hC, hbound⟩
+  refine ⟨C, hC, ?_⟩
+  exact le_trans (correctedChenErrSum_le_panWeighted N) (hbound N hN hEven)
 
 /-- The Selberg term of the corrected sieve at a prime is
 `ν(p) · (1 - ν(p))⁻¹`. -/
