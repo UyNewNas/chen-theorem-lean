@@ -31,6 +31,9 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenBoundingSieve_siftedSum_eq_card
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenTotalMass_eq
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenLogZ_upper_bound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.singularSeriesTruncated_lower_bound
+#print axioms MathlibNt.SieveTheory.SingularSeries.localFactor_dvd_le
+#print axioms MathlibNt.SieveTheory.SingularSeries.localFactor_not_dvd_lt_one
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenMultSum_eq_multiples_card
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenMultiples_card_eq_primeSupport
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenMultSum_eq_modEq_count
