@@ -1,4 +1,5 @@
 import MathlibNt.ChensTheorem
+import MathlibNt.SieveTheory.LinearSieve
 
 /-!
 # Kernel trust audit
@@ -26,6 +27,9 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenSiftingProduct_squarefree
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_apply_prime
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_isMultiplicative
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.prime_dvd_correctedChenSiftingProduct
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_pos_of_prime
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenNu_lt_one_of_prime
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.mem_correctedChenGood_or_bad
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenGoodCandidates_subset_goodRepresentations
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenBad_penalty_ge_two

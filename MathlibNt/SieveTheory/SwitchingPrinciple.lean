@@ -744,6 +744,107 @@ theorem correctedChenNu_apply_prime {p : ℕ} (hp : p.Prime) :
 theorem correctedChenNu_isMultiplicative : correctedChenNu.IsMultiplicative := by
   exact ArithmeticFunction.IsMultiplicative.prodPrimeFactors _
 
+/-- The prime factors of a product of distinct primes are exactly the set of
+those primes. -/
+private theorem primeFactors_prod_eq_self {S : Finset ℕ}
+    (hS : ∀ p ∈ S, p.Prime) : (S.prod id).primeFactors = S := by
+  induction S using Finset.induction_on with
+  | empty => simp [Nat.primeFactors_one]
+  | insert p S hp ih =>
+      rw [Finset.prod_insert hp]
+      show (p * S.prod id).primeFactors = insert p S
+      have hp' := hS p (Finset.mem_insert_self _ _)
+      have h0p : p ≠ 0 := hp'.ne_zero
+      have h0s : S.prod id ≠ 0 := ne_of_gt <| Finset.prod_pos fun q hq =>
+        Nat.Prime.pos (hS q (Finset.mem_insert_of_mem hq))
+      rw [Nat.primeFactors_mul h0p h0s, Nat.Prime.primeFactors hp',
+        ih fun q hq => hS q (Finset.mem_insert_of_mem hq)]
+      rfl
+
+/-- The corrected sifting product is nonzero: it is a product of primes. -/
+theorem correctedChenSiftingProduct_ne_zero (N : ℕ) :
+    correctedChenSiftingProduct N ≠ 0 := by
+  unfold correctedChenSiftingProduct
+  exact ne_of_gt (Finset.prod_pos (by
+    intro r hr
+    simp only [Finset.mem_filter, Finset.mem_range] at hr
+    exact hr.2.1.pos))
+
+/-- The prime divisors of the corrected sifting product are exactly its
+factor primes: `2 < r < z` with `r ∤ N`. -/
+theorem correctedChenSiftingProduct_primeFactors (N : ℕ) :
+    (correctedChenSiftingProduct N).primeFactors =
+      ((Finset.range (correctedChenZ N)).filter
+        (fun r => r.Prime ∧ 2 < r ∧ ¬ r ∣ N)) := by
+  unfold correctedChenSiftingProduct
+  exact primeFactors_prod_eq_self (by
+    intro p hp
+    simp only [Finset.mem_filter, Finset.mem_range] at hp
+    exact hp.2.1)
+
+/-- A prime divides the corrected sifting product exactly when it is one of
+the sieved primes: `2 < p < z` and `p ∤ N`. -/
+theorem prime_dvd_correctedChenSiftingProduct {N p : ℕ} (hp : p.Prime) :
+    p ∣ correctedChenSiftingProduct N ↔
+      p < correctedChenZ N ∧ 2 < p ∧ ¬ p ∣ N := by
+  constructor
+  · intro hdvd
+    have hmem : p ∈ (correctedChenSiftingProduct N).primeFactors :=
+      (Nat.mem_primeFactors_of_ne_zero (correctedChenSiftingProduct_ne_zero N)).mpr
+        ⟨hp, hdvd⟩
+    rw [correctedChenSiftingProduct_primeFactors N] at hmem
+    rcases Finset.mem_filter.mp hmem with ⟨hp_range, hcond⟩
+    exact ⟨by simpa using hp_range, hcond.2.1, hcond.2.2⟩
+  · intro hmem
+    have hmem' : p ∈ (correctedChenSiftingProduct N).primeFactors := by
+      rw [correctedChenSiftingProduct_primeFactors N]
+      exact Finset.mem_filter.mpr ⟨by simpa using hmem.1, ⟨hp, hmem.2.1, hmem.2.2⟩⟩
+    exact (Nat.mem_primeFactors_of_ne_zero (correctedChenSiftingProduct_ne_zero N)).mp hmem' |>.2
+
+/-- The corrected Goldbach density is positive at every sieved prime. -/
+theorem correctedChenNu_pos_of_prime {N p : ℕ} (hp : p.Prime)
+    (hdiv : p ∣ correctedChenSiftingProduct N) : 0 < correctedChenNu p := by
+  rw [correctedChenNu_apply_prime hp]
+  have hpgt : 2 < p := (prime_dvd_correctedChenSiftingProduct hp).mp hdiv |>.2.1
+  exact one_div_pos.mpr (by
+    have hp1 : (1 : ℝ) < p := by exact_mod_cast (show 1 < p by omega)
+    linarith)
+
+/-- The corrected Goldbach density is bounded by one at every sieved prime. -/
+theorem correctedChenNu_lt_one_of_prime {N p : ℕ} (hp : p.Prime)
+    (hdiv : p ∣ correctedChenSiftingProduct N) : correctedChenNu p < 1 := by
+  rw [correctedChenNu_apply_prime hp]
+  have hpgt : 2 < p := (prime_dvd_correctedChenSiftingProduct hp).mp hdiv |>.2.1
+  have hp1 : (1 : ℝ) < p := by exact_mod_cast (show 1 < p by omega)
+  have hp2 : (2 : ℝ) < p := by exact_mod_cast hpgt
+  have hden_pos : 0 < (p : ℝ) - 1 := by linarith
+  rw [div_lt_iff₀ hden_pos, one_mul]
+  linarith
+
+/-- The corrected Chen sieve as a mathlib `BoundingSieve` record: the
+unsifted complements as support, the surviving small-prime product as
+`prodPrimes`, unit weights, and the Goldbach local density
+`ν(p) = 1/(p-1)`.
+
+The total mass is currently the exact finite cardinality of the support.
+Replacing it by the analytic `N / log N` main term, together with a uniform
+remainder bound, is exactly the `ChenAnalyticBounds` workline. -/
+noncomputable def correctedChenBoundingSieve (N : ℕ) : BoundingSieve where
+  support := correctedChenUnsiftedComplements N
+  prodPrimes := correctedChenSiftingProduct N
+  prodPrimes_squarefree := correctedChenSiftingProduct_squarefree N
+  weights := fun _ => 1
+  weights_nonneg := by intro n; norm_num
+  totalMass := (correctedChenUnsiftedComplements N).card
+  nu := correctedChenNu
+  nu_mult := correctedChenNu_isMultiplicative
+  nu_pos_of_prime := by
+    intro p hp hdiv
+    exact correctedChenNu_pos_of_prime hp hdiv
+  nu_lt_one_of_prime := by
+    intro p hp hdiv
+    exact correctedChenNu_lt_one_of_prime hp hdiv
+
 /-- The historical lower-sieve candidates transfer safely to the corrected
 candidate set once the unit boundary is removed.  This is a finite inclusion:
 it carries no historical switching or Omega estimate. -/

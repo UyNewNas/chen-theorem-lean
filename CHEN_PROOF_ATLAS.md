@@ -153,6 +153,15 @@ identification, and a genuinely uniform bound for that sieve's explicit error.
 Its squarefree sifting product is now separately kernel-checked as
 `correctedChenSiftingProduct_squarefree`.
 
+The object-specific `BoundingSieve` record is now kernel-checked as
+`correctedChenBoundingSieve`: it pairs the corrected complement support with
+the sifting product, unit weights, and the Goldbach density
+`ν(p) = 1/(p−1)`, proving `0 < ν(p) < 1` for every sieved prime through the
+divisibility characterization `prime_dvd_correctedChenSiftingProduct`.  Its
+total mass is still the exact support cardinality; replacing it with the
+analytic main term and proving a uniform remainder bound remain the
+`ChenAnalyticBounds` workline.
+
 ## Dependency sketch
 
 ```text
