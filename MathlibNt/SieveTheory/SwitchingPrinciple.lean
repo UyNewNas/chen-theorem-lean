@@ -44,6 +44,7 @@ import Mathlib.Algebra.Ring.Parity
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 import AnalyticNumberTheory
+import MathlibNt.SieveTheory.SingularSeries
 import MathlibNt.SieveTheory.SelbergUpperBound
 
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
@@ -743,6 +744,303 @@ theorem correctedChenLogZ_upper_bound :
     _ = (1 / 10 : ℝ) * log (N : ℝ) := by
       dsimp [x]
       rw [Real.log_rpow hNpos]
+
+/-! ## chen issue #3: 截断奇异级数一致下界 𝔖_trunc ≥ c·𝔖 -/
+
+/-- For `N > 2^110`, the corrected cutoff `z = max 2 ⌊N^{1/10}⌋` satisfies
+`2^11 < N^{1/10}` (real exponent). -/
+private theorem chenZ_root_large (N : ℕ) (hNbig : 2 ^ 110 < N) :
+    (2 ^ 11 : ℝ) < (N : ℝ) ^ (1 / 10 : ℝ) := by
+  have hNcast : (2 ^ 110 : ℝ) < (N : ℝ) := by exact_mod_cast hNbig
+  have hpow := Real.rpow_lt_rpow (by positivity : 0 ≤ (2 ^ 110 : ℝ)) hNcast
+    (by norm_num : 0 < (1 / 10 : ℝ))
+  have hval : (2 ^ 110 : ℝ) ^ (1 / 10 : ℝ) = (2 : ℝ) ^ 11 := by
+    norm_num [Real.rpow_natCast, Real.rpow_mul, Real.rpow_one]
+  rwa [hval] at hpow
+
+/-- `z = max 2 ⌊N^{1/10}⌋` lies above `N^{1/10}/2` for `N > 2^110`. -/
+private theorem chenZ_ge_root_half (N : ℕ) (hNbig : 2 ^ 110 < N) :
+    (N : ℝ) ^ (1 / 10 : ℝ) / 2 ≤ correctedChenZ N := by
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have hx2 : (2 : ℝ) ≤ x := by
+    have h := chenZ_root_large N hNbig
+    dsimp [x]
+    linarith
+  have hfloor : (Nat.floor x : ℝ) ≤ x := by
+    dsimp [x]
+    exact Nat.floor_le (by positivity : 0 ≤ (N : ℝ) ^ (1 / 10 : ℝ))
+  have hfloor_ge : x - 1 ≤ (Nat.floor x : ℝ) := by
+    dsimp [x]
+    have hlt := Nat.lt_floor_add_one ((N : ℝ) ^ (1 / 10 : ℝ))
+    linarith
+  have hzhalf : x / 2 ≤ (correctedChenZ N : ℝ) := by
+    have h1 : x / 2 ≤ x - 1 := by linarith
+    have h2 : x - 1 ≤ (Nat.floor x : ℝ) := hfloor_ge
+    have h3 : (Nat.floor x : ℝ) ≤ (correctedChenZ N : ℝ) := by
+      unfold correctedChenZ
+      exact_mod_cast (le_max_right 2 (Nat.floor x))
+    linarith
+  simpa [x] using hzhalf
+
+/-- `z = max 2 ⌊N^{1/10}⌋ ≥ 3` for `N > 2^110`. -/
+private theorem chenZ_ge_three (N : ℕ) (hNbig : 2 ^ 110 < N) :
+    3 ≤ correctedChenZ N := by
+  have h := chenZ_ge_root_half N hNbig
+  have hroot : (2 ^ 10 : ℝ) ≤ (N : ℝ) ^ (1 / 10 : ℝ) / 2 := by
+    have hl := chenZ_root_large N hNbig
+    linarith
+  have hz : (2 ^ 10 : ℝ) ≤ (correctedChenZ N : ℝ) := le_trans hroot h
+  have hz3 : (3 : ℝ) ≤ (correctedChenZ N : ℝ) := by
+    nlinarith [show (8 : ℝ) ≤ 2 ^ 10 by norm_num]
+  exact_mod_cast hz3
+
+/-- `z = max 2 ⌊N^{1/10}⌋ ≤ N + 1` for `2 ≤ N`. -/
+private theorem chenZ_le_N_add_one (N : ℕ) (hN2 : 2 ≤ N) :
+    correctedChenZ N ≤ N + 1 := by
+  unfold correctedChenZ
+  apply max_le_iff.mpr
+  constructor
+  · omega
+  · have hxle : (N : ℝ) ^ (1 / 10 : ℝ) ≤ (N : ℝ) := by
+      have hN1 : (1 : ℝ) ≤ N := by exact_mod_cast (by omega : 1 ≤ N)
+      have hp := Real.rpow_le_rpow_of_exponent_le hN1 (by norm_num : (1 / 10 : ℝ) ≤ 1)
+      simpa using hp
+    have hf : (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ)) : ℝ) ≤ (N : ℝ) + 1 := by
+      exact le_trans (Nat.floor_le (by positivity : 0 ≤ (N : ℝ) ^ (1 / 10 : ℝ)))
+        (by linarith)
+    exact_mod_cast hf
+
+/-- The product of pairwise coprime prime divisors of `N` divides `N`. -/
+private theorem prod_dvd_of_prime_divisors {s : Finset ℕ} (hdiv : ∀ p ∈ s, p ∣ N)
+    (hprime : ∀ p ∈ s, p.Prime) : (∏ p ∈ s, p) ∣ N := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert p sp hpi ih =>
+      have hdivp : p ∣ N := hdiv p (by simp)
+      have hdivsp : ∀ q ∈ sp, q ∣ N := fun q hq => hdiv q (by simp [hq])
+      have hprimesp : ∀ q ∈ sp, q.Prime := fun q hq => hprime q (by simp [hq])
+      have hih : (∏ q ∈ sp, q) ∣ N := ih hdivsp hprimesp
+      have hcop : p.Coprime (∏ q ∈ sp, q) := by
+        rw [Nat.coprime_prod_right_iff]
+        intro q hq
+        exact (Nat.coprime_primes (hprime p (by simp)) (hprime q (by simp [hq]))).mpr (by
+          intro hpq
+          subst q
+          exact hpi hq)
+      rcases hih with ⟨m, hm⟩
+      have hpm : p ∣ m := by
+        apply Nat.Coprime.dvd_of_dvd_mul_left hcop
+        rw [← hm]
+        exact hdivp
+      rcases hpm with ⟨m', hm'⟩
+      refine ⟨m', ?_⟩
+      rw [hm, hm', Finset.prod_insert hpi]
+      ring
+
+/-- The number of prime divisors of `N` in `(z, N]` is at most `10` for
+`N > 2^110` (each such prime exceeds `N^{1/10}/2`, their product divides `N`,
+and `z^{11} > N`). -/
+private theorem chenZ_tail_prime_count_le (N : ℕ) (hNbig : 2 ^ 110 < N) :
+    ((Finset.Ico (correctedChenZ N) (N + 1)).filter (fun p => p.Prime ∧ p ∣ N)).card ≤ 10 := by
+  let s : Finset ℕ := (Finset.Ico (correctedChenZ N) (N + 1)).filter (fun p => p.Prime ∧ p ∣ N)
+  by_contra hnot
+  have hnot' : ¬ s.card ≤ 10 := by simpa [s] using hnot
+  have hk : 11 ≤ s.card := by omega
+  have hz3 : 3 ≤ correctedChenZ N := chenZ_ge_three N hNbig
+  -- each element of s is ≥ z
+  have hge : ∀ p ∈ s, correctedChenZ N ≤ p := by
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨hpIco, _⟩
+    exact (Finset.mem_Ico.mp hpIco).1
+  have hdiv : ∀ p ∈ s, p ∣ N := by
+    intro p hp
+    exact (Finset.mem_filter.mp hp).2.2
+  have hprime : ∀ p ∈ s, p.Prime := by
+    intro p hp
+    exact (Finset.mem_filter.mp hp).2.1
+  -- product of elements of s divides N, hence ≤ N
+  have hprod_dvd : (∏ p ∈ s, p) ∣ N := prod_dvd_of_prime_divisors hdiv hprime
+  have hNpos : 0 < N := by
+    have h : 2 ^ 110 ≤ N := le_of_lt hNbig
+    omega
+  have hprod_le : (∏ p ∈ s, (p : ℝ)) ≤ (N : ℝ) := by
+    have hnat : (∏ p ∈ s, p) ≤ N := Nat.le_of_dvd hNpos hprod_dvd
+    have hcast : ((∏ p ∈ s, p : ℕ) : ℝ) = ∏ p ∈ s, (p : ℝ) := by
+      rw [Nat.cast_prod]
+    have hcast_le : ((∏ p ∈ s, p : ℕ) : ℝ) ≤ (N : ℝ) := by exact_mod_cast hnat
+    simpa [hcast] using hcast_le
+  -- product ≥ z^card ≥ z^11
+  have hz_ge : (correctedChenZ N : ℝ) ≥ (N : ℝ) ^ (1 / 10 : ℝ) / 2 :=
+    chenZ_ge_root_half N hNbig
+  have hz_nonneg : (0 : ℝ) ≤ correctedChenZ N := by
+    have : (3 : ℝ) ≤ correctedChenZ N := by exact_mod_cast hz3
+    linarith
+  have hz1r : (1 : ℝ) ≤ correctedChenZ N := by
+    have : (3 : ℝ) ≤ correctedChenZ N := by exact_mod_cast hz3
+    linarith
+  have hprod_ge_zcard : (correctedChenZ N : ℝ) ^ s.card ≤ (∏ p ∈ s, (p : ℝ)) := by
+    calc
+      (correctedChenZ N : ℝ) ^ s.card = ∏ p ∈ s, (correctedChenZ N : ℝ) := by
+        rw [Finset.prod_const]
+      _ ≤ ∏ p ∈ s, (p : ℝ) := by
+        apply Finset.prod_le_prod
+        · intro p hp
+          exact hz_nonneg
+        · intro p hp
+          exact_mod_cast hge p hp
+  have hpow : (correctedChenZ N : ℝ) ^ 11 ≤ (correctedChenZ N : ℝ) ^ s.card :=
+    pow_le_pow_right₀ hz1r hk
+  have hprod_ge : (correctedChenZ N : ℝ) ^ 11 ≤ (∏ p ∈ s, (p : ℝ)) :=
+    le_trans hpow hprod_ge_zcard
+  -- z^11 > N
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have hx10 : x ^ 10 = (N : ℝ) := by
+    dsimp [x]
+    rw [← Real.rpow_natCast]
+    rw [← Real.rpow_mul (by exact_mod_cast (le_of_lt hNpos))]
+    norm_num
+  have hx11 : x ^ 11 = (N : ℝ) * x := by
+    rw [pow_succ, hx10]
+  have hxgt : (2 ^ 11 : ℝ) < x := chenZ_root_large N hNbig
+  have hxpos : (0 : ℝ) < x := by
+    dsimp [x]
+    exact Real.rpow_pos_of_pos (by exact_mod_cast hNpos) _
+  have hxdiv : (1 : ℝ) < x / 2 ^ 11 := by
+    rw [one_lt_div (by positivity : (0 : ℝ) < 2 ^ 11)]
+    exact hxgt
+  have hgt : (N : ℝ) < x ^ 11 / 2 ^ 11 := by
+    rw [hx11]
+    have hmain : (N : ℝ) * (x / 2 ^ 11) > (N : ℝ) * 1 := by
+      exact mul_lt_mul_of_pos_left hxdiv (by exact_mod_cast hNpos)
+    simpa [mul_div_assoc, mul_one] using hmain
+  have hz11_ge : (x / 2) ^ 11 ≤ (correctedChenZ N : ℝ) ^ 11 := by
+    apply pow_le_pow_left₀ (by positivity : (0 : ℝ) ≤ x / 2)
+    exact (by simpa [x] using hz_ge : x / 2 ≤ (correctedChenZ N : ℝ))
+  have hdivpow : (x / 2) ^ 11 = x ^ 11 / 2 ^ 11 := by
+    rw [div_pow]
+  have hz11 : (N : ℝ) < (correctedChenZ N : ℝ) ^ 11 := by
+    calc
+      (N : ℝ) < x ^ 11 / 2 ^ 11 := hgt
+      _ = (x / 2) ^ 11 := hdivpow.symm
+      _ ≤ (correctedChenZ N : ℝ) ^ 11 := hz11_ge
+  linarith
+
+/-- 𝔖(N) = 𝔖_trunc(N, z−1) · ∏_{z ≤ p ≤ N} localFactor(p, N), the exact
+tail split used to compare the truncated and full singular series. -/
+private theorem singularSeries_eq_trunc_mul_tail (N : ℕ) (hN2 : 2 ≤ N)
+    (hz1 : 1 ≤ correctedChenZ N) (hzleN : correctedChenZ N ≤ N + 1) :
+    SingularSeries.singularSeries N =
+      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) *
+        ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime).prod
+          (fun p => SingularSeries.localFactor p N) := by
+  unfold SingularSeries.singularSeries SingularSeries.singularSeriesTruncated
+  rw [Nat.sub_add_cancel hz1]
+  have hsplit : Finset.range (N + 1) =
+      Finset.range (correctedChenZ N) ∪ Finset.Ico (correctedChenZ N) (N + 1) := by
+    rw [Finset.range_eq_Ico, Finset.range_eq_Ico]
+    rw [← Finset.Ico_union_Ico_eq_Ico (by omega : 0 ≤ correctedChenZ N) hzleN]
+  have hfilter : (Finset.range (N + 1)).filter Nat.Prime =
+      (Finset.range (correctedChenZ N)).filter Nat.Prime ∪
+        (Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime := by
+    rw [← Finset.filter_union]
+    exact congrArg (fun t : Finset ℕ => t.filter Nat.Prime) hsplit
+  have hdisj : Disjoint ((Finset.range (correctedChenZ N)).filter Nat.Prime)
+      ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime) := by
+    rw [Finset.disjoint_left]
+    intro p hp1 hp2
+    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ico] at hp1 hp2
+    omega
+  rw [hfilter, Finset.prod_union hdisj]
+
+/-- The tail product over primes in `(z, N]` is at most `(3/2)^k`, where `k`
+is the number of prime divisors of `N` in the tail: `p ∤ N` factors are
+`< 1`, `p ∣ N` factors are `≤ 3/2`. -/
+private theorem chenZ_tail_prod_le (N : ℕ) (hz3 : 3 ≤ correctedChenZ N)
+    (hzleN : correctedChenZ N ≤ N + 1) :
+    ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime).prod
+      (fun p => SingularSeries.localFactor p N) ≤
+    (3 / 2 : ℝ) ^ ((Finset.Ico (correctedChenZ N) (N + 1)).filter
+      (fun p => p.Prime ∧ p ∣ N)).card := by
+  have hfac : ∀ p ∈ (Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime,
+      SingularSeries.localFactor p N ≤ if p ∣ N then 3 / 2 else 1 := by
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨hpIco, hpPrime⟩
+    have hpz : correctedChenZ N ≤ p := (Finset.mem_Ico.mp hpIco).1
+    have hp2 : 2 < p := by omega
+    by_cases hpd : p ∣ N
+    · rw [if_pos hpd]
+      exact SingularSeries.localFactor_dvd_le hpPrime hp2 hpd
+    · rw [if_neg hpd]
+      exact le_of_lt (SingularSeries.localFactor_not_dvd_lt_one hpPrime hp2 hpd)
+  have hle1 : ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime).prod
+      (fun p => SingularSeries.localFactor p N) ≤
+    ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime).prod
+      (fun p => if p ∣ N then 3 / 2 else 1) := by
+    apply Finset.prod_le_prod
+    · intro p hp
+      exact le_of_lt (SingularSeries.localFactor_pos
+        ((Finset.mem_filter.mp hp).2))
+    · intro p hp
+      exact hfac p hp
+  have hite : ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime).prod
+      (fun p => if p ∣ N then 3 / 2 else 1) =
+    (3 / 2 : ℝ) ^ ((Finset.Ico (correctedChenZ N) (N + 1)).filter
+      (fun p => p.Prime ∧ p ∣ N)).card := by
+    rw [Finset.prod_ite]
+    rw [Finset.prod_const, Finset.prod_const]
+    rw [Finset.filter_filter, Finset.filter_filter]
+    rw [one_pow, mul_one]
+  exact le_trans hle1 (le_of_eq hite)
+
+/-- **截断奇异级数一致下界** (chen issue #3): 存在 `c > 0, N₀` 使得对所有
+`N ≥ N₀`, 偶数 `N`, `c·𝔖(N) ≤ 𝔖_trunc(N, z−1)`, 其中
+`z = correctedChenZ N = max 2 ⌊N^{1/10}⌋`. 这是
+`CorrectedChenMainTermLower` 主项下界的标准输入之一, 证明要点是尾部
+`∏_{z ≤ p ≤ N} localFactor(p,N)` 至多 `(3/2)^10` (N 的大于 `z` 的素因子
+至多 10 个). -/
+theorem singularSeriesTruncated_lower_bound :
+    ∃ c : ℝ, 0 < c ∧ ∃ N₀ : ℕ,
+      ∀ N : ℕ, N₀ ≤ N → Even N →
+        c * SingularSeries.singularSeries N ≤
+          SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) := by
+  refine ⟨(2 / 3) ^ 10, by positivity, 2 ^ 110 + 1, ?_⟩
+  intro N hN hEven
+  have hNbig : 2 ^ 110 < N := by omega
+  have hN2 : 2 ≤ N := by
+    have h : 2 ^ 110 ≤ N := le_of_lt hNbig
+    omega
+  have hz3 : 3 ≤ correctedChenZ N := chenZ_ge_three N hNbig
+  have hz1 : 1 ≤ correctedChenZ N := by omega
+  have hzleN : correctedChenZ N ≤ N + 1 := chenZ_le_N_add_one N hN2
+  have hsplit := singularSeries_eq_trunc_mul_tail N hN2 hz1 hzleN
+  have htail := chenZ_tail_prod_le N hz3 hzleN
+  have hk : ((Finset.Ico (correctedChenZ N) (N + 1)).filter
+      (fun p => p.Prime ∧ p ∣ N)).card ≤ 10 := chenZ_tail_prime_count_le N hNbig
+  have htail10 : ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime).prod
+      (fun p => SingularSeries.localFactor p N) ≤ (3 / 2 : ℝ) ^ 10 :=
+    le_trans htail (pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 3 / 2) hk)
+  have hpos : 0 < SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    SingularSeries.singularSeriesTruncated_pos N (correctedChenZ N - 1) (by omega)
+  have hle : SingularSeries.singularSeries N ≤
+      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) * (3 / 2 : ℝ) ^ 10 := by
+    calc
+      SingularSeries.singularSeries N
+          = SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) *
+              ((Finset.Ico (correctedChenZ N) (N + 1)).filter Nat.Prime).prod
+                (fun p => SingularSeries.localFactor p N) := hsplit
+      _ ≤ SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) * (3 / 2 : ℝ) ^ 10 := by
+          exact mul_le_mul_of_nonneg_left htail10 (le_of_lt hpos)
+  calc
+    (2 / 3 : ℝ) ^ 10 * SingularSeries.singularSeries N ≤
+        (2 / 3 : ℝ) ^ 10 *
+          (SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) * (3 / 2 : ℝ) ^ 10) := by
+          exact mul_le_mul_of_nonneg_left hle (by positivity)
+    _ = SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) := by
+        have hinv : (2 / 3 : ℝ) ^ 10 * (3 / 2 : ℝ) ^ 10 = 1 := by
+          rw [← mul_pow]
+          norm_num
+        nlinarith
 
 /-- Corrected upper switching cutoff.  Using a ceiling makes the intended
 cube-scale coverage an explicit parameter condition rather than a rounding
