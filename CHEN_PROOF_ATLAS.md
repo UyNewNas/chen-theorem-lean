@@ -219,12 +219,16 @@ seam.
 The repackaging is closed end-to-end: `correctedChenRem_eq_modEq_count`
 spells `rem d` as the congruence-count minus the density main term, and
 `correctedChenErrSum_eq_modEq` writes the whole `errSum` as the sum of
-absolute congruence-count errors.  The precise analytic target is stated as
-`CorrectedChenDistributionCondition`: a uniform `C` bounding
-`|#{p ∈ primeSupport : p ≡ N [MOD d]} − ν(d)·N/log N|` by `C·N/log^A N` for
-`d ≤ N^{1/2}/log^{10} N` and every sufficiently large even `N`.  Supplying
-that condition (from the classical Bombieri--Vinogradov/Pan estimates, with
-the `totalMass` main term replaced by `N/log N`) is the remaining work of the
+absolute congruence-count errors.  The precise analytic target is the
+**averaged Pan form** `CorrectedChenDistributionCondition`: a uniform `C`
+bounding the `3^{ω(d)}`-weighted sum of congruence-count errors
+`Σ_{d | P} 3^{ω(d)} |#{p ∈ primeSupport : p ≡ N [MOD d]} − ν(d)·N/log N|`
+by `C·N/log^A N` for every sufficiently large even `N`.  A per-modulus bound
+would not close the sum (the divisor count of `P` is exponential in `z`), so
+the averaged form is the correct representation; the counting-sieve `errSum`
+is bounded by it via `correctedChenErrSum_le_panWeighted`.  Supplying that
+condition from the classical Bombieri--Vinogradov/Pan estimates (with the
+`totalMass` main term replaced by `N/log N`) is the remaining work of the
 `errSum` line.
 
 The density side of that main term is now identified in closed form:

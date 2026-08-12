@@ -1102,20 +1102,38 @@ theorem correctedChenErrSum_eq_modEq (N : ℕ) (muPlus : ℕ → ℝ) :
 
 /-- The uniform Bombieri--Vinogradov-style distribution condition required by
 the corrected sieve: for every `A > 0` there is a uniform `C` such that the
-count of prime-support partners congruent to `N` modulo `d` differs from
-`ν(d) · N/log N` by at most `C · N/log^A N`, uniformly for
-`1 ≤ d ≤ N^{1/2}/log^{10} N` and all sufficiently large even `N`.  The local
-`bombieri_vinogradov` interface in `BombieriVinogradov.lean` is only its
-fixed-parameter remainder form; this is the uniform target of the `errSum`
-workline, supplied by the classical Bombieri--Vinogradov/Pan estimates. -/
+`3^{ω(d)}`-weighted sum over sieve divisors of the congruence-count errors is
+at most `C · N/log^A N`, uniformly for all sufficiently large even `N`.
+
+This is the **averaged Pan form**, not a per-modulus bound: the individual
+errors do not sum to a `log^{-A}` bound because the divisor count of the
+sifting product is exponential in `z`.  The local `bombieri_vinogradov`
+interface in `BombieriVinogradov.lean` is only its fixed-parameter remainder
+form; this averaged target is what actually bounds the corrected sieve's
+`errSum` (see `correctedChenErrSum_le_panWeighted`). -/
 def CorrectedChenDistributionCondition : Prop :=
   ∀ A : ℝ, 0 < A → ∃ C : ℝ, 0 < C →
     ∀ N : ℕ, 1000 ≤ N → Even N →
-      ∀ d : ℕ, 1 ≤ d →
-        (d : ℝ) ≤ (N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ 10 →
+      ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        (3 : ℝ) ^ d.primeFactors.card *
           |((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card -
             correctedChenNu d * ((N : ℝ) / log (N : ℝ))| ≤
-            C * (N : ℝ) / (log (N : ℝ)) ^ A
+        C * (N : ℝ) / (log (N : ℝ)) ^ A
+
+/-- The counting-sieve `errSum` is bounded by the `3^{ω(d)}`-weighted
+congruence-error sum controlled by `CorrectedChenDistributionCondition`. -/
+theorem correctedChenErrSum_le_panWeighted (N : ℕ) :
+    (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+      ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        (3 : ℝ) ^ d.primeFactors.card *
+          |((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card -
+            correctedChenNu d * (correctedChenBoundingSieve N).totalMass| := by
+  rw [correctedChenErrSum_eq_modEq]
+  apply Finset.sum_le_sum
+  intro d hd
+  have hw : (1 : ℝ) ≤ (3 : ℝ) ^ d.primeFactors.card := by
+    exact one_le_pow₀ (by norm_num : (1 : ℝ) ≤ 3)
+  simpa using le_mul_of_one_le_left (abs_nonneg _) hw
 
 /-- The Selberg term of the corrected sieve at a prime is
 `ν(p) · (1 - ν(p))⁻¹`. -/
