@@ -1000,6 +1000,46 @@ theorem correctedChenMultSum_eq_modEq_count (N d : ℕ) :
     exact prime_dvd_complement_iff_modEq (by simpa using hp_range)
   rw [hf]
 
+/-- The corrected sieve remainder at `d` is the prime-support congruence
+count minus the density main term. -/
+theorem correctedChenRem_eq_modEq_count (N d : ℕ) :
+    (correctedChenBoundingSieve N).rem d =
+      ((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card -
+        correctedChenNu d * (correctedChenBoundingSieve N).totalMass := by
+  unfold BoundingSieve.rem
+  rw [correctedChenMultSum_eq_modEq_count]
+  simp [correctedChenBoundingSieve]
+
+/-- The corrected sieve `errSum` is the sum over sieve divisors of the
+absolute congruence-count error.  This is the exact finite form that a
+uniform distribution estimate must bound. -/
+theorem correctedChenErrSum_eq_modEq (N : ℕ) (muPlus : ℕ → ℝ) :
+    (correctedChenBoundingSieve N).errSum muPlus =
+      ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        |muPlus d| *
+          |((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card -
+            correctedChenNu d * (correctedChenBoundingSieve N).totalMass| := by
+  unfold BoundingSieve.errSum
+  simp_rw [correctedChenRem_eq_modEq_count]
+  rfl
+
+/-- The uniform Bombieri--Vinogradov-style distribution condition required by
+the corrected sieve: for every `A > 0` there is a uniform `C` such that the
+count of prime-support partners congruent to `N` modulo `d` differs from
+`ν(d) · N/log N` by at most `C · N/log^A N`, uniformly for
+`1 ≤ d ≤ N^{1/2}/log^{10} N` and all sufficiently large even `N`.  The local
+`bombieri_vinogradov` interface in `BombieriVinogradov.lean` is only its
+fixed-parameter remainder form; this is the uniform target of the `errSum`
+workline, supplied by the classical Bombieri--Vinogradov/Pan estimates. -/
+def CorrectedChenDistributionCondition : Prop :=
+  ∀ A : ℝ, 0 < A → ∃ C : ℝ, 0 < C →
+    ∀ N : ℕ, 1000 ≤ N → Even N →
+      ∀ d : ℕ, 1 ≤ d →
+        (d : ℝ) ≤ (N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ 10 →
+          |((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card -
+            correctedChenNu d * ((N : ℝ) / log (N : ℝ))| ≤
+            C * (N : ℝ) / (log (N : ℝ)) ^ A
+
 /-- The Selberg term of the corrected sieve at a prime is
 `ν(p) · (1 - ν(p))⁻¹`. -/
 theorem correctedChenSelbergTerm_prime (N : ℕ) {p : ℕ} (hp : p.Prime) :

@@ -216,6 +216,17 @@ input therefore bounds `multSum` (and hence the concrete `errSum`) as an
 arithmetic-progression count; no hidden finite conversion remains at that
 seam.
 
+The repackaging is closed end-to-end: `correctedChenRem_eq_modEq_count`
+spells `rem d` as the congruence-count minus the density main term, and
+`correctedChenErrSum_eq_modEq` writes the whole `errSum` as the sum of
+absolute congruence-count errors.  The precise analytic target is stated as
+`CorrectedChenDistributionCondition`: a uniform `C` bounding
+`|#{p ∈ primeSupport : p ≡ N [MOD d]} − ν(d)·N/log N|` by `C·N/log^A N` for
+`d ≤ N^{1/2}/log^{10} N` and every sufficiently large even `N`.  Supplying
+that condition (from the classical Bombieri--Vinogradov/Pan estimates, with
+the `totalMass` main term replaced by `N/log N`) is the remaining work of the
+`errSum` line.
+
 ## Dependency sketch
 
 ```text
