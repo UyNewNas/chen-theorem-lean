@@ -182,11 +182,28 @@ That seam is now made explicit: each sieved-prime factor splits as
 `(1 − ν(p))⁻¹ = (p/(p−1)) · localFactor(p, N)⁻¹`
 (`correctedChenNu_inv_prime_localFactor`), so the whole Selberg sum factors as
 `∏_{p | P} p/(p−1)` times the reciprocal of the singular-series local-factor
-product (`correctedChenSelbergSum_eq_mertens_mul_localFactor_inv`).  The
-remaining main-term work is the asymptotic evaluation of `∏_{p | P} p/(p−1)`
-by the exact Mertens product formula (with the missing `p | N` and `p = 2`
-factors restored through the singular series), plus the uniform `errSum`
-bound.
+product (`correctedChenSelbergSum_eq_mertens_mul_localFactor_inv`).
+
+The **main-term asymptotic evaluation is now closed**.  The exact seam identity
+`correctedChenSelbergSum_mul_singularSeriesTruncated` restores the excluded
+`p = 2` and `p | N` factors (back into `singularSeriesTruncated`) and reduces
+the sieved Selberg product to the full Mertens-type product
+`∏_{p<z} p/(p−1)`:
+
+```text
+SelbergSum(N) · 𝔖(N, z−1) = 1 / primeProduct(z−1)
+```
+
+Applied to the exact Mertens product formula
+(`primeProduct_asymptotic_order`), this yields the uniform main-term order
+`correctedChenSelbergSum_asymptotic_order`:
+
+```text
+SelbergSum(N) = Θ(log(z−1) / 𝔖(N, z−1))
+```
+
+The only remaining main-term-adjacent work is the uniform `errSum` bound
+(BV/Pan workline).
 
 ## Dependency sketch
 

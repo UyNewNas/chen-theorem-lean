@@ -1011,6 +1011,352 @@ theorem correctedChenSelbergSum_eq_mertens_mul_localFactor_inv (N : ℕ) :
     (Nat.dvd_of_mem_primeFactors hp)
   exact correctedChenNu_inv_prime_localFactor hp_prime hpcond.2.1 hpcond.2.2
 
+/-! ## 4.6 主项渐近: Mertens 对接奇异级数 -/
+
+/-- The corrected Selberg divisor sum factors as the product over the sieved
+primes of `(1 - ν(p))⁻¹ = (p-1)/(p-2)`. -/
+private theorem correctedChenSelbergSum_eq_prod_ratio (N : ℕ) :
+    (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d) =
+      ∏ p ∈ ((Finset.range (correctedChenZ N)).filter
+        (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)), ((p : ℝ) - 1) / ((p : ℝ) - 2) := by
+  rw [correctedChenSelbergSum_eq_prod_inv, correctedChenSiftingProduct_primeFactors]
+  apply Finset.prod_congr rfl
+  intro p hp
+  rcases Finset.mem_filter.mp hp with ⟨hpz, hpP, hp2, hpn⟩
+  exact correctedChenNu_inv_prime (N := N) hpP hp2
+
+/-- The Mertens-type factor `p/(p-1)` (real subtraction). -/
+private noncomputable def mertensTypeFactor (p : ℕ) : ℝ :=
+  (p : ℝ) / ((p : ℝ) - 1)
+
+/-- Partition of the primes `< z` into `p = 2`, `2 < p ∧ p | N`, and
+`2 < p ∧ ¬ p | N`. -/
+private theorem sievedPrimePartition (N : ℕ) :
+    ((Finset.range (correctedChenZ N)).filter Nat.Prime) =
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ p = 2)) ∪
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ p ∣ N)) ∪
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)) := by
+  ext p
+  simp only [mem_filter, mem_union, mem_range]
+  constructor
+  · intro hp
+    rcases hp with ⟨hpz, hpp⟩
+    rcases eq_or_lt_of_le hpp.two_le with hpeq | hplt
+    · exact Or.inl (Or.inl ⟨hpz, hpp, hpeq.symm⟩)
+    · by_cases hpd : p ∣ N
+      · exact Or.inl (Or.inr ⟨hpz, hpp, hplt, hpd⟩)
+      · exact Or.inr ⟨hpz, hpp, hplt, hpd⟩
+  · intro hp
+    rcases hp with hpA | hpBC
+    · rcases hpA with ⟨hpz, hpp, _⟩ | ⟨hpz, hpp, _, _⟩ <;> exact ⟨hpz, hpp⟩
+    · rcases hpBC with ⟨hpz, hpp, _, _⟩
+      exact ⟨hpz, hpp⟩
+
+/-- The `p = 2` slice and the `p | N` slice are disjoint. -/
+private theorem sievedPrimeDisjoint_a_b (N : ℕ) :
+    Disjoint ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ p = 2))
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ p ∣ N)) := by
+  rw [Finset.disjoint_left]
+  intro p hp1 hp2
+  rcases Finset.mem_filter.mp hp1 with ⟨_, _, hpeq⟩
+  rcases Finset.mem_filter.mp hp2 with ⟨_, _, hplt, _⟩
+  omega
+
+/-- The `p = 2` slice and the `¬ p | N` slice are disjoint. -/
+private theorem sievedPrimeDisjoint_a_c (N : ℕ) :
+    Disjoint ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ p = 2))
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)) := by
+  rw [Finset.disjoint_left]
+  intro p hp1 hp2
+  rcases Finset.mem_filter.mp hp1 with ⟨_, _, hpeq⟩
+  rcases Finset.mem_filter.mp hp2 with ⟨_, _, hplt, _⟩
+  omega
+
+/-- The `p | N` slice and the `¬ p | N` slice are disjoint. -/
+private theorem sievedPrimeDisjoint_b_c (N : ℕ) :
+    Disjoint ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ p ∣ N))
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)) := by
+  rw [Finset.disjoint_left]
+  intro p hp1 hp2
+  rcases Finset.mem_filter.mp hp1 with ⟨_, _, _, hpd⟩
+  rcases Finset.mem_filter.mp hp2 with ⟨_, _, _, hpn⟩
+  exact hpn hpd
+
+/-- The union of the first two slices is disjoint from the `¬ p | N` slice. -/
+private theorem sievedPrimeDisjoint_ab_c (N : ℕ) :
+    Disjoint (((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ p = 2)) ∪
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ p ∣ N)))
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)) := by
+  rw [Finset.disjoint_left]
+  intro p hp1 hp2
+  rcases Finset.mem_union.mp hp1 with hpa | hpb
+  · rcases Finset.mem_filter.mp hpa with ⟨_, _, hpeq⟩
+    rcases Finset.mem_filter.mp hp2 with ⟨_, _, hplt, _⟩
+    omega
+  · rcases Finset.mem_filter.mp hpb with ⟨_, _, _, hpd⟩
+    rcases Finset.mem_filter.mp hp2 with ⟨_, _, _, hpn⟩
+    exact hpn hpd
+
+/-- Local factor at `p = 2` equals `p/(p-1)` for even `N`. -/
+private theorem localFactor_eq_mertensTypeFactor_p2 (N : ℕ) (hN : Even N) :
+    SingularSeries.localFactor 2 N = mertensTypeFactor 2 := by
+  rw [SingularSeries.localFactor_two hN]
+  norm_num [mertensTypeFactor]
+
+/-- Local factor at a dividing odd prime equals `p/(p-1)`. -/
+private theorem localFactor_eq_mertensTypeFactor_dvd {N p : ℕ} (hp : p.Prime)
+    (hlt : 2 < p) (hpd : p ∣ N) :
+    SingularSeries.localFactor p N = mertensTypeFactor p := by
+  rw [SingularSeries.localFactor_of_dvd hp hlt hpd]
+  rfl
+
+/-- At a non-dividing odd prime, `(p-1)/(p-2)` times the local factor equals
+`p/(p-1)`. -/
+private theorem localFactor_ratio_not_dvd {N p : ℕ} (hp : p.Prime) (hlt : 2 < p)
+    (hpn : ¬ p ∣ N) :
+    ((p : ℝ) - 1) / ((p : ℝ) - 2) * SingularSeries.localFactor p N =
+      mertensTypeFactor p := by
+  rw [SingularSeries.localFactor_of_not_dvd hp hlt hpn]
+  have hp1 : (2 : ℝ) < p := by exact_mod_cast hlt
+  have hpm1 : (p : ℝ) - 1 ≠ 0 := by linarith
+  have hpm2 : (p : ℝ) - 2 ≠ 0 := by linarith
+  unfold mertensTypeFactor
+  field_simp [hpm1, hpm2]
+
+/-- The corrected Selberg divisor sum times the truncated singular series at
+`z - 1` is exactly the full Mertens-type prime product `∏_{p<z} p/(p-1)`.
+This is the exact seam that restores the excluded `p = 2` and `p | N` local
+factors back into `singularSeriesTruncated`. -/
+private theorem correctedChenSelbergSum_mul_singularSeries_eq_mertensProd
+    (N : ℕ) (hN : Even N) :
+    (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d) *
+      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) =
+      ∏ p ∈ ((Finset.range (correctedChenZ N)).filter Nat.Prime), mertensTypeFactor p := by
+  let z := correctedChenZ N
+  let R : Finset ℕ := (Finset.range z).filter Nat.Prime
+  let A : Finset ℕ := (Finset.range z).filter (fun p => p.Prime ∧ p = 2)
+  let B : Finset ℕ := (Finset.range z).filter (fun p => p.Prime ∧ 2 < p ∧ p ∣ N)
+  let C : Finset ℕ := (Finset.range z).filter (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)
+  have hz : 1 ≤ correctedChenZ N := by
+    unfold correctedChenZ
+    omega
+  have hrange : (Finset.range ((correctedChenZ N - 1) + 1)).filter Nat.Prime =
+      (Finset.range (correctedChenZ N)).filter Nat.Prime := by
+    rw [Nat.sub_add_cancel hz]
+  have hR : R = A ∪ B ∪ C := by
+    dsimp [R, A, B, C, z]
+    exact sievedPrimePartition N
+  have hS : (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d) =
+      ∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) := by
+    dsimp [C, z]
+    exact correctedChenSelbergSum_eq_prod_ratio N
+  have hSplit : (∏ p ∈ R, SingularSeries.localFactor p N) =
+      (∏ p ∈ A, SingularSeries.localFactor p N) *
+      (∏ p ∈ B, SingularSeries.localFactor p N) *
+      (∏ p ∈ C, SingularSeries.localFactor p N) := by
+    rw [hR]
+    rw [Finset.prod_union (sievedPrimeDisjoint_ab_c N)]
+    rw [Finset.prod_union (sievedPrimeDisjoint_a_b N)]
+  have h𝔖 : SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) =
+      ∏ p ∈ R, SingularSeries.localFactor p N := by
+    simp [SingularSeries.singularSeriesTruncated, R, z, hrange]
+  have hSplitMf : (∏ p ∈ R, mertensTypeFactor p) =
+      (∏ p ∈ A, mertensTypeFactor p) * (∏ p ∈ B, mertensTypeFactor p) *
+      (∏ p ∈ C, mertensTypeFactor p) := by
+    rw [hR]
+    rw [Finset.prod_union (sievedPrimeDisjoint_ab_c N)]
+    rw [Finset.prod_union (sievedPrimeDisjoint_a_b N)]
+  have hA : (∏ p ∈ A, SingularSeries.localFactor p N) = (∏ p ∈ A, mertensTypeFactor p) := by
+    apply Finset.prod_congr rfl
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨_, _, hpeq⟩
+    subst p
+    exact localFactor_eq_mertensTypeFactor_p2 N hN
+  have hB : (∏ p ∈ B, SingularSeries.localFactor p N) = (∏ p ∈ B, mertensTypeFactor p) := by
+    apply Finset.prod_congr rfl
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨_, hpP, hlt, hpd⟩
+    exact localFactor_eq_mertensTypeFactor_dvd hpP hlt hpd
+  have hC : (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) * SingularSeries.localFactor p N) =
+      (∏ p ∈ C, mertensTypeFactor p) := by
+    apply Finset.prod_congr rfl
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨_, hpP, hlt, hpn⟩
+    exact localFactor_ratio_not_dvd hpP hlt hpn
+  calc
+    (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d) *
+      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1)
+        = (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2)) *
+          (∏ p ∈ A, SingularSeries.localFactor p N) *
+          (∏ p ∈ B, SingularSeries.localFactor p N) *
+          (∏ p ∈ C, SingularSeries.localFactor p N) := by
+          rw [hS, h𝔖, hSplit]
+          ring
+    _ = (∏ p ∈ A, SingularSeries.localFactor p N) *
+        (∏ p ∈ B, SingularSeries.localFactor p N) *
+        ((∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2)) *
+          (∏ p ∈ C, SingularSeries.localFactor p N)) := by ring
+    _ = (∏ p ∈ A, SingularSeries.localFactor p N) *
+        (∏ p ∈ B, SingularSeries.localFactor p N) *
+        (∏ p ∈ C, ((p : ℝ) - 1) / ((p : ℝ) - 2) * SingularSeries.localFactor p N) := by
+        rw [← Finset.prod_mul_distrib]
+    _ = (∏ p ∈ A, mertensTypeFactor p) * (∏ p ∈ B, mertensTypeFactor p) *
+        (∏ p ∈ C, mertensTypeFactor p) := by
+        rw [hA, hB, hC]
+    _ = ∏ p ∈ R, mertensTypeFactor p := by
+        rw [← hSplitMf]
+
+/-- The full Mertens-type product `∏_{p<z} p/(p-1)` equals the reciprocal of
+the exact Mertens `primeProduct (z - 1)`. -/
+private theorem mertensProd_eq_primeProduct_inv (N : ℕ) :
+    (∏ p ∈ ((Finset.range (correctedChenZ N)).filter Nat.Prime), mertensTypeFactor p) =
+      (MertensTheorem.primeProduct (correctedChenZ N - 1))⁻¹ := by
+  have hz : 1 ≤ correctedChenZ N := by
+    unfold correctedChenZ
+    omega
+  have hrange : (Finset.range ((correctedChenZ N - 1) + 1)).filter Nat.Prime =
+      (Finset.range (correctedChenZ N)).filter Nat.Prime := by
+    rw [Nat.sub_add_cancel hz]
+  unfold mertensTypeFactor MertensTheorem.primeProduct
+  rw [hrange]
+  rw [← Finset.prod_inv_distrib]
+  apply Finset.prod_congr rfl
+  intro p hp
+  have hpP : p.Prime := (Finset.mem_filter.mp hp).2
+  have hp0 : (p : ℝ) ≠ 0 := by exact_mod_cast hpP.ne_zero
+  have hp1 : (p : ℝ) ≠ 1 := by
+    have : (1 : ℝ) < p := by exact_mod_cast hpP.one_lt
+    linarith
+  field_simp [hp0, hp1]
+
+/-- **主项恒等式 (Mertens 对接奇异级数)**: the corrected Selberg divisor sum
+times the truncated singular series at `z - 1` equals the reciprocal of the
+exact Mertens `primeProduct (z - 1)`.
+
+This is the exact seam at which the main term connects the Mertens product
+formula to the singular series: it restores the excluded `p = 2` and `p | N`
+local factors (back into `singularSeriesTruncated`) and reduces the sieved
+Selberg product to the full Mertens-type prime product `∏_{p<z} p/(p-1)`. -/
+theorem correctedChenSelbergSum_mul_singularSeriesTruncated (N : ℕ) (hN : Even N) :
+    (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d) *
+      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) =
+      (MertensTheorem.primeProduct (correctedChenZ N - 1))⁻¹ := by
+  rw [correctedChenSelbergSum_mul_singularSeries_eq_mertensProd N hN]
+  exact mertensProd_eq_primeProduct_inv N
+
+/-- **主项渐近阶**: the corrected Selberg divisor sum for the corrected sieve
+is `Θ(log (z-1) / 𝔖(N, z-1))`.
+
+This applies the exact Mertens product formula
+(`primeProduct_asymptotic_order`) to the seam
+`SelbergSum · 𝔖 = 1 / primeProduct (z-1)`. -/
+theorem correctedChenSelbergSum_asymptotic_order :
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ ∀ N : ℕ, Even N → 4 ≤ N → 3 ≤ correctedChenZ N →
+      c₁ * log ((correctedChenZ N - 1 : ℕ) : ℝ) /
+        SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) ≤
+        (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+          (correctedChenBoundingSieve N).selbergTerms d) ∧
+      (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+          (correctedChenBoundingSieve N).selbergTerms d) ≤
+        c₂ * log ((correctedChenZ N - 1 : ℕ) : ℝ) /
+        SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) := by
+  obtain ⟨c₁₀, c₂₀, hc₁₀, hPP⟩ := MertensTheorem.primeProduct_asymptotic_order
+  have hP2 : MertensTheorem.primeProduct 2 = (1 / 2 : ℝ) := by
+    unfold MertensTheorem.primeProduct
+    have hf : (Finset.range 3).filter Nat.Prime = {2} := by
+      ext p
+      simp only [mem_filter, mem_range, mem_singleton]
+      constructor
+      · intro hp
+        rcases hp with ⟨hp3, hpp⟩
+        interval_cases p
+        · exact absurd hpp Nat.not_prime_zero
+        · exact absurd hpp Nat.not_prime_one
+        · rfl
+      · intro hp
+        subst p
+        simp [Nat.prime_two]
+    rw [hf]
+    norm_num
+  have hc₂₀ : 0 < c₂₀ := by
+    have hb := hPP 2 (by norm_num)
+    have hP2pos : 0 < MertensTheorem.primeProduct 2 := by
+      rw [hP2]
+      norm_num
+    have hlog2 : 0 < log 2 := Real.log_pos (by norm_num : (1 : ℝ) < 2)
+    have hpos : 0 < c₂₀ / log 2 := lt_of_lt_of_le hP2pos hb.2
+    have hmul : 0 < (c₂₀ / log 2) * log 2 := mul_pos hpos hlog2
+    have hcancel : (c₂₀ / log 2) * log 2 = c₂₀ := by field_simp [hlog2.ne']
+    rwa [hcancel] at hmul
+  refine ⟨1 / c₂₀, 1 / c₁₀, one_div_pos.mpr hc₂₀, ?_⟩
+  intro N hN _hN4 hz3
+  let z := correctedChenZ N
+  let x := z - 1
+  have hz1 : 1 ≤ z := by omega
+  have hx1 : 1 ≤ x := by omega
+  have hx2 : 2 ≤ x := by omega
+  have hlog : 0 < log (x : ℝ) := by
+    have : (1 : ℝ) < x := by exact_mod_cast (show 1 < x by omega)
+    exact Real.log_pos this
+  have hSpos : 0 < SingularSeries.singularSeriesTruncated N x :=
+    SingularSeries.singularSeriesTruncated_pos N x hx1
+  have hSne : SingularSeries.singularSeriesTruncated N x ≠ 0 := ne_of_gt hSpos
+  have hP := hPP x hx2
+  have hPpos : 0 < MertensTheorem.primeProduct x := by
+    unfold MertensTheorem.primeProduct
+    exact Finset.prod_pos (fun p hp => by
+      have hpP : p.Prime := (Finset.mem_filter.mp hp).2
+      have hp0 : (0 : ℝ) < p := by exact_mod_cast hpP.pos
+      have hle : (1 : ℝ) < p := by exact_mod_cast hpP.one_lt
+      have hlt1 : 1 / (p : ℝ) < 1 := (div_lt_iff₀ hp0).mpr (by simpa using hle)
+      linarith)
+  have hid := correctedChenSelbergSum_mul_singularSeriesTruncated N hN
+  have hSel : (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+        (correctedChenBoundingSieve N).selbergTerms d) =
+      (MertensTheorem.primeProduct x)⁻¹ *
+        (SingularSeries.singularSeriesTruncated N x)⁻¹ := by
+    have h := congrArg (fun t : ℝ => t * (SingularSeries.singularSeriesTruncated N x)⁻¹) hid
+    rw [mul_assoc, mul_inv_cancel₀ hSne, mul_one] at h
+    exact h
+  have hrec_lo : log (x : ℝ) / c₂₀ ≤ (MertensTheorem.primeProduct x)⁻¹ := by
+    have h1 : (c₂₀ / log (x : ℝ))⁻¹ ≤ (MertensTheorem.primeProduct x)⁻¹ :=
+      (inv_le_inv₀ (div_pos hc₂₀ hlog) hPpos).mpr hP.2
+    have hrew : (c₂₀ / log (x : ℝ))⁻¹ = log (x : ℝ) / c₂₀ := by
+      field_simp [hc₂₀.ne', hlog.ne']
+    rwa [hrew] at h1
+  have hrec_up : (MertensTheorem.primeProduct x)⁻¹ ≤ log (x : ℝ) / c₁₀ := by
+    have h1 : (MertensTheorem.primeProduct x)⁻¹ ≤ (c₁₀ / log (x : ℝ))⁻¹ :=
+      (inv_le_inv₀ hPpos (div_pos hc₁₀ hlog)).mpr hP.1
+    have hrew : (c₁₀ / log (x : ℝ))⁻¹ = log (x : ℝ) / c₁₀ := by
+      field_simp [hc₁₀.ne', hlog.ne']
+    rwa [hrew] at h1
+  have hA : log (x : ℝ) / c₂₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ ≤
+      (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+        (correctedChenBoundingSieve N).selbergTerms d) := by
+    rw [hSel]
+    exact mul_le_mul_of_nonneg_right hrec_lo (inv_nonneg.mpr (le_of_lt hSpos))
+  have hB : (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+        (correctedChenBoundingSieve N).selbergTerms d) ≤
+      log (x : ℝ) / c₁₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ := by
+    rw [hSel]
+    exact mul_le_mul_of_nonneg_right hrec_up (inv_nonneg.mpr (le_of_lt hSpos))
+  have hnormA : log (x : ℝ) / c₂₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ =
+      (1 / c₂₀) * log (x : ℝ) / SingularSeries.singularSeriesTruncated N x := by
+    field_simp [hSne, hc₂₀.ne']
+  have hnormB : log (x : ℝ) / c₁₀ * (SingularSeries.singularSeriesTruncated N x)⁻¹ =
+      (1 / c₁₀) * log (x : ℝ) / SingularSeries.singularSeriesTruncated N x := by
+    field_simp [hSne, hc₁₀.ne']
+  constructor
+  · rw [← hnormA]
+    exact hA
+  · rw [← hnormB]
+    exact hB
+
 /-- The historical lower-sieve candidates transfer safely to the corrected
 candidate set once the unit boundary is removed.  This is a finite inclusion:
 it carries no historical switching or Omega estimate. -/
