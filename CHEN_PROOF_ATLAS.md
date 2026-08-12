@@ -327,6 +327,23 @@ That statement is the pure finite-combinatorics tail of the twin-prime
 constant (`∏(1−x_i) ≥ 1−Σx_i` + even-subset sum bound); once proved,
 `CorrectedChenMainTermLower_of_singularSeries_lower` closes the lower side.
 
+**2026-08-12 update — `SingularSeriesTruncatedLowerBound` is proved.**  The
+chain is now complete:
+
+- `prod_one_sub_ge_one_sub_sum`: `∏(1−x_i) ≥ 1 − Σx_i`;
+- `sum_sq_recip_primes_ge_three_le_half`: `Σ_{p>2} 1/(p−1)² ≤ 1/2`
+  (even-subset injection `p ↦ (p−1)/2` + telescoping `Σ 1/k² ≤ 2`);
+- `singularSeriesTruncated_ge_half`: `∀ N z, 2 ≤ z → 1/2 ≤ 𝔖_trunc(N,z)`
+  (local-factor classification + the two lemmas above);
+- `CorrectedChenMainTermLower_of_singularSeries_lower_bound`:
+  **`CorrectedChenMainTermLower` is now a theorem** — the uniform main-term
+  lower bound `∃ c > 0, ∃ N₀, ∀ N ≥ N₀ Even: c·N/log²N ≤ X·V(N)` holds
+  unconditionally, with no remaining analytic input on the main-term side.
+
+Remaining inputs for `CorrectedChenAnalyticPositivity` are exactly #6
+(`correctedChenOmega` Selberg upper bound) and #7 (weighted Pan errSum
+control); the final assembly is sub-issue #8.
+
 ## Dependency sketch
 
 ```text
