@@ -97,6 +97,15 @@ consumed by `mertens_second_theorem` and `mertens_product_formula`.
 2. Remove the two explicit assumptions from `chens_theorem` only after step
    1 is complete.
 
+The weighted Pan-BV **input** for the corrected sieve is now consumed directly
+from the ant foundation: `CorrectedChenDistributionCondition` is exactly the
+ant `AnalyticNumberTheory.Sieve.WeightedPanCondition` instance
+(`ChenWeightedPanInput`, see
+`correctedChenDistributionCondition_iff_chenWeightedPanInput`), so
+`correctedChenErrSum_uniform_of_weightedPanInput` closes the `errSum` line
+on that input.  What remains for the Pan-BV workline is the analytic theorem
+itself (`PanMeanValueUniform` in ant), not the interface.
+
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.

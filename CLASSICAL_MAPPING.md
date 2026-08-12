@@ -23,9 +23,9 @@
 | 密度主项 = li(x)/φ(d)（ν(d)=1/φ(d)） | `AnalyticNumberTheory.Sieve.goldbachNu_squarefree_eq_inv_totient` | ant `Sieve/GoldbachDensity.lean` | 已证 |
 | 奇异级数 𝔖(N) 局部因子与截断 | `AnalyticNumberTheory.Sieve` 的 SingularSeries 模块 | ant `Sieve/SingularSeries.lean` | 已证 |
 | 主项渐近：SelbergSum = Θ(log z/𝔖(N,z)) | `correctedChenSelbergSum_asymptotic_order` | chen `SwitchingPrinciple` | 已证 |
-| 分布条件（Bombieri--Vinogradov / Pan） | `AnalyticNumberTheory.Sieve.BombieriVinogradov`（接口）+ `CorrectedChenDistributionCondition`（加权 Pan 目标） | ant + chen | 目标待证（研究级） |
+| 分布条件（Bombieri--Vinogradov / Pan） | `AnalyticNumberTheory.Sieve.WeightedPanCondition`（ant #7 输入）+ `CorrectedChenDistributionCondition` ↔ `ChenWeightedPanInput`（消费桥） | ant + chen | 输入已形式化并消费；定理证明待证（研究级） |
 | errSum ≤ Σ 3^{ω(d)}·|Δ(d)|（加权重打包） | `correctedChenErrSum_le_panWeighted` | chen | 已证 |
-| errSum = O(N/log^A N)（给定加权 Pan 输入） | `correctedChenErrSum_uniform_of_distribution` | chen | 已证（条件） |
+| errSum = O(N/log^A N)（给定加权 Pan 输入） | `correctedChenErrSum_uniform_of_distribution` / `correctedChenErrSum_uniform_of_weightedPanInput`（直接消费 ant #7） | chen | 已证（条件） |
 | 关键不等式 W − Ω/2 > 0 | `chen_key_inequality` / `CorrectedChenAnalyticPositivity` | chen | 条件 |
 | 从正计数提取素数 + P₂ 表示 | `corrected_key_inequality_implies_chen_at` | chen | 已证 |
 | PNT | `MertensTheorem.prime_number_theorem`（消费 ant） | chen | 已证 |
@@ -41,5 +41,6 @@
   `AnalyticNumberTheory/Sieve/`（Goldbach 型筛法可复用）；chen 仓库只保留陈氏专属
   应用与消费接口。
 - **研究级开放输入**（"待证"行）：一致 JR 下界、修正 Selberg 上界、加权 Pan/BV
-  分布条件。三者补上后 `CorrectedChenAnalyticPositivity` 即可闭环。
-
+  分布条件的**定理证明**（输入接口本身已由 ant #7 形式化并被 Chen 消费，见
+  `correctedChenDistributionCondition_iff_chenWeightedPanInput`）。三者补上后
+  `CorrectedChenAnalyticPositivity` 即可闭环。
