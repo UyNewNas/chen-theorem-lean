@@ -1049,6 +1049,78 @@ theorem correctedChenErrSum_uniform_of_distribution {A : ℝ} (hA : 0 < A)
   refine ⟨C, hC, ?_⟩
   exact le_trans (correctedChenErrSum_le_panWeighted N) (hbound N hN hEven)
 
+/-! ## 消费 ant 的加权 Pan-BV 输入 (chen issue #6) -/
+
+/-- The reusable ant weighted Pan-BV input
+(`AnalyticNumberTheory.Sieve.WeightedPanCondition`) instantiated at the
+corrected Chen sieve: `x N = N`, `S N = correctedChenBoundingSieve N`,
+`w d = 3^{ω(d)}`.  This is exactly the input formalized in
+[ant issue #7](https://github.com/UyNewNas/analytic-number-theory-lean/issues/7). -/
+def ChenWeightedPanInput : Prop :=
+  AnalyticNumberTheory.Sieve.WeightedPanCondition (fun N : ℕ => (N : ℝ))
+    correctedChenBoundingSieve (fun d => (3 : ℝ) ^ d.primeFactors.card)
+
+/-- The corrected sieve's weighted Pan sum is the ant `weightedPanRemainder`:
+the congruence-count error at `d` is exactly the `BoundingSieve` remainder
+`rem d = multSum d − ν(d)·N/log N`. -/
+theorem correctedChenPanSum_eq_weightedPanRemainder (N : ℕ) :
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        (3 : ℝ) ^ d.primeFactors.card *
+          |((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card -
+            correctedChenNu d * ((N : ℝ) / log (N : ℝ))|) =
+      AnalyticNumberTheory.Sieve.weightedPanRemainder (correctedChenBoundingSieve N)
+        (fun d => (3 : ℝ) ^ d.primeFactors.card) := by
+  unfold AnalyticNumberTheory.Sieve.weightedPanRemainder
+  apply Finset.sum_congr rfl
+  intro d hd
+  have hrem : (correctedChenBoundingSieve N).rem d =
+      ((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card -
+        correctedChenNu d * ((N : ℝ) / log (N : ℝ)) := by
+    rw [correctedChenRem_eq_modEq_count]
+    rfl
+  rw [hrem]
+
+/-- Consuming the ant weighted Pan-BV input: the corrected sieve's
+distribution condition is **exactly** the ant `WeightedPanCondition`
+instance. -/
+theorem correctedChenDistributionCondition_iff_chenWeightedPanInput :
+    CorrectedChenDistributionCondition ↔ ChenWeightedPanInput := by
+  constructor
+  · intro h A hA
+    rcases h A hA with ⟨C, hC, hbound⟩
+    refine ⟨C, hC, ?_⟩
+    intro N hN hEven
+    rw [← correctedChenPanSum_eq_weightedPanRemainder N]
+    exact hbound N hN hEven
+  · intro h A hA
+    rcases h A hA with ⟨C, hC, hbound⟩
+    refine ⟨C, hC, ?_⟩
+    intro N hN hEven
+    rw [correctedChenPanSum_eq_weightedPanRemainder N]
+    exact hbound N hN hEven
+
+/-- The counting-sieve `errSum` is bounded by the ant weighted Pan remainder:
+the reusable ant seam `errSum_le_threeOmegaWeightedPanRemainder` at the
+corrected Chen instance. -/
+theorem correctedChenErrSum_le_weightedPanInput (N : ℕ) :
+    (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+      AnalyticNumberTheory.Sieve.weightedPanRemainder (correctedChenBoundingSieve N)
+        (fun d => (3 : ℝ) ^ d.primeFactors.card) :=
+  AnalyticNumberTheory.Sieve.errSum_le_threeOmegaWeightedPanRemainder
+
+/-- Given the ant weighted Pan-BV input, the corrected sieve's `errSum` is
+uniformly `O(N / log^A N)`: this closes the Chen `errSum` line on
+[ant issue #7](https://github.com/UyNewNas/analytic-number-theory-lean/issues/7). -/
+theorem correctedChenErrSum_uniform_of_weightedPanInput {A : ℝ} (hA : 0 < A)
+    (N : ℕ) (hN : 1000 ≤ N) (hEven : Even N)
+    (hinput : ChenWeightedPanInput) :
+    ∃ C : ℝ, 0 < C ∧
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+        C * (N : ℝ) / (log (N : ℝ)) ^ A := by
+  rcases hinput A hA with ⟨C, hC, hbound⟩
+  refine ⟨C, hC, ?_⟩
+  exact le_trans (correctedChenErrSum_le_weightedPanInput N) (hbound N hN hEven)
+
 /-- The corrected candidate count is at least the lower-sieve main term minus
 the explicit `errSum`: the finite seam through which a uniform
 Jurkat--Richert lower bound for `mainSum μ⁻` (with the closed `N / log N`
