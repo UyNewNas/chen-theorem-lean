@@ -268,6 +268,28 @@ bound for `mainSum(μ⁻)` (the corrected sieve analogue of
 `2.6408·2.6408·N/log² N`) is therefore the single remaining input on the
 lower side of `CorrectedChenAnalyticPositivity`.
 
+**2026-08-12 update — the lower side is closed at the fundamental-lemma
+level.**  For the corrected candidate definition (only "no prime factor below
+`z`"), the plain Möbius function is itself a lower-Möbius sequence and its
+Selberg main term is *exactly* `V(N) = ∏_{p | P}(1 − ν(p))`.  Hence
+`correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum` proves
+unconditionally, for every `N`:
+
+`card(correctedChenCandidates N) ≥ X·V(N) − errSum(1)`.
+
+No sieve-function asymptotics (`f(s)`, Buchstab recursion) is needed for this
+candidate set; the classical Jurkat--Richert weighted-sieve lower bound
+applies to the historical W-count with the extra medium-interval condition.
+The remaining lower-side analytic inputs are now exactly:
+
+1. a Mertens-type lower bound on `V(N)` (turns `X·V(N)` into the
+   `𝔖(N)·N/log²N` main term),
+2. the averaged Pan control of `errSum(1)` (#7, already conditionally closed),
+3. a uniform upper bound for `correctedChenOmega` (#6).
+
+`correctedChenPositivity_of_mainTerm_beats_error` reduces all three to the
+single explicit real inequality `X·V(N) > errSum(1) + Ω/2`.
+
 ## Dependency sketch
 
 ```text

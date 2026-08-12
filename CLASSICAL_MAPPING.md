@@ -15,7 +15,7 @@
 | W(N) 筛法计数 | `chenW` / `correctedChenCandidates` | `SwitchingPrinciple` | 已定义 |
 | Ω(N) 切换和（三因子坏情形） | `chenOmega` / `correctedChenOmega`（显式罚函数） | `SwitchingPrinciple` | 已定义 |
 | 筛函数 F(s)/f(s)（JR 定理的基础） | `AnalyticNumberTheory.Sieve` 的 LinearSieve 模块（`sieveFunctionF/f`） | ant `Sieve/LinearSieve.lean` | 接口层（一致版本待证） |
-| JR 下界：W ≥ 2.6408·𝔖·N/log²N | `ChenAnalyticBounds`（一致版本）+ `correctedChenCandidates_card_ge_mainSum_sub_errSum` | chen + ant | 待证（研究级） |
+| JR 下界：W ≥ 2.6408·𝔖·N/log²N | 修正候选版：`correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum`（精确主项 `X·V(N)`，普通 Möbius 即可，无条件已证） | chen + ant | 结构已闭合；剩 `V(N)` 的 Mertens 下界 |
 | Selberg 上界：Ω ≤ 3.9404·𝔖·N/log²N | `ChenAnalyticBounds`（一致版本） | chen | 待证（研究级，常数须重导出） |
 | Selberg 主项分解：Σ_{d|P} g(d) = ∏(1−ν(p))⁻¹ | `AnalyticNumberTheory.Sieve.selbergSum_eq_prod_inv` | ant `Sieve/SelbergIdentities.lean` | 已证 |
 | 素数处 Selberg 项 g(p) = ν(p)(1−ν(p))⁻¹ | `AnalyticNumberTheory.Sieve.selbergTerm_prime` | ant `Sieve/SelbergIdentities.lean` | 已证 |

@@ -1141,6 +1141,117 @@ theorem correctedChenCandidates_card_ge_mainSum_sub_errSum (N : ℕ)
     _ = (correctedChenCandidates N).card :=
       correctedChenBoundingSieve_siftedSum_eq_card N
 
+/-! ## 3.5 修正筛的基本引理级下界 (issue #5 的 chen 侧核心) -/
+
+/-- 修正候选下界的核心观察: 普通 Möbius 函数就是下 Möbius 序列, 且等式成立.
+
+`∑_{d | n} μ(d) = [n = 1]` (Möbius 反演, mathlib
+`ArithmeticFunction.coe_zeta_mul_coe_moebius` + `coe_zeta_smul_apply`),
+因此 `μ : ℕ → ℝ` 满足 `IsLowerMoebius`. -/
+theorem moebius_real_isLowerMoebius :
+    AnalyticNumberTheory.Sieve.IsLowerMoebius
+      (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) := by
+  intro n
+  have hz : (ArithmeticFunction.zeta * ArithmeticFunction.moebius :
+      ArithmeticFunction ℝ) = (1 : ArithmeticFunction ℝ) := by
+    simp
+  have hzn : (ArithmeticFunction.zeta * ArithmeticFunction.moebius :
+      ArithmeticFunction ℝ) n = (1 : ArithmeticFunction ℝ) n := by
+    rw [hz]
+  have hsum : (∑ i ∈ n.divisors,
+      ((ArithmeticFunction.moebius i : ℤ) : ℝ)) =
+      if n = 1 then (1 : ℝ) else 0 := by
+    have hsmul : (ArithmeticFunction.zeta : ArithmeticFunction ℝ) *
+        (ArithmeticFunction.moebius : ArithmeticFunction ℝ) =
+      (ArithmeticFunction.zeta : ArithmeticFunction ℝ) •
+        (ArithmeticFunction.moebius : ArithmeticFunction ℝ) := by
+      rfl
+    rw [hsmul, ArithmeticFunction.coe_zeta_smul_apply (R := ℝ)
+      (f := (ArithmeticFunction.moebius : ArithmeticFunction ℝ))] at hzn
+    rw [ArithmeticFunction.one_apply] at hzn
+    exact hzn
+  exact le_of_eq hsum
+
+/-- |μ(d)| ≤ 1 (实值版本). -/
+theorem abs_moebius_real_le_one (d : ℕ) :
+    |((ArithmeticFunction.moebius d : ℤ) : ℝ)| ≤ 1 := by
+  exact_mod_cast (ArithmeticFunction.abs_moebius_le_one (n := d))
+
+/-- 修正筛积 (chen 侧): V(N) = ∏_{p | 修正筛积} (1 - ν(p)), 其中
+ν(p) = 1/(p-1). 与 ant 的 `sieveProductPrimeFactors` 相同; 在 ant PR #8
+合并后可改为引用通用定义. -/
+noncomputable def correctedChenSieveProduct (N : ℕ) : ℝ :=
+  ∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (1 - correctedChenNu p)
+
+/-- 普通 Möbius 的 Selberg 主项等于修正筛积 (精确恒等式).
+
+`∑_{d | P} μ(d)·ν(d) = ∏_{p | P} (1 - ν(p))` — 乘法函数的"一减分解"
+(mathlib `prodPrimeFactors_one_sub_of_squarefree`). 这是"JR 主项"在修正
+候选上的精确形式: 主项就是 `V(N)`, 不需要任何筛函数渐近. -/
+theorem mainSum_moebius_eq_correctedChenSieveProduct (N : ℕ) :
+    (correctedChenBoundingSieve N).mainSum
+        (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) =
+      correctedChenSieveProduct N := by
+  rw [BoundingSieve.mainSum, correctedChenSieveProduct]
+  change (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      ((ArithmeticFunction.moebius d : ℤ) : ℝ) * correctedChenNu d) =
+    ∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (1 - correctedChenNu p)
+  rw [← ArithmeticFunction.IsMultiplicative.prodPrimeFactors_one_sub_of_squarefree
+    correctedChenNu (AnalyticNumberTheory.Sieve.goldbachNu_isMultiplicative)
+    (correctedChenSiftingProduct_squarefree N)]
+
+/-- μ 的误差和被 1 系数误差和控制: |μ(d)| ≤ 1 ⇒ errSum(μ) ≤ errSum(1). -/
+theorem correctedChenErrSum_moebius_le_errSum_one (N : ℕ) :
+    (correctedChenBoundingSieve N).errSum
+        (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) ≤
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) := by
+  unfold BoundingSieve.errSum
+  apply Finset.sum_le_sum
+  intro d hd
+  have hmul : |((ArithmeticFunction.moebius d : ℤ) : ℝ)| *
+        |(correctedChenBoundingSieve N).rem d| ≤
+      (1 : ℝ) * |(correctedChenBoundingSieve N).rem d| :=
+    mul_le_mul_of_nonneg_right (abs_moebius_real_le_one d) (abs_nonneg _)
+  simpa using hmul
+
+/-- **修正候选的基本引理级下界 (chen 侧核心)**.
+
+  `card(correctedChenCandidates N) ≥ X·V(N) − errSum(1)`
+
+对**所有** `N` 无条件成立, 其中 `X = N/log N` 为总质量, `V(N)` 为修正
+筛积, `errSum(1) = Σ_{d | P} |rem d|` 为显式除数误差和.
+
+经典对应: 基本引理/线性筛下界 `S(A,z) ≥ X·V(z) − Σ_{d ≤ D} |R_d|`。
+证明只用普通 Möbius 函数 (它本身就是精确的下 Möbius 序列), 因此主项是
+精确的 `X·V(N)`, 不需要筛函数 `f(s)` 的任何渐近 —— 这正是修正候选定义
+(只要求 `N-p` 无小于 `z` 的素因子) 与历史 W 候选 (多一个中区间素因子
+条件) 的区别。剩下的解析输入只有:
+  (1) `V(N)` 的 Mertens 型一致下界 (把主项放大到 `≫ N/log²N`);
+  (2) `errSum(1)` 的加权 Pan 控制 (#7);
+  (3) `correctedChenOmega` 的一致上界 (#6). -/
+theorem correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum (N : ℕ) :
+    (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N -
+        (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+      (correctedChenCandidates N).card := by
+  let mu : ℕ → ℝ := fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)
+  have hseam := correctedChenCandidates_card_ge_mainSum_sub_errSum N mu
+    moebius_real_isLowerMoebius
+  have hmain : (correctedChenBoundingSieve N).mainSum mu = correctedChenSieveProduct N := by
+    simpa [mu] using mainSum_moebius_eq_correctedChenSieveProduct N
+  have herr : (correctedChenBoundingSieve N).errSum mu ≤
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) := by
+    simpa [mu] using correctedChenErrSum_moebius_le_errSum_one N
+  calc
+    (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N -
+        (correctedChenBoundingSieve N).errSum (fun _ => 1)
+      ≤ (correctedChenBoundingSieve N).totalMass *
+            (correctedChenBoundingSieve N).mainSum mu -
+          (correctedChenBoundingSieve N).errSum mu := by
+      rw [hmain]
+      linarith
+    _ ≤ (correctedChenCandidates N).card := hseam
+
+
 /-- At a sieved prime `2 < p < z` with `p ∤ N`, the corrected Goldbach
 density factor satisfies `(1 - ν(p))⁻¹ = (p-1)/(p-2)`. -/
 theorem correctedChenNu_inv_prime {N p : ℕ} (hp : p.Prime) (hp2 : 2 < p) :
@@ -1624,6 +1735,20 @@ Unlike the historical `chenOmega`, its factor multiplicity is explicit.  No
 analytic upper bound or counting bridge is claimed for it yet. -/
 noncomputable def correctedChenOmega (N : ℕ) : ℝ :=
   (correctedChenCandidates N).sum (correctedChenPenalty N)
+
+/-- 由下界接缝得到正性的最终化简: 只要主项 `X·V(N)` 严格大于
+`errSum(1) + Ω/2`, 修正计数就是正的.
+
+这正是 `CorrectedChenAnalyticPositivity` 的完整下界侧化简: 三个解析输入
+(`V(N)` 的 Mertens 下界、#7 的 errSum 控制、#6 的 Ω 上界) 最终都只用于
+验证这一条显式实数不等式. -/
+theorem correctedChenPositivity_of_mainTerm_beats_error (N : ℕ)
+    (hV : (correctedChenBoundingSieve N).errSum (fun _ => 1) +
+        correctedChenOmega N / 2 <
+      (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N) :
+    0 < ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 := by
+  have hlow := correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum N
+  linarith
 
 /-- The corrected penalty is exactly the amount subtracted by the existing
 Chen weight.  This gives a concrete interpretation to the future `/ 2` in a
