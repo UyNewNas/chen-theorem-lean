@@ -312,6 +312,21 @@ is assembled (`correctedChenMainTerm_lower_of_estimates`,
 Each of the three is an independent, standard estimate; the algebraic
 assembly around them is fully kernel-checked.
 
+**2026-08-12 update — parameter estimates done; one input remains.**  The
+parameter estimate `log(z−1) ≤ log N` and the cutoff facts
+(`correctedChenZ_sub_one_le_N`, `correctedChenZ_sub_one_ge_two_of_large`,
+`correctedChenZ_log_le_logN`) are proved, and the Mertens lower bound is
+already available (`primeProduct_asymptotic_order`).
+`CorrectedChenMainTermLower_of_singularSeries_bound` (with the
+`c𝔖 = 1/2` corollary) reduces the uniform main-term lower bound to the
+single remaining input `SingularSeriesTruncatedLowerBound`:
+
+`∀ N z, 2 ≤ z → 1/2 ≤ 𝔖_trunc(N, z)`.
+
+That statement is the pure finite-combinatorics tail of the twin-prime
+constant (`∏(1−x_i) ≥ 1−Σx_i` + even-subset sum bound); once proved,
+`CorrectedChenMainTermLower_of_singularSeries_lower` closes the lower side.
+
 ## Dependency sketch
 
 ```text

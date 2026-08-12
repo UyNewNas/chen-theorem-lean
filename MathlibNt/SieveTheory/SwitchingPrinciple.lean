@@ -1719,6 +1719,121 @@ theorem CorrectedChenMainTermLower_of_uniform_estimates
       (hpp (correctedChenZ N - 1) hM hz)
       (hlog N hN2)
 
+/-! ## 4.8 参数估计与 Mertens/奇异级数接线 -/
+
+/-- 参数估计 1: 修正筛水平满足 `z - 1 ≤ N` (实数). -/
+theorem correctedChenZ_sub_one_le_N {N : ℕ} (hN : 1 ≤ N) :
+    ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ N := by
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have hx0 : 0 ≤ x := by
+    dsimp [x]
+    exact Real.rpow_nonneg (by exact_mod_cast (Nat.zero_le N)) _
+  by_cases hf : 2 ≤ Nat.floor x
+  · have hz : correctedChenZ N = Nat.floor x := by
+      unfold correctedChenZ
+      exact max_eq_right hf
+    have hxle : x ≤ (N : ℝ) := by
+      have hx1 : 1 ≤ (N : ℝ) := by exact_mod_cast hN
+      have hpow := Real.rpow_le_rpow_of_exponent_le hx1 (by norm_num : (1 / 10 : ℝ) ≤ 1)
+      -- hpow : N^(1/10) ≤ N^1
+      simpa [x] using hpow
+    calc
+      ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ (correctedChenZ N : ℝ) := by
+        exact_mod_cast (Nat.sub_le (correctedChenZ N) 1)
+      _ = (Nat.floor x : ℝ) := by rw [hz]
+      _ ≤ x := Nat.floor_le hx0
+      _ ≤ (N : ℝ) := hxle
+  · have hz : correctedChenZ N = 2 := by
+      unfold correctedChenZ
+      change max 2 (Nat.floor x) = 2
+      exact max_eq_left (by omega)
+    rw [hz]
+    norm_num
+    exact_mod_cast hN
+
+/-- 参数估计 2: 对 `N ≥ 3^10 = 59049`, 修正筛水平满足 `2 ≤ z - 1`. -/
+theorem correctedChenZ_sub_one_ge_two_of_large {N : ℕ} (hN : 59049 ≤ N) :
+    2 ≤ correctedChenZ N - 1 := by
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have h3le : (3 : ℝ) ≤ x := by
+    dsimp [x]
+    -- 3 = (3^10)^(1/10) ≤ N^(1/10)
+    have h310 : (3 : ℝ) ^ (10 : ℝ) ≤ (N : ℝ) := by
+      have hnat : (3 : ℝ) ^ 10 ≤ (N : ℝ) := by
+        norm_num at hN ⊢
+        exact_mod_cast hN
+      simpa [Real.rpow_natCast] using hnat
+    have hstep := Real.rpow_le_rpow (by positivity : 0 ≤ (3 : ℝ) ^ (10 : ℝ)) h310
+      (by norm_num : 0 ≤ (1 / 10 : ℝ))
+    -- hstep : ((3:ℝ)^(10:ℝ))^(1/10:ℝ) ≤ x ; LHS 化简为 3
+    have hrew : ((3 : ℝ) ^ (10 : ℝ)) ^ (1 / 10 : ℝ) = (3 : ℝ) := by
+      rw [← Real.rpow_mul (by norm_num : 0 ≤ (3 : ℝ))]
+      norm_num
+    rwa [hrew] at hstep
+  have hfloor : 3 ≤ Nat.floor x := Nat.le_floor h3le
+  have hz : correctedChenZ N = Nat.floor x := by
+    unfold correctedChenZ
+    change max 2 (Nat.floor x) = Nat.floor x
+    exact max_eq_right (le_trans (by norm_num : (2 : ℕ) ≤ 3) hfloor)
+  rw [hz]
+  omega
+
+/-- 参数估计 3: `log(z - 1) ≤ log N` (即 `Clog = 1` 的参数估计). -/
+theorem correctedChenZ_log_le_logN {N : ℕ} (hN : 2 ≤ N) :
+    log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ log (N : ℝ) := by
+  have hle := correctedChenZ_sub_one_le_N (by omega : 1 ≤ N)
+  have hpos : 0 < (correctedChenZ N - 1 : ℕ) := by
+    have hz2 : 2 ≤ correctedChenZ N := by
+      unfold correctedChenZ
+      exact le_max_left _ _
+    omega
+  exact Real.log_le_log (by exact_mod_cast hpos) hle
+
+/-- 一致主项下界由两个标准输入推出: (1) `𝔖_trunc` 的一致下界 `h𝔖`
+(C₂ 级, 待证), (2) Mertens 积的 `primeProduct_asymptotic_order` (已证)
+加参数估计 (已证). 剩余唯一解析输入是 `h𝔖`. -/
+theorem CorrectedChenMainTermLower_of_singularSeries_bound
+    {c𝔖 : ℝ} (hc𝔖 : 0 < c𝔖)
+    (h𝔖 : ∀ N : ℕ, ∀ z : ℕ, 2 ≤ z →
+      c𝔖 ≤ AnalyticNumberTheory.Sieve.singularSeriesTruncated N z) :
+    CorrectedChenMainTermLower := by
+  obtain ⟨c₁₀, c₂₀, hc₁₀, hPP⟩ := MertensTheorem.primeProduct_asymptotic_order
+  exact CorrectedChenMainTermLower_of_uniform_estimates
+    (c𝔖 := c𝔖) (cpp := c₁₀) (Clog := 1) (M₀ := 2) (N₀'' := 59049)
+    hc𝔖 hc₁₀ (by norm_num)
+    h𝔖
+    (fun m _hm h2 => (hPP m h2).1)
+    (fun N hN => by
+      have hlog := correctedChenZ_log_le_logN hN
+      simpa using hlog)
+    (fun N hN => by
+      refine ⟨by omega, ?_, ?_⟩
+      · exact correctedChenZ_sub_one_ge_two_of_large hN
+      · exact correctedChenZ_sub_one_ge_two_of_large hN)
+
+/-- **截断奇异级数的一致下界** (issue #5 的最后一个解析输入).
+
+对任意 `N` 与 `z ≥ 2`: `1/2 ≤ 𝔖_trunc(N, z)`. 经典证明 (孪生素数常数
+`C₂ ≈ 0.66` 级):
+
+  𝔖_trunc(N,z) ≥ ∏_{2<p≤z}(1 − 1/(p−1)²) ≥ 1 − Σ_{p>2} 1/(p−1)²
+                  ≥ 1 − (1/4)·Σ_{k≥1} 1/k² ≥ 1/2,
+
+其中第二步行由 `∏(1−x_i) ≥ 1−Σx_i`, 第三行用 `p−1` 为偶数的子集包含
+(素数 > 2 均为奇数), 最后一行用望远镜求和 `Σ_{k≥1}1/k² ≤ 2`. 该命题
+的证明 = 纯有限组合/实数引理, 已精确陈述; 由它经
+`CorrectedChenMainTermLower_of_singularSeries_lower` 直接闭合主项下界. -/
+def SingularSeriesTruncatedLowerBound : Prop :=
+  ∀ N z : ℕ, 2 ≤ z → (1 / 2 : ℝ) ≤
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated N z
+
+/-- 截断奇异级数一致下界 (取 `c𝔖 = 1/2`) 推出 `CorrectedChenMainTermLower`. -/
+theorem CorrectedChenMainTermLower_of_singularSeries_lower
+    (h𝔖 : SingularSeriesTruncatedLowerBound) :
+    CorrectedChenMainTermLower := by
+  exact CorrectedChenMainTermLower_of_singularSeries_bound (c𝔖 := 1 / 2) (by norm_num)
+    (fun N z hz => h𝔖 N z hz)
+
 /-- **主项渐近阶**: the corrected Selberg divisor sum for the corrected sieve
 is `Θ(log (z-1) / 𝔖(N, z-1))`.
 
