@@ -929,6 +929,51 @@ theorem correctedChenBoundingSieve_siftedSum_eq_card (N : ℕ) :
   rw [Finset.sum_boole]
   exact_mod_cast correctedChenSiftedCard_eq_correctedCandidateCard N
 
+/-- The Selberg term of the corrected sieve at a prime is
+`ν(p) · (1 - ν(p))⁻¹`. -/
+theorem correctedChenSelbergTerm_prime (N : ℕ) {p : ℕ} (hp : p.Prime) :
+    (correctedChenBoundingSieve N).selbergTerms p =
+      correctedChenNu p * (1 - correctedChenNu p)⁻¹ := by
+  rw [BoundingSieve.selbergTerms_apply, Nat.Prime.primeFactors hp]
+  simp [correctedChenBoundingSieve]
+
+/-- At a sieved prime `2 < p < z` with `p ∤ N`, the corrected Goldbach
+density factor satisfies `(1 - ν(p))⁻¹ = (p-1)/(p-2)`. -/
+theorem correctedChenNu_inv_prime {N p : ℕ} (hp : p.Prime) (hp2 : 2 < p) :
+    (1 - correctedChenNu p)⁻¹ = ((p : ℝ) - 1) / ((p : ℝ) - 2) := by
+  rw [correctedChenNu_apply_prime hp]
+  have hp2r : (2 : ℝ) < p := by exact_mod_cast hp2
+  have hpm1 : (p : ℝ) - 1 ≠ 0 := by linarith
+  have hpm2 : (p : ℝ) - 2 ≠ 0 := by linarith
+  field_simp [hpm1, hpm2]
+  have hcancel : ((-2 : ℝ) + p) * ((-2 : ℝ) + p)⁻¹ = 1 := by
+    convert mul_inv_cancel₀ hpm2 using 1
+    ring
+  ring_nf at hcancel ⊢
+  exact hcancel
+
+/-- The Selberg divisor sum for the corrected sieve factors over the sieved
+primes: `∑_{d | P} g(d) = ∏_{p | P} (1 - ν(p))⁻¹`.  This is the finite
+algebraic core of the Selberg main term; the asymptotic evaluation of the
+right-hand side is the Mertens-type workline. -/
+theorem correctedChenSelbergSum_eq_prod_inv (N : ℕ) :
+    ∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d =
+      ∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (1 - correctedChenNu p)⁻¹ := by
+  rw [← ArithmeticFunction.IsMultiplicative.prodPrimeFactors_one_add_of_squarefree
+    (correctedChenBoundingSieve N).selbergTerms_isMultiplicative
+    (correctedChenBoundingSieve N).prodPrimes_squarefree]
+  apply Finset.prod_congr rfl
+  intro p hp
+  have hp_prime : p.Prime := Nat.prime_of_mem_primeFactors hp
+  rw [correctedChenSelbergTerm_prime N hp_prime]
+  have hp_dvd : p ∣ (correctedChenBoundingSieve N).prodPrimes := Nat.dvd_of_mem_primeFactors hp
+  have hlt : correctedChenNu p < 1 :=
+    (correctedChenBoundingSieve N).nu_lt_one_of_prime p hp_prime hp_dvd
+  have hne : (1 : ℝ) - correctedChenNu p ≠ 0 := by linarith
+  field_simp [hne]
+  ring
+
 /-- The historical lower-sieve candidates transfer safely to the corrected
 candidate set once the unit boundary is removed.  This is a finite inclusion:
 it carries no historical switching or Omega estimate. -/

@@ -169,6 +169,15 @@ so the surviving sieve count is literally the corrected candidate count.  The
 remaining analytic step on this line is the uniform `errSum` bound for the
 corrected sieve; no further finite conversion is hidden at that boundary.
 
+On the main-term side, the Selberg divisor sum for the corrected sieve is
+factored in closed form as
+`correctedChenSelbergSum_eq_prod_inv`:
+`∑_{d | P} g(d) = ∏_{p | P} (1 − ν(p))⁻¹`, with prime factor
+`(1 − ν(p))⁻¹ = (p−1)/(p−2)` at each sieved prime
+(`correctedChenNu_inv_prime`).  The asymptotic evaluation of this product —
+via the exact Mertens product formula and the singular series — is the next
+main-term step on the analytic workline.
+
 ## Dependency sketch
 
 ```text
