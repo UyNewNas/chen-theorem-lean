@@ -91,6 +91,10 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenOmegaUpperBound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.omega_upper_bound_compatible_with_39404
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenOmegaUpperBound_of_39404
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.primePowerSum_eq_sum_factorization_of_dvd
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.factorization_le_card_pow_dvd
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.primePowerSum_le_powerCount
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenOmega_eq_primePower_add_triple
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenPositivity_large_of_inputs
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_chens_theorem_of_inputs
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_counting_bridge_public

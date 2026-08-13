@@ -3397,6 +3397,125 @@ theorem corrected_chens_theorem_of_inputs
   intro N hN hEven
   exact corrected_key_inequality_implies_chen_at (N := N) (by omega) (hpos N (by omega) hEven)
 
+/-
+
+## 4.11 Ω 上界的有限核心 (chen issue #7 的有限部分)
+
+`correctedChenOmega` 的惩罚计数拆成素幂部分与三因子部分, 并把素幂部分化为
+"重数 ≤ 素幂个数"的有限计数 — 这是任何切换筛 Ω 上界都需要的第一步
+(与并行 `selberg-omega-upper` 分支的 Selberg 主项链互补). -/
+
+/-- 素幂部分: `primePowerSum n z y` 等于在 `[z, y)` 中整除 `n` 的素数之
+重数和 (filter 条件 `∃ k ≥ 1, exactDiv q k n` 等价于 `q ∣ n`). -/
+theorem primePowerSum_eq_sum_factorization_of_dvd {n z y : ℕ} (hn : n ≠ 0) :
+    primePowerSum n z y =
+      (∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n),
+        (n.factorization q : ℝ)) := by
+  unfold primePowerSum
+  have hfilter : (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧
+      ∃ k : ℕ, 1 ≤ k ∧ exactDiv q k n) =
+      (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n) := by
+    apply Finset.filter_congr
+    intro q hq
+    constructor
+    · intro h
+      rcases h with ⟨hp, hz, hk⟩
+      rcases hk with ⟨k, hk1, hkdiv⟩
+      exact ⟨hp, hz, dvd_trans (by simpa using (pow_dvd_pow q (by omega : 1 ≤ k))) hkdiv.1⟩
+    · intro h
+      rcases h with ⟨hp, hz, hdvd⟩
+      refine ⟨hp, hz, ?_⟩
+      let a : ℕ := n.factorization q
+      have hpow : q ^ a ∣ n := (Nat.Prime.pow_dvd_iff_le_factorization hp hn).mpr le_rfl
+      have hnot : ¬ q ^ (a + 1) ∣ n := by
+        intro hbad
+        have : a + 1 ≤ a := (Nat.Prime.pow_dvd_iff_le_factorization hp hn).mp hbad
+        omega
+      have h1le : 1 ≤ a := (Nat.Prime.pow_dvd_iff_le_factorization hp hn).mp (by simpa using hdvd)
+      exact ⟨a, h1le, hpow, hnot⟩
+  rw [hfilter]
+
+/-- 重数 ≤ 素幂个数: `n.factorization q ≤ #{k : q^(k+1) ∣ n}`. -/
+theorem factorization_le_card_pow_dvd {n q : ℕ} (hq : q.Prime) (hn : n ≠ 0) :
+    n.factorization q ≤
+      ((Finset.range (n + 1)).filter (fun k => q ^ (k + 1) ∣ n)).card := by
+  let a : ℕ := n.factorization q
+  have hle_a_n : a ≤ n := by
+    by_cases ha : a = 0
+    · simp [ha]
+    · have hpow : q ^ a ∣ n := (Nat.Prime.pow_dvd_iff_le_factorization hq hn).mpr le_rfl
+      have hq2 : 2 ≤ q := hq.two_le
+      have hlt : a < q ^ a := lt_of_lt_of_le Nat.lt_two_pow_self
+        (pow_le_pow_left₀ (by norm_num) hq2 a)
+      exact le_trans (le_of_lt hlt) (Nat.le_of_dvd (Nat.pos_of_ne_zero hn) hpow)
+  have hsubset : (Finset.range a) ⊆ (Finset.range (n + 1)).filter
+      (fun k => q ^ (k + 1) ∣ n) := by
+    intro k hk
+    rw [Finset.mem_filter, Finset.mem_range]
+    constructor
+    · have hk' : k < a := Finset.mem_range.mp hk
+      have : k < n := lt_of_lt_of_le hk' hle_a_n
+      omega
+    · exact (Nat.Prime.pow_dvd_iff_le_factorization hq hn).mpr (by
+        have : k + 1 ≤ a := by
+          have hk' : k < a := Finset.mem_range.mp hk
+          omega
+        exact this)
+  have hcard : (Finset.range a).card = a := Finset.card_range a
+  have hle := Finset.card_le_card hsubset
+  rwa [hcard] at hle
+
+/-- 素幂部分的一致有限上界: `primePowerSum n z y ≤ Σ_{q ∈ [z,y)} Σ_k [q^(k+1) | n]`. -/
+theorem primePowerSum_le_powerCount (n z y : ℕ) :
+    primePowerSum n z y ≤
+      ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+        ∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0 := by
+  by_cases hn : n = 0
+  · subst n
+    unfold primePowerSum
+    simp [exactDiv]
+  · have hident := primePowerSum_eq_sum_factorization_of_dvd (n := n) (z := z) (y := y) hn
+    rw [hident]
+    have hper : ∀ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+        (n.factorization q : ℝ) ≤
+          ∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0 := by
+      intro q hq
+      rcases Finset.mem_filter.mp hq with ⟨hqr, hqp⟩
+      have hcard := factorization_le_card_pow_dvd hqp.1 hn
+      have hsum_eq : (∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0) =
+          ((Finset.range (n + 1)).filter (fun k => q ^ (k + 1) ∣ n)).card := by
+        rw [Finset.sum_boole]
+      have hle1 : (n.factorization q : ℝ) ≤
+          ((Finset.range (n + 1)).filter (fun k => q ^ (k + 1) ∣ n)).card := by
+        exact_mod_cast hcard
+      exact le_trans hle1 (by rw [hsum_eq])
+    calc
+      (∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n),
+          (n.factorization q : ℝ))
+          ≤ ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+              ∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0 := by
+            have hsub : (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n) ⊆
+                (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q) := by
+              intro q hq
+              rcases Finset.mem_filter.mp hq with ⟨hq1, hq2⟩
+              exact Finset.mem_filter.mpr ⟨hq1, hq2.1, hq2.2.1⟩
+            have hle0 : (∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n),
+                  (n.factorization q : ℝ)) ≤
+                ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+                  (n.factorization q : ℝ) := by
+              exact Finset.sum_le_sum_of_subset_of_nonneg hsub (fun q hq hnot => by positivity)
+            exact le_trans hle0 (Finset.sum_le_sum hper)
+
+/-- `correctedChenOmega` 拆成素幂部分与三因子部分. -/
+theorem correctedChenOmega_eq_primePower_add_triple (N : ℕ) :
+    correctedChenOmega N =
+      (correctedChenCandidates N).sum
+          (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) +
+      (correctedChenCandidates N).sum
+          (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N)) := by
+  unfold correctedChenOmega correctedChenPenalty
+  rw [Finset.sum_add_distrib]
+
 
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge

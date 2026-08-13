@@ -367,6 +367,21 @@ statement, consumed as `ChenWeightedPanInput`) and the Ω upper-bound proof
 singular-series main term, the error budget, and the final reduction — is
 kernel-checked.
 
+**2026-08-12 update — Ω upper bound, finite core.**  The penalty sum is
+decomposed and its prime-power part is reduced to a finite power count:
+
+- `correctedChenOmega_eq_primePower_add_triple`: `Ω = (prime-power part) +
+  (triple part)`;
+- `primePowerSum_eq_sum_factorization_of_dvd`: the prime-power part is the
+  multiplicity sum over `[z,y)`-primes dividing `N−p` (the `exactDiv` filter
+  is equivalent to divisibility);
+- `factorization_le_card_pow_dvd`: `n.factorization q ≤ #{k : q^(k+1) | n}`;
+- `primePowerSum_le_powerCount`: `primePowerSum n z y ≤ Σ_q Σ_k [q^(k+1)|n]`.
+
+These are the first finite steps of any switching-sieve Ω bound (chen #7);
+the analytic part (BV-type counts + the parallel Selberg main-term chain)
+remains to be attached.
+
 ## Dependency sketch
 
 ```text
