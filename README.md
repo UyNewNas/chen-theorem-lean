@@ -136,6 +136,15 @@ contributions `Σ_p #{q ∈ [z,y) : q² | N−p} ≤ 6·N^{9/10}` for `N > 2^110
 `z ≥ N^{1/10}/2`).  The full Ω assembly still needs the triple-part Selberg
 bound and the k = 1 prime-factor part via the weighted Pan input.
 
+The structural side of the prime-power bound is now complete (P3):
+`primePowerSum_le_factorCount_add_powerSum` decomposes the penalty as
+`Σ_p primePowerSum(N−p) ≤ Σ_p #{q ∈ [z,y) : q | N−p} + (proper-power part)`,
+with the proper-power part already bounded by the `N^{9/10}` estimate; and
+`errLogCube_negligible` supplies the elementary `hNeg` threshold
+(`Cerr·N/log³N ≤ (1/4)·N/log²N` for `log N ≥ 4·Cerr`).  The only remaining
+prime-power input for `CorrectedChenOmegaUpperBound_of_analytic_inputs` is the
+`k = 1` prime-factor count via the weighted Pan/distribution input.
+
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.

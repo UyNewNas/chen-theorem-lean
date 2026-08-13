@@ -100,6 +100,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.primePowerSum_le_powerCount
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenOmega_eq_primePower_add_triple
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenPrimePowerProperCountBound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.primePowerSum_le_factorCount_add_powerSum
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.errLogCube_negligible
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenPositivity_large_of_inputs
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_chens_theorem_of_inputs
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_counting_bridge_public
