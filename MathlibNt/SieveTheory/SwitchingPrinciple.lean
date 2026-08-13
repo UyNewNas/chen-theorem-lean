@@ -3707,16 +3707,12 @@ private theorem inv_mul_sub_one_Ico_sum (a b : ℕ) (ha : 2 ≤ a) (hab : a ≤ 
 
 /-- **素幂一致界 (P3 第一步: 真幂部分)**: 修正候选上满足 `q² | N−p`
 (`q ∈ [z,y)` 素数) 的 `(p,q)` 对数的一致上界 `≤ 6·N^{9/10}`. -/
-theorem correctedChenPrimePowerProperCountBound :
-    ∃ C : ℝ, 0 < C ∧ ∃ N₀ : ℕ,
-      ∀ N : ℕ, N₀ ≤ N → Even N →
-        (correctedChenCandidates N).sum (fun p =>
-          ((Finset.range (correctedChenY N)).filter
-            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card) ≤
-          C * (N : ℝ) ^ (9 / 10 : ℝ) := by
-  refine ⟨6, by norm_num, 2 ^ 110 + 1, ?_⟩
-  intro N hN hEven
-  have hNbig : 2 ^ 110 < N := by omega
+theorem correctedChenPrimePowerProperCountBound (N : ℕ) (hNbig : 2 ^ 110 < N)
+    (hEven : Even N) :
+    (correctedChenCandidates N).sum (fun p =>
+      ((Finset.range (correctedChenY N)).filter
+        (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card) ≤
+      6 * (N : ℝ) ^ (9 / 10 : ℝ) := by
   have hN2 : 2 ≤ N := by
     have h : 2 ^ 110 ≤ N := le_of_lt hNbig
     omega
@@ -4069,6 +4065,298 @@ theorem errLogCube_negligible (Cerr : ℝ) :
   have hmain : Cerr ≤ (1 / 4 : ℝ) * log (N : ℝ) := by linarith
   rw [div_le_div_iff₀ (pow_pos hlogpos 3) (pow_pos hlogpos 2)]
   nlinarith [hmain, mul_pos hNpos (sq_pos_of_pos hlogpos)]
+
+/-! ## chen #18 (P3): q¹ 分布输入的消费骨架 -/
+
+/-- q¹ 分布输入: 候选的 `[z,y)` 素因子计数和
+`Σ_{p ∈ candidates} #{q ∈ [z,y) : q | N−p}`. -/
+noncomputable def correctedChenQ1Count (N : ℕ) : ℝ :=
+  (correctedChenCandidates N).sum (fun p =>
+    ((Finset.range (correctedChenY N)).filter
+      (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ∣ N - p)).card)
+
+/-- q¹ 计数重排: `Σ_p #{q ∈ [z,y) : q | N−p} =
+Σ_{q ∈ [z,y)} #{p ∈ candidates : q | N−p}`. -/
+theorem correctedChenQ1Count_eq_reindexed (N : ℕ) :
+    correctedChenQ1Count N =
+      ∑ q ∈ (Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q),
+        (((correctedChenCandidates N).filter (fun p => q ∣ N - p)).card : ℝ) := by
+  unfold correctedChenQ1Count
+  let Q : Finset ℕ := (Finset.range (correctedChenY N)).filter
+    (fun q => q.Prime ∧ correctedChenZ N ≤ q)
+  have h2 : (correctedChenCandidates N).sum (fun p =>
+        (((Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ∣ N - p)).card : ℝ)) =
+      (correctedChenCandidates N).sum (fun p =>
+        ∑ q ∈ Q, if q ∣ N - p then (1 : ℝ) else 0) := by
+    apply Finset.sum_congr rfl
+    intro p hp
+    rw [Finset.card_filter]
+    rw [Nat.cast_sum]
+    simp only [Nat.cast_ite, Nat.cast_one, Nat.cast_zero]
+    rw [← Finset.sum_filter]
+    rw [Finset.sum_filter]
+    rw [Finset.sum_filter]
+    apply Finset.sum_congr rfl
+    intro q hq
+    by_cases hd : q ∣ N - p <;> simp [hd]
+  have h3 : (correctedChenCandidates N).sum (fun p =>
+        ∑ q ∈ Q, if q ∣ N - p then (1 : ℝ) else 0) =
+      ∑ q ∈ Q, (correctedChenCandidates N).sum (fun p =>
+        if q ∣ N - p then (1 : ℝ) else 0) := by
+    rw [Finset.sum_comm]
+  have h4 : ∑ q ∈ Q, (correctedChenCandidates N).sum (fun p =>
+        if q ∣ N - p then (1 : ℝ) else 0) =
+      ∑ q ∈ Q, (((correctedChenCandidates N).filter (fun p => q ∣ N - p)).card : ℝ) := by
+    apply Finset.sum_congr rfl
+    intro q hq
+    rw [Finset.sum_boole]
+  exact h2.trans (h3.trans h4)
+
+/-- 大 `N` 下素因子重数 ≤ 10: 对 `q ≥ z`, `n ≤ N`, `N > 2^110`,
+`v_q(n) ≤ 10` (因 `q^{11} > N`). -/
+private theorem factorization_le_ten_of_large {N q : ℕ} (hq : q.Prime)
+    (hqz : correctedChenZ N ≤ q) (hNbig : 2 ^ 110 < N) (n : ℕ) (hn : n ≤ N) :
+    n.factorization q ≤ 10 := by
+  by_cases hn0 : n = 0
+  · subst n
+    simp
+  · have hNpos : (0 : ℝ) < N := by exact_mod_cast (by omega : 0 < N)
+    have hq11 : (N : ℝ) < (q : ℝ) ^ 11 := by
+      let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+      have hz_ge : (N : ℝ) ^ (1 / 10 : ℝ) / 2 ≤ (correctedChenZ N : ℝ) :=
+        chenZ_ge_root_half N hNbig
+      have hqge : (N : ℝ) ^ (1 / 10 : ℝ) / 2 ≤ (q : ℝ) :=
+        le_trans hz_ge (by exact_mod_cast hqz)
+      have hN10 : (2 ^ 11 : ℝ) < (N : ℝ) ^ (1 / 10 : ℝ) := chenZ_root_large N hNbig
+      have hx10 : x ^ 10 = (N : ℝ) := by
+        dsimp [x]
+        rw [← Real.rpow_natCast]
+        rw [← Real.rpow_mul (le_of_lt hNpos)]
+        norm_num
+      have hx11 : x ^ 11 = (N : ℝ) * x := by
+        rw [show x ^ 11 = x * x ^ 10 by rw [pow_succ']]
+        rw [hx10]
+        ring
+      have hxdiv : (1 : ℝ) < x / 2 ^ 11 := by
+        rw [one_lt_div (by positivity : (0 : ℝ) < 2 ^ 11)]
+        dsimp [x]
+        exact hN10
+      have hpow11' : (x / 2) ^ 11 ≤ (q : ℝ) ^ 11 := by
+        dsimp [x]
+        apply pow_le_pow_left₀
+        · positivity
+        · exact hqge
+      have hgt : (N : ℝ) < (x / 2) ^ 11 := by
+        rw [div_pow, hx11]
+        have h1 : (N : ℝ) * 1 < (N : ℝ) * (x / 2 ^ 11) := by
+          exact mul_lt_mul_of_pos_left hxdiv hNpos
+        simpa [mul_div_assoc, mul_one] using h1
+      exact lt_of_lt_of_le (by simpa [x] using hgt) hpow11'
+    have hdvd : q ^ n.factorization q ∣ n :=
+      (Nat.Prime.pow_dvd_iff_le_factorization hq hn0).mpr le_rfl
+    have hqpow_le_n : (q : ℝ) ^ n.factorization q ≤ (n : ℝ) := by
+      exact_mod_cast (Nat.le_of_dvd (Nat.pos_of_ne_zero hn0) hdvd)
+    by_contra hnot
+    have h11 : 11 ≤ n.factorization q := by
+      exact Nat.succ_le_of_lt (Nat.lt_of_not_ge hnot)
+    have hqpow11 : (q : ℝ) ^ 11 ≤ (q : ℝ) ^ n.factorization q :=
+      pow_le_pow_right₀ (by exact_mod_cast (show 1 ≤ q from hq.pos)) h11
+    have hqpow_le_N : (q : ℝ) ^ n.factorization q ≤ (N : ℝ) :=
+      le_trans hqpow_le_n (by exact_mod_cast hn)
+    have hNlt : (N : ℝ) < (q : ℝ) ^ n.factorization q := lt_of_lt_of_le hq11 hqpow11
+    exact (not_lt_of_ge hqpow_le_N hNlt).elim
+
+/-- 真幂部分的统一界: `Σ_p Σ_{q ∈ [z,y), q²|N−p} v_q(N−p) ≤ 60·N^{9/10}`
+(重数 ≤ 10 + PR #13 的 `6·N^{9/10}` 计数界). -/
+theorem correctedChenProperPowerSum_le_negligible (N : ℕ) (hNbig : 2 ^ 110 < N)
+    (hEven : Even N) :
+    (correctedChenCandidates N).sum (fun p =>
+      ∑ q ∈ (Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+        ((N - p).factorization q : ℝ)) ≤
+      60 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+  have h10 : ∀ p ∈ correctedChenCandidates N,
+      ∀ q ∈ (Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+        (N - p).factorization q ≤ 10 := by
+    intro p hp q hq
+    rcases Finset.mem_filter.mp hq with ⟨hqr, hc⟩
+    have hqz : correctedChenZ N ≤ q := hc.2.1
+    have hpN : p < N := by
+      rcases Finset.mem_filter.mp hp with ⟨hpN, _⟩
+      simpa using hpN
+    exact factorization_le_ten_of_large hc.1 hqz hNbig (N - p) (by omega)
+  have hsum : (correctedChenCandidates N).sum (fun p =>
+      ∑ q ∈ (Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+        ((N - p).factorization q : ℝ)) ≤
+    (correctedChenCandidates N).sum (fun p =>
+      (10 * ((Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card : ℝ)) := by
+    apply Finset.sum_le_sum
+    intro p hp
+    have hper : ∀ q ∈ (Finset.range (correctedChenY N)).filter
+        (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+      ((N - p).factorization q : ℝ) ≤ (10 : ℝ) := by
+      intro q hq
+      exact_mod_cast h10 p hp q hq
+    calc
+      (∑ q ∈ (Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+        ((N - p).factorization q : ℝ)) ≤
+          ∑ q ∈ (Finset.range (correctedChenY N)).filter
+            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p), (10 : ℝ) :=
+            Finset.sum_le_sum hper
+      _ = (10 * ((Finset.range (correctedChenY N)).filter
+            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card : ℝ) := by
+            rw [Finset.sum_const, nsmul_eq_mul]
+            ring
+  have hb' : (correctedChenCandidates N).sum (fun p =>
+      ((Finset.range (correctedChenY N)).filter
+        (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card) ≤
+      6 * (N : ℝ) ^ (9 / 10 : ℝ) :=
+    correctedChenPrimePowerProperCountBound N hNbig hEven
+  have hbreal : (correctedChenCandidates N).sum (fun p =>
+      (((Finset.range (correctedChenY N)).filter
+        (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card : ℝ)) ≤
+      6 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+    exact_mod_cast hb'
+  calc
+    (correctedChenCandidates N).sum (fun p =>
+      ∑ q ∈ (Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+        ((N - p).factorization q : ℝ)) ≤
+    (correctedChenCandidates N).sum (fun p =>
+      (10 * ((Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card : ℝ)) := hsum
+    _ = 10 * (correctedChenCandidates N).sum (fun p =>
+          (((Finset.range (correctedChenY N)).filter
+            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card : ℝ)) := by
+          rw [Finset.mul_sum]
+    _ ≤ 10 * (6 * (N : ℝ) ^ (9 / 10 : ℝ)) := by
+          exact mul_le_mul_of_nonneg_left hbreal (by norm_num)
+    _ = 60 * (N : ℝ) ^ (9 / 10 : ℝ) := by ring
+
+/-- **素幂罚函数和的归约 (chen #18 结构侧)**: 对 `N > 2^110` 偶数 `N`,
+
+  Σ_p primePowerSum(N−p) ≤ q¹ 计数 + 60·N^{9/10},
+
+其中 q¹ 计数 `= Σ_p #{q ∈ [z,y) : q | N−p}` 是剩余的唯一解析输入
+(配合 ant #15 的加权 Pan 分布输入), 真幂部分已被 `60·N^{9/10}` 吸收. -/
+theorem correctedChenPrimePowerSum_le_q1Count_add_negligible (N : ℕ)
+    (hNbig : 2 ^ 110 < N) (hEven : Even N) :
+    (correctedChenCandidates N).sum
+        (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+      correctedChenQ1Count N + 60 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+  have hper : ∀ p ∈ correctedChenCandidates N,
+      primePowerSum (N - p) (correctedChenZ N) (correctedChenY N) ≤
+        ((Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ∣ N - p)).card +
+        (∑ q ∈ (Finset.range (correctedChenY N)).filter
+            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+          ((N - p).factorization q : ℝ)) := by
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨hpN, _⟩
+    have hnp : N - p ≠ 0 := by
+      have hpN' : p < N := by simpa using hpN
+      have hge2 : 2 ≤ N - p := by
+        rcases Finset.mem_filter.mp hp with ⟨_, hc⟩
+        exact hc.2.1
+      omega
+    exact primePowerSum_le_factorCount_add_powerSum (N - p) (correctedChenZ N)
+      (correctedChenY N) hnp
+  calc
+    (correctedChenCandidates N).sum
+        (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+      (correctedChenCandidates N).sum (fun p =>
+        ((Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ∣ N - p)).card +
+        (∑ q ∈ (Finset.range (correctedChenY N)).filter
+            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+          ((N - p).factorization q : ℝ))) :=
+        Finset.sum_le_sum hper
+    _ = (correctedChenCandidates N).sum (fun p =>
+          ((Finset.range (correctedChenY N)).filter
+            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ∣ N - p)).card) +
+        (correctedChenCandidates N).sum (fun p =>
+          ∑ q ∈ (Finset.range (correctedChenY N)).filter
+              (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p),
+            ((N - p).factorization q : ℝ)) := by
+          rw [Finset.sum_add_distrib]
+          conv => rhs; rw [Nat.cast_sum]
+    _ ≤ correctedChenQ1Count N + 60 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+          unfold correctedChenQ1Count
+          rw [Nat.cast_sum]
+          exact add_le_add le_rfl (correctedChenProperPowerSum_le_negligible N hNbig hEven)
+
+/-- **hPrimePower 的输入消费定理 (chen #18)**: 若 q¹ 计数有一致上界
+`q¹Count(N) ≤ Cq·𝔖_trunc·N/log²N` (来自 ant #15 的加权 Pan/分布输入),
+且真幂部分可忽略, 则 `hPrimePower` 成立 — 即
+`Σ_p primePowerSum(N−p) ≤ (Cq + 1/2)·𝔖_trunc·N/log²N`. -/
+theorem hPrimePower_of_q1Count_bound
+    (hq1 : ∃ Cq : ℝ, 0 < Cq ∧ ∃ Nq : ℕ, ∀ N : ℕ, Nq ≤ N → Even N →
+      correctedChenQ1Count N ≤ Cq * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+        (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hneg : ∃ Nn : ℕ, ∀ N : ℕ, Nn ≤ N → Even N →
+      60 * (N : ℝ) ^ (9 / 10 : ℝ) ≤
+        (1 / 2 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+          (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2) :
+    ∃ Cₚ : ℝ, 0 < Cₚ ∧ ∃ N₀ₚ : ℕ, ∀ N : ℕ, N₀ₚ ≤ N → Even N →
+      (correctedChenCandidates N).sum
+          (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+        Cₚ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+  rcases hq1 with ⟨Cq, hCq, Nq, hq1'⟩
+  rcases hneg with ⟨Nn, hneg'⟩
+  refine ⟨Cq + 1 / 2, by positivity, max (max Nq Nn) (2 ^ 110 + 1), ?_⟩
+  intro N hN hEven
+  have hNq : Nq ≤ N := by
+    dsimp at hN
+    omega
+  have hNn : Nn ≤ N := by
+    dsimp at hN
+    omega
+  have hNbig : 2 ^ 110 < N := by
+    dsimp at hN
+    omega
+  let 𝔖 : ℝ := AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1)
+  let X : ℝ := (N : ℝ) / (log (N : ℝ)) ^ 2
+  have hred := correctedChenPrimePowerSum_le_q1Count_add_negligible N hNbig hEven
+  have hXeq1 : Cq * 𝔖 * X =
+      Cq * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    dsimp [𝔖, X]
+    ring
+  have hXeq2 : (1 / 2 : ℝ) * 𝔖 * X =
+      (1 / 2 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    dsimp [𝔖, X]
+    ring
+  have hq1'' : correctedChenQ1Count N ≤ Cq * 𝔖 * X := by
+    dsimp [𝔖, X]
+    rw [hXeq1]
+    exact hq1' N hNq hEven
+  have hneg'' : 60 * (N : ℝ) ^ (9 / 10 : ℝ) ≤ (1 / 2 : ℝ) * 𝔖 * X := by
+    dsimp [𝔖, X]
+    rw [hXeq2]
+    exact hneg' N hNn hEven
+  have hXeq : (Cq + 1 / 2) * 𝔖 * X =
+      (Cq + 1 / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+        (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    dsimp [𝔖, X]
+    ring
+  calc
+    (correctedChenCandidates N).sum
+        (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+      correctedChenQ1Count N + 60 * (N : ℝ) ^ (9 / 10 : ℝ) := hred
+    _ ≤ Cq * 𝔖 * X + (1 / 2 : ℝ) * 𝔖 * X := by
+          exact add_le_add hq1'' hneg''
+    _ = (Cq + 1 / 2) * 𝔖 * X := by ring
+    _ = (Cq + 1 / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+          (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+          exact hXeq
 
 /-- 逐候选: 三因子惩罚 ≤ 切换权重 (对 `(p₁,p₂)` 对的计数, 丢掉
 `p₁ < p₂`、`p₂ ≤ p₃` 等约束后仍为上界; `p₃` 由等式唯一决定). -/
