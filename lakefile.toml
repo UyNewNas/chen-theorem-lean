@@ -11,7 +11,7 @@ rev = "e4c91783ca8e6a7c693ae624ade32fd22d4e43c1"
 [[require]]
 name = "analytic_number_theory"
 git = "https://github.com/UyNewNas/analytic-number-theory-lean.git"
-rev = "2d8a3df9e05f52613f495ccb61aa5d0ae605b0bd"
+rev = "21b94d1bef3f9011243b8662cf62fd25be846a90"
 
 # `MathlibNt.lean` is the audited public root: building it recursively checks
 # the entire module set shipped by this focused repository.

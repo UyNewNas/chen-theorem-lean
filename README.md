@@ -119,6 +119,16 @@ ten prime divisors above `z = max 2 ⌊N^{1/10}⌋` (each `p | N` local factor i
 now in place; what remains for `CorrectedChenMainTermLower` is the assembly
 seam on the `jr-lower-bound-core` branch (chen PR #2).
 
+The optimal Selberg upper-bound main-term chain is now consumed from ant #6
+(`selberg_upper_bound_optimal`, `selbergMainTerm_eq_prod_one_sub_nu`, ant PR
+#12): `correctedChenSelbergUpperBound` gives
+`siftedSum ≤ totalMass·(Σ selbergTerms)⁻¹ + errSum(Λ²w*)` for the corrected
+sieve, and the main-term chain
+`totalMass·(Σ selbergTerms)⁻¹ = (N/log N)·primeProduct(z−1)·𝔖_trunc(N, z−1)`
+is kernel-checked.  What remains for chen #7 is the switching bridge from
+`correctedChenOmega` to this sifted-sum bound and the `3.9404` constant
+assembly.
+
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.
