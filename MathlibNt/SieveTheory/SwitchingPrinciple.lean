@@ -1688,7 +1688,6 @@ theorem correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum (N : ℕ) 
       linarith
     _ ≤ (correctedChenCandidates N).card := hseam
 
-
 /-- At a sieved prime `2 < p < z` with `p ∤ N`, the corrected Goldbach
 density factor satisfies `(1 - ν(p))⁻¹ = (p-1)/(p-2)`. -/
 theorem correctedChenNu_inv_prime {N p : ℕ} (hp : p.Prime) (hp2 : 2 < p) :
@@ -5567,5 +5566,260 @@ theorem switching_identity (N z y : ℕ) (_hz : 2 ≤ z) (_hy : y ≤ N) :
   - SwitchingPrinciple.lean: W(N), Ω, 切换原理 (本文件)
   - SelbergUpperBound.lean: Selberg 筛上界 (Ω 估计)
 -/
+
+/-- 修正筛积非负: 每个因子 `1 - nu p` 在筛素因子处为正. -/
+lemma correctedChenSieveProduct_pos_aux (N : ℕ) : 0 ≤ correctedChenSieveProduct N := by
+  unfold correctedChenSieveProduct
+  exact Finset.prod_nonneg (by
+    intro p hp
+    have hpp : p.Prime := (Nat.mem_primeFactors.mp hp).1
+    have hpdvd : p ∣ correctedChenSiftingProduct N :=
+      (Nat.mem_primeFactors.mp hp).2.1
+    have hpc : p < correctedChenZ N ∧ 2 < p ∧ ¬ p ∣ N :=
+      (prime_dvd_correctedChenSiftingProduct hpp).mp hpdvd
+    have hinv := correctedChenNu_inv_prime (N := N) hpp hpc.2.1
+    have hpos : 0 < (1 - correctedChenNu p) := by
+      have hnum : 0 < ((p : ℝ) - 1) / ((p : ℝ) - 2) := by
+        have hcast : (3 : ℝ) ≤ (p : ℝ) := by exact_mod_cast (by omega : 3 ≤ p)
+        have hpm1 : 0 < (p : ℝ) - 1 := by linarith
+        have hpm2 : 0 < (p : ℝ) - 2 := by linarith
+        exact div_pos hpm1 hpm2
+      rw [← hinv] at hnum
+      exact inv_pos.mp hnum
+    exact le_of_lt hpos)
+
+/-- 修正 Chen 筛上 ant 一致 JR 下界的独立实例化:
+普通 Möbius 就是下 Möbius 序列且主项恒等 `mainSum mu = V`,
+取 `fs = 1`, `eta0 = 1/2`, 得 `X*V*(1-1/2) - errSum(1) <= siftedSum`.
+
+这是 chen #8 备注中列出的独立验证通道: 经 ant 的 `UniformJurkatRichertLowerBound`
+接缝 (统一量词 `N₀, eta0` 先于 `forall N`) 重新推出
+`correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum` 同款下界. -/
+theorem correctedChenJR_ant_lower_bound :
+    AnalyticNumberTheory.Sieve.UniformJurkatRichertLowerBound
+      correctedChenBoundingSieve (fun N => (N : ℝ) ^ (1 / 10 : ℝ))
+      (fun N => (N : ℝ) ^ (1 / 2 : ℝ)) (fun _ => 1) := by
+  let mu : ℕ → ℝ := fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)
+  refine ⟨2, 1 / 2, by norm_num, ?_⟩
+  intro N hN hEven
+  refine ⟨mu, ?_, ?_, ?_⟩
+  · simpa [mu] using moebius_real_isLowerMoebius
+  · intro d
+    simpa [mu] using abs_moebius_real_le_one d
+  · have hV : AnalyticNumberTheory.Sieve.sieveProductPrimeFactors
+        (correctedChenBoundingSieve N) = correctedChenSieveProduct N := by
+      unfold AnalyticNumberTheory.Sieve.sieveProductPrimeFactors correctedChenSieveProduct
+      rfl
+    have hmain : (correctedChenBoundingSieve N).mainSum mu =
+        correctedChenSieveProduct N := by
+      simpa [mu] using mainSum_moebius_eq_correctedChenSieveProduct N
+    have hVnonneg : 0 ≤ correctedChenSieveProduct N :=
+      correctedChenSieveProduct_pos_aux N
+    have hineq : correctedChenSieveProduct N * (1 - 1 / 2) ≤
+        correctedChenSieveProduct N := by
+      nlinarith
+    have hmainterm : AnalyticNumberTheory.Sieve.sieveProductPrimeFactors
+          (correctedChenBoundingSieve N) * (1 - 1 / 2) ≤
+        (correctedChenBoundingSieve N).mainSum mu := by
+      rw [hV, hmain]
+      exact hineq
+    have hmass : 0 ≤ (correctedChenBoundingSieve N).totalMass := by
+      unfold BoundingSieve.totalMass correctedChenBoundingSieve
+      exact div_nonneg (by positivity : (0 : ℝ) ≤ (N : ℝ))
+        (Real.log_nonneg (by exact_mod_cast (by omega : 1 ≤ N)))
+    exact AnalyticNumberTheory.Sieve.siftedSum_lower_bound_of_mainTerm
+      (S := correctedChenBoundingSieve N) (fs := fun _ => 1)
+      (t := ((N : ℝ) ^ (1 / 2 : ℝ)) / ((N : ℝ) ^ (1 / 10 : ℝ)))
+      (η := (1 / 2 : ℝ)) (muMinus := mu) hmass
+      (by simpa [mu] using moebius_real_isLowerMoebius)
+      (by intro d; simpa [mu] using abs_moebius_real_le_one d)
+      hmainterm
+
+/-- **独立验证通道 (正性侧, 不依赖 Ω)**: ant `UniformJurkatRichertLowerBound`
+实例 (普通 Möbius 主项恒等) + 加权 Pan errSum 控制 ⇒ 充分大偶数的修正候选
+计数严格正:
+
+  `0 < card(correctedChenCandidates N)`.
+
+与 main 上 `correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum` 的
+直证路线并行; 本通道经由 ant 的 JR 接缝 (统一量词 `N₀, eta₀` 先于 `∀ N`,
+`X·V·(1-eta₀) - errSum(1) ≤ siftedSum = card`) 得到同一下界. -/
+theorem correctedChenPositivity_via_jr_ant
+    (hjr : AnalyticNumberTheory.Sieve.UniformJurkatRichertLowerBound
+      correctedChenBoundingSieve (fun N => (N : ℝ) ^ (1 / 10 : ℝ))
+      (fun N => (N : ℝ) ^ (1 / 2 : ℝ)) (fun _ => 1))
+    (hPan : ChenWeightedPanInput) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N₀ ≤ N → Even N →
+      0 < ((correctedChenCandidates N).card : ℝ) := by
+  obtain ⟨N₀m, hm⟩ := CorrectedChenMainTermLower_singularSeries_units
+  rcases hPan 3 (by norm_num : 0 < (3 : ℝ)) with ⟨C, hC, hbound⟩
+  have hErr : ∀ N : ℕ, 1000 ≤ N → Even N →
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤ C * (N : ℝ) / (log (N : ℝ)) ^ 3 := by
+    intro N hN hEven
+    exact le_trans (correctedChenErrSum_le_weightedPanInput N) (by
+      simpa [Real.rpow_natCast] using hbound N hN hEven)
+  let T : ℝ := 6 * C / 5
+  let M : ℕ := Nat.ceil (Real.exp T) + 1
+  let N₀ : ℕ := max (max N₀m 1000) (max M 59049)
+  refine ⟨N₀, ?_⟩
+  intro N hN hEven
+  have hNm : N₀m ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hN1000 : 1000 ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hNM : M ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hN59049 : 59049 ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hlogN : 0 < log (N : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < N))
+  have hT : T < log (N : ℝ) := by
+    have hce : Real.exp T ≤ (Nat.ceil (Real.exp T) : ℝ) := Nat.le_ceil (Real.exp T)
+    have hcm : (Nat.ceil (Real.exp T) : ℝ) < (N : ℝ) := by
+      have h1 : (Nat.ceil (Real.exp T) + 1 : ℕ) ≤ N := hNM
+      have h1r : ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) ≤ (N : ℝ) := by exact_mod_cast h1
+      have hlt : (Nat.ceil (Real.exp T) : ℝ) < ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) := by
+        exact_mod_cast (Nat.lt_succ_self (Nat.ceil (Real.exp T)))
+      exact lt_of_lt_of_le hlt h1r
+    have hstrict : Real.exp T < (N : ℝ) := lt_of_le_of_lt hce hcm
+    have hloglt : Real.log (Real.exp T) < log (N : ℝ) :=
+      Real.log_lt_log (Real.exp_pos T) hstrict
+    rwa [Real.log_exp] at hloglt
+  have hCdiv : C / log (N : ℝ) < (5 / 6 : ℝ) := by
+    have hT' : (6 * C) / 5 < log (N : ℝ) := by
+      simpa [T] using hT
+    have hmul := mul_lt_mul_of_pos_right hT' (by norm_num : 0 < (5 : ℝ))
+    have hcross : C * 6 < 5 * log (N : ℝ) := by
+      field_simp at hmul ⊢
+      nlinarith
+    rw [div_lt_iff₀ hlogN]
+    nlinarith
+  have hz : 2 ≤ correctedChenZ N - 1 := correctedChenZ_sub_one_ge_two_of_large hN59049
+  have h𝔖 : (1 / 2 : ℝ) ≤
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    singularSeriesTruncated_ge_half hz
+  have h𝔖pos : 0 < AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos N (correctedChenZ N - 1) (by omega)
+  have hmainN := hm N hNm hEven
+  have hErrN := hErr N hN1000 hEven
+  -- ant JR 实例 ⇒ X·V·(1/2) - errSum(1) ≤ card
+  rcases hjr with ⟨N₀jr, η₀, hη₀, hjrN⟩
+  have hN2 : 2 ≤ N := by omega
+  have hjrN' : (correctedChenBoundingSieve N).totalMass *
+        AnalyticNumberTheory.Sieve.sieveProductPrimeFactors (correctedChenBoundingSieve N) *
+        (1 - 1 / 2) - (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+      (correctedChenBoundingSieve N).siftedSum := by
+    have hV' : AnalyticNumberTheory.Sieve.sieveProductPrimeFactors
+          (correctedChenBoundingSieve N) = correctedChenSieveProduct N := by
+      unfold AnalyticNumberTheory.Sieve.sieveProductPrimeFactors correctedChenSieveProduct
+      rfl
+    have hmain' : (correctedChenBoundingSieve N).mainSum
+          (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) =
+        correctedChenSieveProduct N :=
+      mainSum_moebius_eq_correctedChenSieveProduct N
+    have hmainterm : AnalyticNumberTheory.Sieve.sieveProductPrimeFactors
+          (correctedChenBoundingSieve N) * (1 - 1 / 2) ≤
+        (correctedChenBoundingSieve N).mainSum
+          (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) := by
+      rw [hV', hmain']
+      have hVnonneg : 0 ≤ correctedChenSieveProduct N :=
+        correctedChenSieveProduct_pos_aux N
+      nlinarith
+    exact AnalyticNumberTheory.Sieve.siftedSum_lower_bound_of_mainTerm
+      (S := correctedChenBoundingSieve N) (fs := fun _ => 1)
+      (t := ((N : ℝ) ^ (1 / 2 : ℝ)) / ((N : ℝ) ^ (1 / 10 : ℝ)))
+      (η := (1 / 2 : ℝ))
+      (muMinus := fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ))
+      (by
+        unfold BoundingSieve.totalMass correctedChenBoundingSieve
+        exact div_nonneg (by positivity : (0 : ℝ) ≤ (N : ℝ))
+          (Real.log_nonneg (by exact_mod_cast (by omega : 1 ≤ N))))
+      moebius_real_isLowerMoebius abs_moebius_real_le_one hmainterm
+  have hlow : (correctedChenBoundingSieve N).totalMass *
+        AnalyticNumberTheory.Sieve.sieveProductPrimeFactors (correctedChenBoundingSieve N) *
+        (1 - 1 / 2) - (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+      ((correctedChenCandidates N).card : ℝ) := by
+    rw [← correctedChenBoundingSieve_siftedSum_eq_card N]
+    exact hjrN'
+  have hV : AnalyticNumberTheory.Sieve.sieveProductPrimeFactors
+        (correctedChenBoundingSieve N) = correctedChenSieveProduct N := by
+    unfold AnalyticNumberTheory.Sieve.sieveProductPrimeFactors correctedChenSieveProduct
+    rfl
+  have hX : (correctedChenBoundingSieve N).totalMass = (N : ℝ) / log (N : ℝ) := rfl
+  have hmaj : (5 / 3 : ℝ) *
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+      (correctedChenBoundingSieve N).totalMass *
+        AnalyticNumberTheory.Sieve.sieveProductPrimeFactors (correctedChenBoundingSieve N) *
+        (1 - 1 / 2) := by
+    have hle0 : (5 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+        (10 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 * (1 / 2) := by
+      ring_nf
+      exact le_rfl
+    have hmain2 := le_trans hle0 (mul_le_mul_of_nonneg_right hmainN (by norm_num : 0 ≤ (1 / 2 : ℝ)))
+    rw [hX] at hmain2
+    rw [hV, hX]
+    norm_num at hmain2 ⊢
+    simpa [mul_assoc] using hmain2
+  have hCsmall : C * (N : ℝ) / (log (N : ℝ)) ^ 3 <
+      (5 / 3 : ℝ) *
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    have h𝔖56 : (5 / 6 : ℝ) ≤
+        (5 / 3 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+          (correctedChenZ N - 1) := by
+      nlinarith [h𝔖, h𝔖pos]
+    have hC : C / log (N : ℝ) < (5 / 6 : ℝ) := hCdiv
+    have hX3 : 0 < (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+      exact div_pos (by positivity : (0 : ℝ) < N) (pow_pos hlogN 2)
+    have hmul2 := mul_lt_mul_of_pos_right hC hX3
+    have h𝔖N : C / log (N : ℝ) * ((N : ℝ) / (log (N : ℝ)) ^ 2) <
+        (5 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          ((N : ℝ) / (log (N : ℝ)) ^ 2) := by
+      exact lt_of_lt_of_le (by simpa using hmul2) (by
+        exact mul_le_mul_of_nonneg_right h𝔖56 (le_of_lt hX3))
+    have hrewL : C * (N : ℝ) / (log (N : ℝ)) ^ 3 =
+        (C / log (N : ℝ)) * ((N : ℝ) / (log (N : ℝ)) ^ 2) := by
+      field_simp [hlogN.ne']
+    have hrewR : (5 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 =
+        (5 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          ((N : ℝ) / (log (N : ℝ)) ^ 2) := by
+      field_simp [hlogN.ne']
+    rwa [hrewL, hrewR]
+  have hpos : 0 < (correctedChenBoundingSieve N).totalMass *
+        AnalyticNumberTheory.Sieve.sieveProductPrimeFactors (correctedChenBoundingSieve N) *
+        (1 - 1 / 2) - (correctedChenBoundingSieve N).errSum (fun _ => 1) := by
+    have h1 : C * (N : ℝ) / (log (N : ℝ)) ^ 3 <
+        (5 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 := hCsmall
+    have h2 : (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+        C * (N : ℝ) / (log (N : ℝ)) ^ 3 := hErrN
+    have h3 : (5 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+        (correctedChenBoundingSieve N).totalMass *
+          AnalyticNumberTheory.Sieve.sieveProductPrimeFactors (correctedChenBoundingSieve N) *
+          (1 - 1 / 2) := hmaj
+    linarith
+  have hcardpos : 0 < ((correctedChenCandidates N).card : ℝ) := by
+    have hhlow : (correctedChenBoundingSieve N).totalMass *
+          AnalyticNumberTheory.Sieve.sieveProductPrimeFactors (correctedChenBoundingSieve N) *
+          (1 - 1 / 2) - (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+        ((correctedChenCandidates N).card : ℝ) := hlow
+    linarith
+  exact hcardpos
+
 
 end MathlibNt.SieveTheory.SwitchingPrinciple
