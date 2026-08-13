@@ -3995,6 +3995,7 @@ theorem tripleFactorCount_le_switchingWeight {n z y : ℕ} :
     rcases Finset.mem_filter.mp hp₁ with ⟨h1r, h1c⟩
     rcases h1c with ⟨hpp, hz, hy, hw⟩
     rcases hw with ⟨p₂, p₃, hp₂p, hp₃p, hy₂, h₂₃, hprod, h₁₂, h₂₃'⟩
+    have hw' : ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n := ⟨p₃, hp₃p, hprod⟩
     have hmem : p₂ ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂) := by
       rw [Finset.mem_filter, Finset.mem_range]
       constructor
@@ -4006,10 +4007,9 @@ theorem tripleFactorCount_le_switchingWeight {n z y : ℕ} :
             _ ≤ p₁ * (p₂ * p₃) := h1b
             _ = p₁ * p₂ * p₃ := by rw [mul_assoc]
         rw [← hprod]
-        omega
+        exact lt_of_le_of_lt hle (Nat.lt_succ_self (p₁ * p₂ * p₃))
       · exact ⟨hp₂p, hy₂⟩
     have hterm : (if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n then (1 : ℝ) else 0) = 1 := by
-      have hw' : ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n := ⟨p₃, hp₃p, hprod⟩
       simp [hw']
     have hnonneg : ∀ q ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂),
         q ∉ ({p₂} : Finset ℕ) →
@@ -4026,6 +4026,7 @@ theorem tripleFactorCount_le_switchingWeight {n z y : ℕ} :
         exact hmem) hnonneg
     have hsing : ({p₂} : Finset ℕ).sum
         (fun q => if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * q * p₃ = n then (1 : ℝ) else 0) = 1 := by
+      rw [Finset.sum_singleton]
       simp [hw']
     rwa [hsing] at hs
   have hTsub : T ⊆ (Finset.range y).filter (fun p₁ => p₁.Prime ∧ z ≤ p₁) := by
@@ -4108,16 +4109,355 @@ theorem correctedChenOmega_triple_le_switchingCount (N : ℕ) :
             (correctedChenCandidates N).sum (fun p =>
               if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p then (1 : ℝ) else 0) := by
           rw [Finset.sum_comm]
+          apply Finset.sum_congr rfl
+          intro p₁ hp₁
           rw [Finset.sum_comm]
-    _ ≤ ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+    _ = ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
           ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
             ((correctedChenCandidates N).filter
               (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p)).card := by
-          apply Finset.sum_le_sum
-          intro p₁ hp₁
-          apply Finset.sum_le_sum
-          intro p₂ hp₂
-          rw [Finset.sum_boole]
+          -- 逐对: Σ_p if = #(filter)
+          simp_rw [Finset.sum_boole]
+          norm_cast
+
+/-! ## chen #7 (P2): 解析切换上界 — 切换集合的 Selberg 筛 -/
+
+/-- 切换集合上的密度: `ν(d) = 1/d` (支撑集 `{p₃ ≤ x}` 中 `d | p₃` 的比例). -/
+noncomputable def switchingSieveNu : ArithmeticFunction ℝ :=
+  { toFun := fun d : ℕ => (1 : ℝ) / d
+    map_zero' := by simp }
+
+/-- `switchingSieveNu` 乘性: `1/(mn) = (1/m)(1/n)`. -/
+theorem switchingSieveNu_isMultiplicative : switchingSieveNu.IsMultiplicative := by
+  constructor
+  · simp [switchingSieveNu]
+  · intro m n hcop
+    by_cases hm : m = 0
+    · subst m
+      simp [switchingSieveNu]
+    · by_cases hn : n = 0
+      · subst n
+        simp [switchingSieveNu]
+      · simp [switchingSieveNu, hm, hn]
+        field_simp [hm, hn]
+
+/-- 切换筛的筛积: `z` 以下所有素数之积. -/
+noncomputable def switchingSiftingProduct (z : ℕ) : ℕ :=
+  ((Finset.range z).filter Nat.Prime).prod id
+
+/-- 切换筛积非零. -/
+theorem switchingSiftingProduct_ne_zero (z : ℕ) : switchingSiftingProduct z ≠ 0 := by
+  unfold switchingSiftingProduct
+  exact ne_of_gt (Finset.prod_pos (fun p hp => Nat.Prime.pos (Finset.mem_filter.mp hp).2))
+
+/-- 素数集合之积的 `primeFactors` 等于该集合本身. -/
+private lemma primeFactors_prod_of_prime_set (S : Finset ℕ) (hS : ∀ p ∈ S, p.Prime) :
+    (S.prod id).primeFactors = S := by
+  induction S using Finset.induction_on with
+  | empty => simp [Nat.primeFactors_one]
+  | insert p S hpS ih =>
+      rw [Finset.prod_insert hpS]
+      change (p * S.prod id).primeFactors = insert p S
+      have hp' := hS p (Finset.mem_insert_self p S)
+      have h0p : p ≠ 0 := hp'.ne_zero
+      have h0s : (S.prod id) ≠ 0 := ne_of_gt <| Finset.prod_pos
+        (fun q hq => Nat.Prime.pos (hS q (Finset.mem_insert_of_mem hq)))
+      rw [Nat.primeFactors_mul h0p h0s, Nat.Prime.primeFactors hp',
+        ih (fun q hq => hS q (Finset.mem_insert_of_mem hq))]
+      rw [Finset.insert_eq]
+
+/-- 切换筛积是 squarefree 的 (不同素数之积). -/
+theorem switchingSiftingProduct_squarefree (z : ℕ) : Squarefree (switchingSiftingProduct z) := by
+  unfold switchingSiftingProduct
+  let S : Finset ℕ := (Finset.range z).filter Nat.Prime
+  have hS : ∀ p ∈ S, p.Prime := by
+    intro p hp
+    exact (Finset.mem_filter.mp hp).2
+  change Squarefree (S.prod id)
+  have hmain : ∀ (S : Finset ℕ), (∀ p ∈ S, p.Prime) → Squarefree (S.prod id) := by
+    intro S hS
+    induction S using Finset.induction_on with
+    | empty => simp
+    | insert p S hpS ih =>
+      have hprim : p.Prime := hS p (Finset.mem_insert_self p S)
+      have hsq_p : Squarefree p := by
+        unfold Squarefree
+        intro b hb
+        have hbd : b ∣ p := by
+          rcases hb with ⟨k, hk⟩
+          refine ⟨b * k, ?_⟩
+          calc
+            p = b * b * k := hk
+            _ = b * (b * k) := by ring
+        rcases hprim.eq_one_or_self_of_dvd b hbd with hb1 | hbp
+        · rw [hb1]
+          simp
+        · exfalso
+          have hpp : p * p ∣ p := by
+            rw [hbp] at hb
+            exact hb
+          have hp1 : p ∣ 1 := by
+            rcases hpp with ⟨k, hk⟩
+            have hmain : p * (p * k) = p * 1 := by
+              calc
+                p * (p * k) = (p * p) * k := by ring
+                _ = p := hk.symm
+                _ = p * 1 := by ring
+            -- p·(p·k) = p ⟹ p·k = 1 (p > 0)
+            refine ⟨k, ?_⟩
+            exact (Nat.mul_left_cancel (Nat.Prime.pos hprim) hmain).symm
+          exact (hprim.ne_one) (Nat.dvd_one.mp hp1)
+      have hcop : p.Coprime (S.prod id) := by
+        rw [Nat.coprime_prod_right_iff]
+        intro q hq
+        exact (Nat.coprime_primes hprim (hS q (Finset.mem_insert.mpr (Or.inr hq)))).mpr (by
+          intro hpq
+          apply hpS
+          rwa [hpq])
+      rw [Finset.prod_insert hpS]
+      exact (Nat.squarefree_mul hcop).mpr ⟨hsq_p, ih (fun q hq => hS q (Finset.mem_insert_of_mem hq))⟩
+  exact hmain ((Finset.range z).filter Nat.Prime) hS
+
+/-- **切换集合上的筛法问题**: 支撑 = `{p₃ ≤ x}` (`x = N/a`), 筛去
+`q < z` 的素数倍数 (`q | p₃`), 密度 `ν(d) = 1/d`, 总质量 = 支撑基数.
+筛后和 = `#{p₃ ≤ x : p₃ 无 < z 的素因子}`. -/
+noncomputable def switchingSieve (N a : ℕ) : BoundingSieve where
+  support := Finset.range (N / a + 1)
+  prodPrimes := switchingSiftingProduct (correctedChenZ N)
+  prodPrimes_squarefree := switchingSiftingProduct_squarefree (correctedChenZ N)
+  weights := fun _ => 1
+  weights_nonneg := by intro n; norm_num
+  totalMass := (N / a + 1 : ℕ)
+  nu := switchingSieveNu
+  nu_mult := switchingSieveNu_isMultiplicative
+  nu_pos_of_prime := by
+    intro p hp hdiv
+    unfold switchingSieveNu
+    have hp0 : p ≠ 0 := hp.ne_zero
+    simp [hp0]
+    exact hp.pos
+  nu_lt_one_of_prime := by
+    intro p hp hdiv
+    unfold switchingSieveNu
+    have hp0 : p ≠ 0 := hp.ne_zero
+    simp [hp0]
+    simpa [div_eq_mul_inv] using
+      (div_lt_one (by exact_mod_cast hp.pos : (0 : ℝ) < (p : ℝ))).mpr
+        (by exact_mod_cast hp.one_lt : (1 : ℝ) < (p : ℝ))
+
+/-- **切换集合计数**: 固定 `a = p₁p₂`, 满足 `a·p₃ = N−p` 的候选数. -/
+noncomputable def switchingCount (N a : ℕ) : ℝ :=
+  ((correctedChenCandidates N).filter (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p)).card
+
+/-- **切换计数 ≤ 切换筛的筛后和**: 候选 `p` 的 `p₃ = (N−p)/a` 落在支撑内、
+与筛积互素 (候选条件 ⟺ `p₃` 无 `< z` 的素因子, 因 `a = p₁p₂` 的素因子 ≥ z). -/
+theorem switchingCount_le_siftedSum (N a : ℕ) :
+    switchingCount N a ≤ (switchingSieve N a).siftedSum := by
+  unfold switchingCount
+  let T : Finset ℕ := (correctedChenCandidates N).filter
+    (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p)
+  have hmap : T.image (fun p => (N - p) / a) ⊆
+      ((Finset.range (N / a + 1)).filter
+        (fun n => Nat.Coprime (switchingSiftingProduct (correctedChenZ N)) n)) := by
+    intro n hn
+    rcases Finset.mem_image.mp hn with ⟨p, hp, rfl⟩
+    rw [Finset.mem_filter] at hp
+    rcases hp with ⟨hpc, hwit⟩
+    unfold correctedChenCandidates at hpc
+    rw [Finset.mem_filter] at hpc
+    rcases hpc with ⟨hpN, hpp, hNp2, hqcond⟩
+    rcases hwit with ⟨p₃, hp₃p, hprod⟩
+    have haeq : a * p₃ = N - p := hprod
+    have ha0 : a ≠ 0 := by
+      intro ha0
+      rw [ha0, zero_mul] at haeq
+      have hNp : N - p ≠ 0 := by omega
+      exact hNp haeq.symm
+    have hp₃eq : p₃ = (N - p) / a := by
+      rw [← haeq, mul_comm]
+      exact (Nat.mul_div_cancel p₃ (Nat.pos_of_ne_zero ha0)).symm
+    have hp₃le : p₃ ≤ N / a := by
+      rw [hp₃eq]
+      apply Nat.div_le_div_right
+      omega
+    have hcop : Nat.Coprime (switchingSiftingProduct (correctedChenZ N)) p₃ := by
+      rw [AnalyticNumberTheory.Sieve.coprime_prod_iff_no_prime_dvd]
+      intro r hrprime hrdvd hra
+      have hr_lt : r < correctedChenZ N := by
+        have hmem : r ∈ (Finset.range (correctedChenZ N)).filter Nat.Prime := by
+          have hrin : r ∈ (switchingSiftingProduct (correctedChenZ N)).primeFactors := by
+            rw [Nat.mem_primeFactors]
+            exact ⟨hrprime, hrdvd, switchingSiftingProduct_ne_zero (correctedChenZ N)⟩
+          have hpf := primeFactors_prod_of_prime_set
+            ((Finset.range (correctedChenZ N)).filter Nat.Prime)
+            (fun q hq => (Finset.mem_filter.mp hq).2)
+          unfold switchingSiftingProduct at hrin
+          rwa [hpf] at hrin
+        exact (Finset.mem_range.mp (Finset.mem_filter.mp hmem).1)
+      have hrdvd_Np : r ∣ N - p := by
+        rcases hra with ⟨k, hk⟩
+        refine ⟨a * k, ?_⟩
+        calc
+          N - p = a * p₃ := haeq.symm
+          _ = a * (r * k) := by rw [hk]
+          _ = r * (a * k) := by ring
+      exact hqcond r hrprime hr_lt hrdvd_Np
+    rw [Finset.mem_filter]
+    exact ⟨by rw [Finset.mem_range]; omega, by simpa [hp₃eq] using hcop⟩
+  have hinj : Set.InjOn (fun p => (N - p) / a) (T : Finset ℕ) := by
+    intro p₁ hp₁ p₂ hp₂ hdiv
+    unfold T at hp₁ hp₂
+    change p₁ ∈ (correctedChenCandidates N).filter
+        (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p) at hp₁
+    change p₂ ∈ (correctedChenCandidates N).filter
+        (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p) at hp₂
+    rw [Finset.mem_filter] at hp₁ hp₂
+    rcases hp₁ with ⟨hpc₁, hwit₁⟩
+    rcases hp₂ with ⟨hpc₂, hwit₂⟩
+    unfold correctedChenCandidates at hpc₁ hpc₂
+    rw [Finset.mem_filter] at hpc₁ hpc₂
+    rcases hwit₁ with ⟨p₃₁, hp₃₁p, hprod₁⟩
+    rcases hwit₂ with ⟨p₃₂, hp₃₂p, hprod₂⟩
+    have hp₁ge2 : 2 ≤ N - p₁ := hpc₁.2.2.1
+    have hp₂ge2 : 2 ≤ N - p₂ := hpc₂.2.2.1
+    have ha0 : a ≠ 0 := by
+      intro ha0
+      rw [ha0, zero_mul] at hprod₁
+      omega
+    have h1 : (N - p₁) / a * a = N - p₁ := Nat.div_mul_cancel (by
+      exact ⟨p₃₁, hprod₁.symm⟩)
+    have h2 : (N - p₂) / a * a = N - p₂ := Nat.div_mul_cancel (by
+      exact ⟨p₃₂, hprod₂.symm⟩)
+    change (N - p₁) / a = (N - p₂) / a at hdiv
+    have hNp : N - p₁ = N - p₂ := by
+      calc
+        N - p₁ = (N - p₁) / a * a := h1.symm
+        _ = (N - p₂) / a * a := by rw [hdiv]
+        _ = N - p₂ := h2
+    have hp₁N : p₁ < N := Finset.mem_range.mp hpc₁.1
+    have hp₂N : p₂ < N := Finset.mem_range.mp hpc₂.1
+    omega
+  have hcard : T.card = (T.image (fun p => (N - p) / a)).card := by
+    exact (Finset.card_image_of_injOn hinj).symm
+  calc
+    switchingCount N a = (T.card : ℝ) := rfl
+    _ = ((T.image (fun p => (N - p) / a)).card : ℝ) := by
+          exact_mod_cast hcard
+    _ ≤ (((Finset.range (N / a + 1)).filter
+          (fun n => Nat.Coprime (switchingSiftingProduct (correctedChenZ N)) n)).card : ℝ) := by
+          exact_mod_cast (Finset.card_le_card hmap)
+    _ = (switchingSieve N a).siftedSum := by
+          unfold BoundingSieve.siftedSum switchingSieve
+          simp [Finset.sum_boole]
+
+/-- **切换筛主项 = Mertens 积**: `(Σ selbergTerms)⁻¹ = ∏_{q<z}(1−1/q)
+= primeProduct(z−1)` (切换筛密度 `ν(q) = 1/q`). -/
+theorem switchingSieve_mainTerm_eq_primeProduct (N a : ℕ) :
+    (∑ l ∈ (switchingSieve N a).prodPrimes.divisors,
+      (switchingSieve N a).selbergTerms l)⁻¹ =
+    MertensTheorem.primeProduct (correctedChenZ N - 1) := by
+  have hmain := AnalyticNumberTheory.Sieve.selbergMainTerm_eq_prod_one_sub_nu (switchingSieve N a)
+  rw [hmain]
+  have h_pf : (switchingSieve N a).prodPrimes.primeFactors =
+      (Finset.range (correctedChenZ N)).filter Nat.Prime := by
+    unfold switchingSieve switchingSiftingProduct
+    have hprime : ∀ p ∈ (Finset.range (correctedChenZ N)).filter Nat.Prime, p.Prime := by
+      intro p hp
+      exact (Finset.mem_filter.mp hp).2
+    exact primeFactors_prod_of_prime_set
+      ((Finset.range (correctedChenZ N)).filter Nat.Prime) hprime
+  rw [h_pf]
+  unfold MertensTheorem.primeProduct
+  have hz : 1 ≤ correctedChenZ N := by
+    unfold correctedChenZ
+    omega
+  rw [← Nat.sub_add_cancel hz]
+  apply Finset.prod_congr rfl
+  intro q hq
+  have hqprime : q.Prime := (Finset.mem_filter.mp hq).2
+  have hq0 : q ≠ 0 := hqprime.ne_zero
+  unfold switchingSieve switchingSieveNu
+  simp [hq0]
+
+/-- **切换筛的 Selberg 上界** (ant #6 的无条件实例): 切换集合的筛后和
+≤ `totalMass·(Σ selbergTerms)⁻¹ + errSum(Λ²w*)`. -/
+theorem switchingSieve_upper_bound (N a : ℕ) :
+    ∃ w : ℕ → ℝ, w 1 = 1 ∧
+      (switchingSieve N a).siftedSum ≤
+        (switchingSieve N a).totalMass *
+          (∑ l ∈ (switchingSieve N a).prodPrimes.divisors,
+            (switchingSieve N a).selbergTerms l)⁻¹ +
+        (switchingSieve N a).errSum (BoundingSieve.lambdaSquared w) :=
+  AnalyticNumberTheory.Sieve.selberg_upper_bound_optimal (switchingSieve N a)
+
+/-- **切换筛的 Selberg 上界 (显式最优权重)**: 同前, 权重明确为 ant 的
+`optimalSelbergWeight` (即 Möbius, 单位有界). -/
+theorem switchingSieve_upper_bound_optimal (N a : ℕ) :
+    (switchingSieve N a).siftedSum ≤
+      (switchingSieve N a).totalMass *
+        (∑ l ∈ (switchingSieve N a).prodPrimes.divisors,
+          (switchingSieve N a).selbergTerms l)⁻¹ +
+      (switchingSieve N a).errSum (BoundingSieve.lambdaSquared
+        (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N a))) := by
+  have h := AnalyticNumberTheory.Sieve.omega_upper_bound_via_mathlib (switchingSieve N a)
+    (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N a))
+    (AnalyticNumberTheory.Sieve.optimalSelbergWeight_one (switchingSieve N a))
+  rw [AnalyticNumberTheory.Sieve.optimalSelbergMainSum_eq (switchingSieve N a)] at h
+  simpa [AnalyticNumberTheory.Sieve.selbergMainTerm] using h
+
+/-- 切换筛的逐对主项 + 误差: `totalMass·primeProduct(z−1) + errSum(Λ²w*)`. -/
+noncomputable def switchingSieveMainErr (N : ℕ) (p₁ p₂ : ℕ) : ℝ :=
+  (switchingSieve N (p₁ * p₂)).totalMass * MertensTheorem.primeProduct (correctedChenZ N - 1) +
+    (switchingSieve N (p₁ * p₂)).errSum (BoundingSieve.lambdaSquared
+      (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N (p₁ * p₂))))
+
+/-- **三因子部分: 主项 + 误差分解** (条件化):
+三因子惩罚和 ≤ 主项和 + 误差和, 其中
+
+  - 主项: `Σ_{p₁,p₂} (N/(p₁p₂)+1)·primeProduct(z−1)`;
+  - 误差: `Σ_{p₁,p₂} errSum(Λ²w*)` (w* = ant 最优权重).
+
+这是 `3.9404·𝔖·N/log²N` 形态的结构核心: 主项和由 Mertens + 数值积分
+(Liu Lemma 4) 控制, 误差和由加权 Pan 输入控制. -/
+theorem correctedChenOmega_triple_le_switchingSieveMainErr (N : ℕ) :
+    (correctedChenCandidates N).sum
+        (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+      ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+          switchingSieveMainErr N p₁ p₂ := by
+  have hfinite := correctedChenOmega_triple_le_switchingCount N
+  have hpair : ∀ p₁ ∈ (Finset.range (correctedChenY N)).filter
+      (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+      ∀ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+        (switchingCount N (p₁ * p₂) : ℝ) ≤ switchingSieveMainErr N p₁ p₂ := by
+    intro p₁ hp₁ p₂ hp₂
+    have hsc := switchingCount_le_siftedSum N (p₁ * p₂)
+    have hb := switchingSieve_upper_bound_optimal N (p₁ * p₂)
+    have hmain := switchingSieve_mainTerm_eq_primeProduct N (p₁ * p₂)
+    calc
+      (switchingCount N (p₁ * p₂) : ℝ) ≤ (switchingSieve N (p₁ * p₂)).siftedSum := by
+            exact_mod_cast hsc
+      _ ≤ (switchingSieve N (p₁ * p₂)).totalMass *
+              (∑ l ∈ (switchingSieve N (p₁ * p₂)).prodPrimes.divisors,
+                (switchingSieve N (p₁ * p₂)).selbergTerms l)⁻¹ +
+            (switchingSieve N (p₁ * p₂)).errSum
+              (BoundingSieve.lambdaSquared
+                (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N (p₁ * p₂)))) := hb
+      _ = switchingSieveMainErr N p₁ p₂ := by
+            unfold switchingSieveMainErr
+            rw [hmain]
+  calc
+    (correctedChenCandidates N).sum
+        (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N))
+        ≤ ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+            ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+              (switchingCount N (p₁ * p₂) : ℝ) := by
+            simpa [switchingCount] using hfinite
+    _ ≤ ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+            ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+              switchingSieveMainErr N p₁ p₂ := by
+            exact Finset.sum_le_sum (fun p₁ hp₁ => Finset.sum_le_sum
+              (fun p₂ hp₂ => hpair p₁ hp₁ p₂ hp₂))
 
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge
