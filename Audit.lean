@@ -111,6 +111,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_chens_theorem
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.tripleFactorCount_le_switchingWeight
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenOmega_triple_le_switchingCount
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingCount_le_pi
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingCount_eq_zero_of_N_lt_two_mul
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingSieveNu_isMultiplicative
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingSiftingProduct_ne_zero
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingSiftingProduct_squarefree
