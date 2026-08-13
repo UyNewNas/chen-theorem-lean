@@ -129,6 +129,13 @@ is kernel-checked.  What remains for chen #7 is the switching bridge from
 `correctedChenOmega` to this sifted-sum bound and the `3.9404` constant
 assembly.
 
+First step of the `correctedChenOmega` uniform bound (P3, 素幂一致界):
+`correctedChenPrimePowerProperCountBound` bounds the proper-prime-power
+contributions `Σ_p #{q ∈ [z,y) : q² | N−p} ≤ 6·N^{9/10}` for `N > 2^110`
+(elementary: per-`q` count `≤ N/q² + 1`, `Σ 1/q² ≤ 2/z` by telescoping,
+`z ≥ N^{1/10}/2`).  The full Ω assembly still needs the triple-part Selberg
+bound and the k = 1 prime-factor part via the weighted Pan input.
+
 Read [the chain audit](MathlibNt/SieveTheory/CHEN_CHAIN_AUDIT.md) before relying
 on any headline claim.  It gives the exact theorem status, limitations of the
 pointwise remainder interfaces, review commands, and completion milestones.
