@@ -40,12 +40,16 @@ import Mathlib.Data.Nat.Totient
 import Mathlib.Data.Nat.Squarefree
 import Mathlib.NumberTheory.AlmostPrime
 import Mathlib.NumberTheory.Harmonic.EulerMascheroni
+import Mathlib.NumberTheory.ArithmeticFunction.Moebius
 import Mathlib.Algebra.Ring.Parity
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 import AnalyticNumberTheory
 import MathlibNt.SieveTheory.SingularSeries
 import MathlibNt.SieveTheory.SelbergUpperBound
+
+open scoped ArithmeticFunction.Moebius
+open scoped ArithmeticFunction.zeta
 
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
 
@@ -1358,6 +1362,279 @@ noncomputable def correctedChenUnsiftedPrimeSupport (N : ℕ) : Finset ℕ :=
     p.Prime ∧ 2 ≤ N - p ∧
       ∀ r : ℕ, r.Prime → r < correctedChenZ N →
         (r ≤ 2 ∨ r ∣ N) → ¬ r ∣ N - p)
+
+/-- **禁素因子乘积 (Pan 桥)**: `F(N) = ∏_{r < z, r 素数, r ≤ 2 ∨ r | N} r`.
+support 条件 `∀ r < z: (r ≤ 2 ∨ r | N) → ¬ r | N−p` 恰为
+`(N−p, F(N)) = 1`. -/
+noncomputable def correctedChenForbiddenProduct (N : ℕ) : ℕ :=
+  ((Finset.range (correctedChenZ N)).filter
+    (fun r => r.Prime ∧ (r ≤ 2 ∨ r ∣ N))).prod id
+
+/-- 禁素因子乘积无平方因子 (不同素数之积). -/
+theorem correctedChenForbiddenProduct_squarefree (N : ℕ) :
+    Squarefree (correctedChenForbiddenProduct N) := by
+  unfold correctedChenForbiddenProduct
+  refine Finset.squarefree_prod_of_pairwise_isCoprime ?_ ?_
+  · rintro p hp q hq hpq
+    simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_range] at hp hq
+    exact Nat.coprime_iff_isRelPrime.mp
+      ((Nat.coprime_primes hp.2.1 hq.2.1).mpr hpq)
+  · intro p hp
+    simp only [Finset.mem_filter, Finset.mem_range] at hp
+    exact hp.2.1.squarefree
+
+/-- 禁素因子乘积非零. -/
+theorem correctedChenForbiddenProduct_ne_zero (N : ℕ) :
+    correctedChenForbiddenProduct N ≠ 0 := by
+  exact (Squarefree.ne_zero (correctedChenForbiddenProduct_squarefree N))
+
+/-- 禁素因子乘积的素因子集恰为被过滤的素数. -/
+theorem correctedChenForbiddenProduct_primeFactors (N : ℕ) :
+    (correctedChenForbiddenProduct N).primeFactors =
+      (Finset.range (correctedChenZ N)).filter (fun r => r.Prime ∧ (r ≤ 2 ∨ r ∣ N)) := by
+  unfold correctedChenForbiddenProduct
+  exact primeFactors_prod_eq_self (by
+    intro p hp
+    simp only [Finset.mem_filter, Finset.mem_range] at hp
+    exact hp.2.1)
+
+/-- `r | F(N)` 的刻画: `r` 素数且 `r < z` 且 `(r ≤ 2 ∨ r | N)`. -/
+theorem prime_dvd_correctedChenForbiddenProduct_iff {N r : ℕ} (hr : r.Prime) :
+    r ∣ correctedChenForbiddenProduct N ↔
+      r < correctedChenZ N ∧ (r ≤ 2 ∨ r ∣ N) := by
+  constructor
+  · intro hdvd
+    have hmem : r ∈ (correctedChenForbiddenProduct N).primeFactors :=
+      (Nat.mem_primeFactors_of_ne_zero (correctedChenForbiddenProduct_ne_zero N)).mpr
+        ⟨hr, hdvd⟩
+    rw [correctedChenForbiddenProduct_primeFactors N] at hmem
+    rcases Finset.mem_filter.mp hmem with ⟨hrange, hcond⟩
+    exact ⟨by simpa using hrange, hcond.2⟩
+  · intro hmem
+    have hmem' : r ∈ (correctedChenForbiddenProduct N).primeFactors := by
+      rw [correctedChenForbiddenProduct_primeFactors N]
+      exact Finset.mem_filter.mpr ⟨by simpa using hmem.1, ⟨hr, hmem.2⟩⟩
+    exact (Nat.mem_primeFactors_of_ne_zero (correctedChenForbiddenProduct_ne_zero N)).mp hmem' |>.2
+
+/-- **support 的互素刻画 (Pan 桥)**: `p ∈ support ⟺ p.Prime ∧ 2 ≤ N−p ∧
+∀ r | F(N) 素数: ¬ r | N−p`. -/
+theorem mem_correctedChenUnsiftedPrimeSupport_iff_coprime (N p : ℕ) :
+    p ∈ correctedChenUnsiftedPrimeSupport N ↔
+      p.Prime ∧ 2 ≤ N - p ∧
+        ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p := by
+  unfold correctedChenUnsiftedPrimeSupport
+  rw [Finset.mem_filter]
+  constructor
+  · intro hp
+    rcases hp with ⟨hp_range, hbase⟩
+    exact ⟨hbase.1, ⟨hbase.2.1, by
+      intro r hr hrF
+      have hlt : r < correctedChenZ N := (prime_dvd_correctedChenForbiddenProduct_iff hr).mp hrF |>.1
+      have hcond : r ≤ 2 ∨ r ∣ N := (prime_dvd_correctedChenForbiddenProduct_iff hr).mp hrF |>.2
+      exact hbase.2.2 r hr hlt hcond⟩⟩
+  · intro hp
+    rcases hp with ⟨hpp, h2, hcop⟩
+    exact ⟨(by simpa using (show p < N by omega)), ⟨hpp, ⟨h2, by
+      intro r hr hlt hcond
+      have hrF : r ∣ correctedChenForbiddenProduct N :=
+        (prime_dvd_correctedChenForbiddenProduct_iff hr).mpr ⟨hlt, hcond⟩
+      exact hcop r hr hrF⟩⟩⟩
+
+/-- **Möbius 互素指示 (Pan 桥)**: `Σ_{e | F(N), e | m} μ(e) =
+1_{∀ r | F(N) 素数: ¬ r | m}`. -/
+theorem moebius_coprime_sum_forbidden (N m : ℕ) :
+    (∑ e ∈ (correctedChenForbiddenProduct N).divisors, if e ∣ m then (μ e : ℝ) else 0) =
+      if ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ m
+        then (1 : ℝ) else 0 := by
+  let F : ℕ := correctedChenForbiddenProduct N
+  have hdiv : F.divisors.filter (fun e => e ∣ m) = (Nat.gcd m F).divisors := by
+    ext e
+    constructor
+    · intro he
+      rw [Finset.mem_filter] at he
+      rw [Nat.mem_divisors] at he ⊢
+      rcases he with ⟨heF, hem⟩
+      rcases heF with ⟨hed, hF0⟩
+      constructor
+      · exact Nat.dvd_gcd_iff.mpr ⟨hem, hed⟩
+      · have hFpos : 0 < F := Nat.pos_of_ne_zero hF0
+        exact ne_of_gt (Nat.gcd_pos_of_pos_right m hFpos)
+    · intro he
+      rw [Nat.mem_divisors] at he
+      rw [Finset.mem_filter] at ⊢
+      rw [Nat.mem_divisors] at ⊢
+      rcases he with ⟨hg, hg0⟩
+      rcases (Nat.dvd_gcd_iff.mp hg) with ⟨hem, hed⟩
+      constructor
+      · exact ⟨hed, correctedChenForbiddenProduct_ne_zero N⟩
+      · exact hem
+  have hsum : (∑ e ∈ F.divisors, if e ∣ m then (μ e : ℝ) else 0) =
+      (∑ e ∈ (Nat.gcd m F).divisors, (μ e : ℝ)) := by
+    rw [← Finset.sum_filter]
+    rw [hdiv]
+  have hsum' : (∑ e ∈ (Nat.gcd m F).divisors, (μ e : ℝ)) =
+      if Nat.gcd m F = 1 then (1 : ℝ) else 0 := by
+    have h := ArithmeticFunction.coe_zeta_mul_coe_moebius (R := ℝ)
+    have hkey : (ζ * (μ : ArithmeticFunction ℝ)) (Nat.gcd m F) =
+        (1 : ArithmeticFunction ℝ) (Nat.gcd m F) := by rw [h]
+    rw [ArithmeticFunction.coe_zeta_mul_apply, ArithmeticFunction.one_apply] at hkey
+    simpa [ArithmeticFunction.intCoe_apply, mul_comm] using hkey
+  have hgcd : (Nat.gcd m F = 1) ↔ ∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ m := by
+    constructor
+    · intro hg r hr hrF hm
+      have hrg : r ∣ Nat.gcd m F := Nat.dvd_gcd_iff.mpr ⟨hm, hrF⟩
+      rw [hg] at hrg
+      have hr1 : r ≤ 1 := Nat.le_of_dvd (by norm_num) hrg
+      have hr2 : 2 ≤ r := hr.two_le
+      omega
+    · intro hcop
+      by_contra hg
+      have hgne : Nat.gcd m F ≠ 1 := by omega
+      obtain ⟨r, hrp, hrd⟩ := Nat.exists_prime_and_dvd hgne
+      have hrm : r ∣ m := (Nat.dvd_gcd_iff.mp hrd).1
+      have hrF : r ∣ F := (Nat.dvd_gcd_iff.mp hrd).2
+      exact hcop r hrp hrF hrm
+  rw [hsum, hsum']
+  by_cases hc : Nat.gcd m F = 1
+  · rw [if_pos hc]
+    rw [if_pos (hgcd.mp hc)]
+  · rw [if_neg hc]
+    rw [if_neg (mt hgcd.mpr hc)]
+
+/-- **support AP 计数的 Möbius 分解 (Pan 桥)**: 逐点
+`1_{p ∈ support, p ≡ N mod d} = Σ_{e | F(N)} μ(e)·1_{base ∧ e | N−p}`. -/
+private theorem support_AP_indicator_eq_moebiusSum (N p d : ℕ) (hp : p ∈ Finset.range N) :
+    (if p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD d] then (1 : ℝ) else 0) =
+      ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p then (μ e : ℝ) else 0 := by
+  have hcop := moebius_coprime_sum_forbidden N (N - p)
+  by_cases hsupp : p ∈ correctedChenUnsiftedPrimeSupport N
+  · have hbase : p.Prime ∧ 2 ≤ N - p :=
+      ⟨(Finset.mem_filter.mp hsupp).2.1, (Finset.mem_filter.mp hsupp).2.2.1⟩
+    by_cases hcong : p ≡ N [MOD d]
+    · rw [if_pos ⟨hsupp, hcong⟩]
+      have hcoprime : ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p := by
+        rw [mem_correctedChenUnsiftedPrimeSupport_iff_coprime] at hsupp
+        exact hsupp.2.2
+      have hcop1 : (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+          if e ∣ N - p then (μ e : ℝ) else 0) = 1 := by
+        rw [hcop]
+        rw [if_pos hcoprime]
+      calc
+        (1 : ℝ) = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+            if e ∣ N - p then (μ e : ℝ) else 0 := hcop1.symm
+        _ = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+            if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p then (μ e : ℝ) else 0 := by
+              apply Finset.sum_congr rfl
+              intro e he
+              rcases hbase with ⟨hpp, h2⟩
+              by_cases hdvd : e ∣ N - p <;> simp [hpp, h2, hcong, hdvd]
+    · rw [if_neg (by intro h; exact hcong h.2)]
+      symm
+      apply Finset.sum_eq_zero
+      intro e he
+      by_cases hdvd : e ∣ N - p
+      · have hne : ¬ (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p) := by
+          intro h
+          exact hcong h.2.2.1
+        simp [hne]
+      · simp [hdvd]
+  · rw [if_neg (by intro h; exact hsupp h.1)]
+    symm
+    by_cases hbase : p.Prime ∧ 2 ≤ N - p
+    · by_cases hcong : p ≡ N [MOD d]
+      · have hcop0 : (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+            if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
+          rw [hcop]
+          rw [if_neg]
+          intro hcoprime
+          have hsupp' : p ∈ correctedChenUnsiftedPrimeSupport N := by
+            rw [mem_correctedChenUnsiftedPrimeSupport_iff_coprime]
+            exact ⟨hbase.1, hbase.2, hcoprime⟩
+          exact hsupp hsupp'
+        calc
+          (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+              if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p then (μ e : ℝ) else 0)
+              = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                  if e ∣ N - p then (μ e : ℝ) else 0 := by
+                apply Finset.sum_congr rfl
+                intro e he
+                rcases hbase with ⟨hpp, h2⟩
+                by_cases hdvd : e ∣ N - p <;> simp [hpp, h2, hcong, hdvd]
+          _ = 0 := hcop0
+      · apply Finset.sum_eq_zero
+        intro e he
+        by_cases hdvd : e ∣ N - p
+        · have hne : ¬ (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p) := by
+            intro h
+            exact hcong h.2.2.1
+          simp [hne]
+        · simp [hdvd]
+    · apply Finset.sum_eq_zero
+      intro e he
+      by_cases hdvd : e ∣ N - p
+      · have hne : ¬ (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p) := by
+          intro h
+          exact hbase ⟨h.1, h.2.1⟩
+        simp [hne]
+      · simp [hdvd]
+
+/-- **support AP 计数的 Möbius 分解 (Pan 桥, ant #25)**: 陈氏分布条件
+的内层计数展开为素数-AP 基计数关于禁素因子的 Möbius 加权和 — 桥的
+结构主干, 后续把每个基计数接 `primesInAPBelow`/`panDistributionError`. -/
+theorem unsiftedPrimeSupport_AP_count_eq_moebiusSum (N d : ℕ) :
+    (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card : ℝ) =
+      ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p)).card : ℝ) := by
+  calc
+    (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card : ℝ)
+        = ∑ p ∈ (Finset.range N),
+            if p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD d] then (1 : ℝ) else 0 := by
+          have h₁ : (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card : ℝ) =
+              ∑ p ∈ correctedChenUnsiftedPrimeSupport N, if p ≡ N [MOD d] then (1 : ℝ) else 0 := by
+            rw [Finset.sum_boole]
+          rw [h₁]
+          have hsub : correctedChenUnsiftedPrimeSupport N ⊆ Finset.range N := by
+            intro p hp
+            exact (Finset.mem_filter.mp hp).1
+          have hz : ∀ p ∈ Finset.range N, p ∉ correctedChenUnsiftedPrimeSupport N →
+              (if p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD d] then (1 : ℝ) else 0) = 0 := by
+            intro p hp hnot
+            simp [hnot]
+          rw [← Finset.sum_subset hsub hz]
+          apply Finset.sum_congr rfl
+          intro p hp
+          simp [hp]
+    _ = ∑ p ∈ (Finset.range N),
+          (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+            if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p then (μ e : ℝ) else 0) := by
+          apply Finset.sum_congr rfl
+          intro p hp
+          exact support_AP_indicator_eq_moebiusSum N p d hp
+    _ = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p)).card : ℝ) := by
+          rw [Finset.sum_comm]
+          apply Finset.sum_congr rfl
+          intro e he
+          calc
+            (∑ p ∈ (Finset.range N),
+                if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p then (μ e : ℝ) else 0)
+                = ∑ p ∈ (Finset.range N),
+                    (μ e : ℝ) * (if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p
+                      then (1 : ℝ) else 0) := by
+                  apply Finset.sum_congr rfl
+                  intro p hp
+                  by_cases h : p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p
+                  · simp [h]
+                  · simp [h]
+            _ = (μ e : ℝ) * (∑ p ∈ (Finset.range N),
+                    if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p then (1 : ℝ) else 0) := by
+                  rw [← Finset.mul_sum]
+            _ = (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+                    p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p)).card : ℝ) := by
+                  rw [Finset.sum_boole]
 
 /-- The unsifted complement support is definitionally the image of the prime
 support under `p ↦ N - p`. -/
