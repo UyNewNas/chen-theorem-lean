@@ -3976,6 +3976,99 @@ theorem correctedChenPrimePowerProperCountBound :
         linarith
     _ = 6 * (N : ℝ) ^ (9 / 10 : ℝ) := by ring
 
+/-- **素幂和的结构分解 (P3)**: `primePowerSum(n) ≤ #{q ∈ [z,y) : q | n} +
+Σ_{q ∈ [z,y), q²|n} v_q(n)`. 即素幂罚函数 ≤ k=1 素因子计数 + 真幂部分
+(后者已有 `correctedChenPrimePowerProperCountBound` 的 `N^{9/10}` 界). -/
+theorem primePowerSum_le_factorCount_add_powerSum (n z y : ℕ) (hn : n ≠ 0) :
+    primePowerSum n z y ≤
+      (((Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n)).card : ℝ) +
+        ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ^ 2 ∣ n),
+          (n.factorization q : ℝ) := by
+  have hident := primePowerSum_eq_sum_factorization_of_dvd (n := n) (z := z) (y := y) hn
+  rw [hident]
+  let F1 : Finset ℕ := (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n)
+  let F2 : Finset ℕ := (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ^ 2 ∣ n)
+  have hper : ∀ q ∈ F1, (n.factorization q : ℝ) ≤
+      (1 : ℝ) + (if q ^ 2 ∣ n then (n.factorization q : ℝ) else 0) := by
+    intro q hq
+    rcases Finset.mem_filter.mp hq with ⟨hqr, hc⟩
+    have hv1 : 1 ≤ n.factorization q :=
+      (Nat.Prime.pow_dvd_iff_le_factorization hc.1 hn (k := 1)).mp (by simpa using hc.2.2)
+    by_cases hq2 : q ^ 2 ∣ n
+    · simp [hq2]
+    · have hv : n.factorization q = 1 := by
+        have hvlt2 : ¬ 2 ≤ n.factorization q := by
+          intro h2
+          exact hq2 ((Nat.Prime.pow_dvd_iff_le_factorization hc.1 hn).mpr h2)
+        omega
+      simp [hq2, hv]
+  have hsum : (∑ q ∈ F1, (n.factorization q : ℝ)) ≤
+      (∑ q ∈ F1, (1 : ℝ)) + (∑ q ∈ F1,
+        if q ^ 2 ∣ n then (n.factorization q : ℝ) else 0) := by
+    rw [← Finset.sum_add_distrib]
+    exact Finset.sum_le_sum hper
+  have hfilter : (∑ q ∈ F1, if q ^ 2 ∣ n then (n.factorization q : ℝ) else 0) =
+      ∑ q ∈ F2, (n.factorization q : ℝ) := by
+    rw [← Finset.sum_filter]
+    congr 1
+    ext q
+    constructor
+    · intro h
+      rcases Finset.mem_filter.mp h with ⟨hF1, hq2⟩
+      rcases Finset.mem_filter.mp hF1 with ⟨hr, hc⟩
+      exact Finset.mem_filter.mpr ⟨hr, ⟨hc.1, hc.2.1, hq2⟩⟩
+    · intro h
+      rcases Finset.mem_filter.mp h with ⟨hr, hc⟩
+      have hqn : q ∣ n := dvd_trans (dvd_mul_right q q) (by simpa [pow_two] using hc.2.2)
+      exact Finset.mem_filter.mpr ⟨Finset.mem_filter.mpr ⟨hr, ⟨hc.1, hc.2.1, hqn⟩⟩, hc.2.2⟩
+  have hcard : (∑ q ∈ F1, (1 : ℝ)) = (F1.card : ℝ) := by simp
+  calc
+    (∑ q ∈ F1, (n.factorization q : ℝ)) ≤
+        (∑ q ∈ F1, (1 : ℝ)) + (∑ q ∈ F1,
+          if q ^ 2 ∣ n then (n.factorization q : ℝ) else 0) := hsum
+    _ = (F1.card : ℝ) + (∑ q ∈ F2, (n.factorization q : ℝ)) := by
+        rw [hcard, hfilter]
+    _ = (((Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n)).card : ℝ) +
+          ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ^ 2 ∣ n),
+            (n.factorization q : ℝ) := by
+        rfl
+
+/-- **可忽略阈值 (P3 / hNeg)**: 对任意 `Cerr`, 存在 `N₀` 使
+`Cerr·N/log³N ≤ (1/4)·N/log²N` (对 `N ≥ N₀`, 偶数 `N`) — 只需
+`log N ≥ 4·Cerr`, 取 `N₀ = ⌈exp(4·Cerr)⌉ + 1`. -/
+theorem errLogCube_negligible (Cerr : ℝ) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N₀ ≤ N → Even N →
+      Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤ (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+  let N₀ : ℕ := max 2 (Nat.ceil (Real.exp (4 * Cerr)) + 1)
+  refine ⟨N₀, ?_⟩
+  intro N hN hEven
+  have hN2 : 2 ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hNpos : (0 : ℝ) < N := by exact_mod_cast (by omega : 0 < N)
+  have hN1 : (1 : ℝ) < N := by exact_mod_cast (by omega : 1 < N)
+  have hlogpos : (0 : ℝ) < log (N : ℝ) := Real.log_pos hN1
+  have hNbig : Real.exp (4 * Cerr) < (N : ℝ) := by
+    have h1 : Real.exp (4 * Cerr) ≤ (Nat.ceil (Real.exp (4 * Cerr)) : ℝ) := Nat.le_ceil _
+    have hN' : (Nat.ceil (Real.exp (4 * Cerr)) + 1 : ℕ) ≤ N := by
+      dsimp [N₀] at hN
+      omega
+    have hNcast : ((Nat.ceil (Real.exp (4 * Cerr)) + 1 : ℕ) : ℝ) ≤ (N : ℝ) := by
+      exact_mod_cast hN'
+    have hcast : ((Nat.ceil (Real.exp (4 * Cerr)) + 1 : ℕ) : ℝ) =
+        (Nat.ceil (Real.exp (4 * Cerr)) : ℝ) + 1 := by norm_num
+    have hNcast' : (Nat.ceil (Real.exp (4 * Cerr)) : ℝ) + 1 ≤ (N : ℝ) := by
+      rwa [hcast] at hNcast
+    linarith
+  have hlogge : 4 * Cerr ≤ log (N : ℝ) := by
+    have hlogexp : log (Real.exp (4 * Cerr)) = 4 * Cerr := by rw [Real.log_exp]
+    have hmono : log (Real.exp (4 * Cerr)) ≤ log (N : ℝ) :=
+      (Real.log_le_log_iff (Real.exp_pos _) hNpos).2 (le_of_lt hNbig)
+    rwa [hlogexp] at hmono
+  have hmain : Cerr ≤ (1 / 4 : ℝ) * log (N : ℝ) := by linarith
+  rw [div_le_div_iff₀ (pow_pos hlogpos 3) (pow_pos hlogpos 2)]
+  nlinarith [hmain, mul_pos hNpos (sq_pos_of_pos hlogpos)]
+
 /-- 逐候选: 三因子惩罚 ≤ 切换权重 (对 `(p₁,p₂)` 对的计数, 丢掉
 `p₁ < p₂`、`p₂ ≤ p₃` 等约束后仍为上界; `p₃` 由等式唯一决定). -/
 theorem tripleFactorCount_le_switchingWeight {n z y : ℕ} :
