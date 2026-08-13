@@ -138,3 +138,5 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenPrimePowerSum_le_q1Count_add_negligible
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.hPrimePower_of_q1Count_bound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.properPower_negligible_threshold
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenJR_ant_lower_bound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenPositivity_via_jr_ant
