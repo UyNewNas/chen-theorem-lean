@@ -3226,6 +3226,25 @@ def CorrectedChenOmegaUpperBound : Prop :=
         cΩ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
           (N : ℝ) / (log (N : ℝ)) ^ 2
 
+/-- 经典常数兼容性: 主项系数 `10/3` 严格大于经典 Ω 上界系数的一半
+`3.9404/2`. 因此 `CorrectedChenOmegaUpperBound` 的数值条件允许取
+`cΩ = 3.9404` (Chen 1973 的经典常数). -/
+theorem omega_upper_bound_compatible_with_39404 :
+    (10 / 3 : ℝ) > 3.9404 / 2 := by
+  norm_num
+
+/-- 若 Ω 上界以经典常数 `3.9404` 成立 (且主项系数条件满足), 组装直接可用.
+该定理把 `CorrectedChenOmegaUpperBound` 的实例化条件显式化: 只需证明
+`∃ N₀, ∀ N ≥ N₀ Even, correctedChenOmega N ≤ 3.9404·𝔖_trunc·N/log²N`. -/
+theorem CorrectedChenOmegaUpperBound_of_39404
+    (hbound : ∃ N₀ : ℕ, ∀ N : ℕ, N₀ ≤ N → Even N →
+      correctedChenOmega N ≤
+        3.9404 * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2) :
+    CorrectedChenOmegaUpperBound := by
+  rcases hbound with ⟨N₀, hN₀⟩
+  exact ⟨3.9404, omega_upper_bound_compatible_with_39404, N₀, hN₀⟩
+
 /-- **最终组装 (sub-issue #8)**: 主项一致下界 (已证) + Ω 上界 (输入 #7) +
 加权 Pan errSum 控制 (输入 #6) ⇒ 充分大偶数的修正计数正性. -/
 theorem CorrectedChenPositivity_large_of_inputs

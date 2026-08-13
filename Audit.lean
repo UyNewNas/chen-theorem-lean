@@ -89,6 +89,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenZ_sub_one_ge_of_N_ge
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenMainTermLower_singularSeries_units
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenOmegaUpperBound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.omega_upper_bound_compatible_with_39404
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenOmegaUpperBound_of_39404
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenPositivity_large_of_inputs
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_chens_theorem_of_inputs
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_counting_bridge_public
