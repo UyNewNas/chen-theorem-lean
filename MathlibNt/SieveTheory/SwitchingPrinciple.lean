@@ -4662,6 +4662,60 @@ theorem corrected_chens_theorem_of_omega_inputs
   exact corrected_chens_theorem_of_inputs hPan
     (CorrectedChenOmegaUpperBound_of_analytic_inputs hTripleMain hTripleErr hPrimePower hNeg hnum)
 
+/-- errSum 可忽略阈值: 对任意 `C > 0`, `∃ N₀, ∀ N ≥ N₀:
+`C·N/log³N ≤ (1/4)·N/log²N` (即 `C/log N ≤ 1/4` 的初等阈值).
+
+这给出了 PR #15 组装定理中 `hNeg` 输入的显式证明 — 由 `log N → ∞`
+(经 `ceil(exp(4C))` 阈值) 与正性/倒数算术直接得到. -/
+theorem errSum_negligible_threshold (C : ℝ) (hC : 0 < C) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N₀ ≤ N →
+      C * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤ (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+  let T : ℝ := 4 * C
+  let M : ℕ := Nat.ceil (Real.exp T) + 1
+  refine ⟨M, ?_⟩
+  intro N hN
+  have hTpos : 0 < T := by
+    dsimp [T]
+    nlinarith
+  have h1exp : (1 : ℝ) < Real.exp T := by
+    rw [← Real.exp_zero]
+    exact (Real.exp_lt_exp).2 hTpos
+  have hce : Real.exp T ≤ (Nat.ceil (Real.exp T) : ℝ) := Nat.le_ceil (Real.exp T)
+  have hcm : (Nat.ceil (Real.exp T) : ℝ) < (N : ℝ) := by
+    have h1 : (Nat.ceil (Real.exp T) + 1 : ℕ) ≤ N := hN
+    have h1r : ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) ≤ (N : ℝ) := by exact_mod_cast h1
+    have hlt : (Nat.ceil (Real.exp T) : ℝ) < ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) := by
+      exact_mod_cast (Nat.lt_succ_self (Nat.ceil (Real.exp T)))
+    exact lt_of_lt_of_le hlt h1r
+  have hNbig : (1 : ℝ) < N := lt_trans h1exp (lt_of_le_of_lt hce hcm)
+  have hlog : 0 < log (N : ℝ) := Real.log_pos hNbig
+  have hT : T < log (N : ℝ) := by
+    have hstrict : Real.exp T < (N : ℝ) := lt_of_le_of_lt hce hcm
+    have hloglt : Real.log (Real.exp T) < log (N : ℝ) :=
+      Real.log_lt_log (Real.exp_pos T) hstrict
+    rwa [Real.log_exp] at hloglt
+  have hT' : 4 * C < log (N : ℝ) := by
+    dsimp [T] at hT
+    exact hT
+  have hdiv : C / log (N : ℝ) < (1 / 4 : ℝ) := by
+    rw [div_lt_iff₀ hlog]
+    have hm := mul_lt_mul_of_pos_right hT' (by norm_num : 0 < (1 / 4 : ℝ))
+    -- (4C)·(1/4) = C < logN·(1/4)
+    nlinarith
+  have hX2 : 0 < (N : ℝ) / (log (N : ℝ)) ^ 2 :=
+    div_pos (by positivity) (sq_pos_of_pos hlog)
+  have hmul := mul_lt_mul_of_pos_right hdiv hX2
+  have hrewL : (C / log (N : ℝ)) * ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+      C * (N : ℝ) / (log (N : ℝ)) ^ 3 := by
+    field_simp [hlog.ne']
+  have hrewR : (1 / 4 : ℝ) * ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+      (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    ring
+  have hlt : C * (N : ℝ) / (log (N : ℝ)) ^ 3 <
+      (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    rwa [hrewL, hrewR] at hmul
+  exact le_of_lt hlt
+
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge
 and representation extraction have been discharged above. -/
