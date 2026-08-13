@@ -5205,6 +5205,76 @@ theorem corrected_chens_theorem_of_omega_inputs
   exact corrected_chens_theorem_of_inputs hPan
     (CorrectedChenOmegaUpperBound_of_analytic_inputs hTripleMain hPrimePower hnum)
 
+/-- **陈氏定理的最终 hookup (chen #8, 独立于 ant #15)**: 加权 Pan 输入 +
+两个干净的解析输入 (修正 `hTripleMain` + q¹ 分布界) + 数值条件 ⇒ 无条件陈氏定理.
+
+`hPrimePower_of_q1Count_bound` (chen #23) 把素幂输入归约到 q¹ 界,
+`properPower_negligible_threshold` (PR #24) 消解真幂可忽略项 — 本定理把
+整条结构链闭合到只剩解析输入. 一旦 `PanMeanValueUniform` (ant #15) 与
+两个解析界落地, 直接实例化即得 `corrected_chens_theorem` 的完整证明. -/
+theorem corrected_chens_theorem_of_q1Count_and_triple
+    {cₘ Cq : ℝ} {N₀ₘ Nq : ℕ}
+    (hPan : ChenWeightedPanInput)
+    (hTripleMain : ∀ N : ℕ, N₀ₘ ≤ N → Even N →
+      (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+          (switchingCount N (p₁ * p₂) : ℝ)) ≤
+        cₘ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hq1 : ∀ N : ℕ, Nq ≤ N → Even N →
+      correctedChenQ1Count N ≤ Cq * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+        (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hCq : 0 < Cq)
+    (hnum : (10 / 3 : ℝ) > (cₘ + (Cq + 1 / 2)) / 2) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N ≥ N₀ → Even N →
+      ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧ Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q := by
+  rcases properPower_negligible_threshold with ⟨Nn, hneg'⟩
+  let Cₚ : ℝ := Cq + 1 / 2
+  let N₀ₚ : ℕ := max (max Nq Nn) (2 ^ 110 + 1)
+  have hPrimePower' : ∀ N : ℕ, N₀ₚ ≤ N → Even N →
+      (correctedChenCandidates N).sum
+          (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+        Cₚ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    intro N hN hEven
+    have hNq : Nq ≤ N := by
+      dsimp [N₀ₚ] at hN
+      omega
+    have hNn : Nn ≤ N := by
+      dsimp [N₀ₚ] at hN
+      omega
+    have hNbig : 2 ^ 110 < N := by
+      dsimp [N₀ₚ] at hN
+      omega
+    let 𝔖 : ℝ := AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1)
+    let X : ℝ := (N : ℝ) / (log (N : ℝ)) ^ 2
+    have hred := correctedChenPrimePowerSum_le_q1Count_add_negligible N hNbig hEven
+    have hq1' : correctedChenQ1Count N ≤ Cq * 𝔖 * X := by
+      dsimp [𝔖, X]
+      rw [show Cq * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+          Cq * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 by ring]
+      exact hq1 N hNq hEven
+    have hneg'' : 60 * (N : ℝ) ^ (9 / 10 : ℝ) ≤ (1 / 2 : ℝ) * 𝔖 * X := by
+      dsimp [𝔖, X]
+      rw [show (1 / 2 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+          (1 / 2 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 by ring]
+      exact hneg' N hNn hEven
+    calc
+      (correctedChenCandidates N).sum
+          (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N))
+          ≤ correctedChenQ1Count N + 60 * (N : ℝ) ^ (9 / 10 : ℝ) := hred
+      _ ≤ Cq * 𝔖 * X + (1 / 2 : ℝ) * 𝔖 * X := add_le_add hq1' hneg''
+      _ = (Cq + 1 / 2) * 𝔖 * X := by ring
+      _ = Cₚ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+            dsimp [Cₚ, 𝔖, X]
+            ring
+  exact corrected_chens_theorem_of_omega_inputs hPan hTripleMain hPrimePower' hnum
+
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge
 and representation extraction have been discharged above. -/
