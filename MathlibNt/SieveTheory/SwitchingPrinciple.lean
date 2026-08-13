@@ -1577,6 +1577,117 @@ theorem correctedChenCandidates_card_ge_mainSum_sub_errSum (N : ℕ)
     _ = (correctedChenCandidates N).card :=
       correctedChenBoundingSieve_siftedSum_eq_card N
 
+/-! ## 3.5 修正筛的基本引理级下界 (issue #5 的 chen 侧核心) -/
+
+/-- 修正候选下界的核心观察: 普通 Möbius 函数就是下 Möbius 序列, 且等式成立.
+
+`∑_{d | n} μ(d) = [n = 1]` (Möbius 反演, mathlib
+`ArithmeticFunction.coe_zeta_mul_coe_moebius` + `coe_zeta_smul_apply`),
+因此 `μ : ℕ → ℝ` 满足 `IsLowerMoebius`. -/
+theorem moebius_real_isLowerMoebius :
+    AnalyticNumberTheory.Sieve.IsLowerMoebius
+      (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) := by
+  intro n
+  have hz : (ArithmeticFunction.zeta * ArithmeticFunction.moebius :
+      ArithmeticFunction ℝ) = (1 : ArithmeticFunction ℝ) := by
+    simp
+  have hzn : (ArithmeticFunction.zeta * ArithmeticFunction.moebius :
+      ArithmeticFunction ℝ) n = (1 : ArithmeticFunction ℝ) n := by
+    rw [hz]
+  have hsum : (∑ i ∈ n.divisors,
+      ((ArithmeticFunction.moebius i : ℤ) : ℝ)) =
+      if n = 1 then (1 : ℝ) else 0 := by
+    have hsmul : (ArithmeticFunction.zeta : ArithmeticFunction ℝ) *
+        (ArithmeticFunction.moebius : ArithmeticFunction ℝ) =
+      (ArithmeticFunction.zeta : ArithmeticFunction ℝ) •
+        (ArithmeticFunction.moebius : ArithmeticFunction ℝ) := by
+      rfl
+    rw [hsmul, ArithmeticFunction.coe_zeta_smul_apply (R := ℝ)
+      (f := (ArithmeticFunction.moebius : ArithmeticFunction ℝ))] at hzn
+    rw [ArithmeticFunction.one_apply] at hzn
+    exact hzn
+  exact le_of_eq hsum
+
+/-- |μ(d)| ≤ 1 (实值版本). -/
+theorem abs_moebius_real_le_one (d : ℕ) :
+    |((ArithmeticFunction.moebius d : ℤ) : ℝ)| ≤ 1 := by
+  exact_mod_cast (ArithmeticFunction.abs_moebius_le_one (n := d))
+
+/-- 修正筛积 (chen 侧): V(N) = ∏_{p | 修正筛积} (1 - ν(p)), 其中
+ν(p) = 1/(p-1). 与 ant 的 `sieveProductPrimeFactors` 相同; 在 ant PR #8
+合并后可改为引用通用定义. -/
+noncomputable def correctedChenSieveProduct (N : ℕ) : ℝ :=
+  ∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (1 - correctedChenNu p)
+
+/-- 普通 Möbius 的 Selberg 主项等于修正筛积 (精确恒等式).
+
+`∑_{d | P} μ(d)·ν(d) = ∏_{p | P} (1 - ν(p))` — 乘法函数的"一减分解"
+(mathlib `prodPrimeFactors_one_sub_of_squarefree`). 这是"JR 主项"在修正
+候选上的精确形式: 主项就是 `V(N)`, 不需要任何筛函数渐近. -/
+theorem mainSum_moebius_eq_correctedChenSieveProduct (N : ℕ) :
+    (correctedChenBoundingSieve N).mainSum
+        (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) =
+      correctedChenSieveProduct N := by
+  rw [BoundingSieve.mainSum, correctedChenSieveProduct]
+  change (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      ((ArithmeticFunction.moebius d : ℤ) : ℝ) * correctedChenNu d) =
+    ∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (1 - correctedChenNu p)
+  rw [← ArithmeticFunction.IsMultiplicative.prodPrimeFactors_one_sub_of_squarefree
+    correctedChenNu (AnalyticNumberTheory.Sieve.goldbachNu_isMultiplicative)
+    (correctedChenSiftingProduct_squarefree N)]
+
+/-- μ 的误差和被 1 系数误差和控制: |μ(d)| ≤ 1 ⇒ errSum(μ) ≤ errSum(1). -/
+theorem correctedChenErrSum_moebius_le_errSum_one (N : ℕ) :
+    (correctedChenBoundingSieve N).errSum
+        (fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)) ≤
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) := by
+  unfold BoundingSieve.errSum
+  apply Finset.sum_le_sum
+  intro d hd
+  have hmul : |((ArithmeticFunction.moebius d : ℤ) : ℝ)| *
+        |(correctedChenBoundingSieve N).rem d| ≤
+      (1 : ℝ) * |(correctedChenBoundingSieve N).rem d| :=
+    mul_le_mul_of_nonneg_right (abs_moebius_real_le_one d) (abs_nonneg _)
+  simpa using hmul
+
+/-- **修正候选的基本引理级下界 (chen 侧核心)**.
+
+  `card(correctedChenCandidates N) ≥ X·V(N) − errSum(1)`
+
+对**所有** `N` 无条件成立, 其中 `X = N/log N` 为总质量, `V(N)` 为修正
+筛积, `errSum(1) = Σ_{d | P} |rem d|` 为显式除数误差和.
+
+经典对应: 基本引理/线性筛下界 `S(A,z) ≥ X·V(z) − Σ_{d ≤ D} |R_d|`。
+证明只用普通 Möbius 函数 (它本身就是精确的下 Möbius 序列), 因此主项是
+精确的 `X·V(N)`, 不需要筛函数 `f(s)` 的任何渐近 —— 这正是修正候选定义
+(只要求 `N-p` 无小于 `z` 的素因子) 与历史 W 候选 (多一个中区间素因子
+条件) 的区别。剩下的解析输入只有:
+  (1) `V(N)` 的 Mertens 型一致下界 (把主项放大到 `≫ N/log²N`);
+  (2) `errSum(1)` 的加权 Pan 控制 (#7);
+  (3) `correctedChenOmega` 的一致上界 (#6). -/
+theorem correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum (N : ℕ) :
+    (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N -
+        (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤
+      (correctedChenCandidates N).card := by
+  let mu : ℕ → ℝ := fun d => ((ArithmeticFunction.moebius d : ℤ) : ℝ)
+  have hseam := correctedChenCandidates_card_ge_mainSum_sub_errSum N mu
+    moebius_real_isLowerMoebius
+  have hmain : (correctedChenBoundingSieve N).mainSum mu = correctedChenSieveProduct N := by
+    simpa [mu] using mainSum_moebius_eq_correctedChenSieveProduct N
+  have herr : (correctedChenBoundingSieve N).errSum mu ≤
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) := by
+    simpa [mu] using correctedChenErrSum_moebius_le_errSum_one N
+  calc
+    (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N -
+        (correctedChenBoundingSieve N).errSum (fun _ => 1)
+      ≤ (correctedChenBoundingSieve N).totalMass *
+            (correctedChenBoundingSieve N).mainSum mu -
+          (correctedChenBoundingSieve N).errSum mu := by
+      rw [hmain]
+      linarith
+    _ ≤ (correctedChenCandidates N).card := hseam
+
+
 /-- At a sieved prime `2 < p < z` with `p ∤ N`, the corrected Goldbach
 density factor satisfies `(1 - ν(p))⁻¹ = (p-1)/(p-2)`. -/
 theorem correctedChenNu_inv_prime {N p : ℕ} (hp : p.Prime) (hp2 : 2 < p) :
@@ -1868,6 +1979,641 @@ theorem correctedChenSelbergSum_mul_singularSeriesTruncated (N : ℕ) (hN : Even
   rw [correctedChenSelbergSum_mul_singularSeries_eq_mertensProd N hN]
   exact mertensProd_eq_primeProduct_inv N
 
+/-! ## 4.7 主项下界: 奇异级数连接与一致主项 (issue #5 的解析核心) -/
+
+/-- Mertens 素数乘积为正: `∏_{p ≤ x}(1 - 1/p) > 0`. -/
+theorem primeProduct_pos (x : ℕ) : 0 < MertensTheorem.primeProduct x := by
+  unfold MertensTheorem.primeProduct
+  exact Finset.prod_pos (fun p hp => by
+    have hpP : p.Prime := (Finset.mem_filter.mp hp).2
+    have hp0 : (0 : ℝ) < p := by exact_mod_cast hpP.pos
+    have hle : (1 : ℝ) < p := by exact_mod_cast hpP.one_lt
+    have hlt1 : 1 / (p : ℝ) < 1 := (div_lt_iff₀ hp0).mpr (by simpa using hle)
+    linarith)
+
+/-- `selbergSum = 1 / V(N)`: Selberg 除数和的"一减分解"取倒数. -/
+theorem correctedChenSelbergSum_eq_sieveProduct_inv (N : ℕ) :
+    (∑ d ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms d) =
+      (correctedChenSieveProduct N)⁻¹ := by
+  rw [AnalyticNumberTheory.Sieve.selbergSum_eq_prod_inv]
+  change (∏ p ∈ (correctedChenSiftingProduct N).primeFactors,
+      (1 - correctedChenNu p)⁻¹) = (correctedChenSieveProduct N)⁻¹
+  rw [correctedChenSieveProduct]
+  rw [← Finset.prod_inv_distrib]
+
+/-- **主项恒等式 (奇异级数连接)**: 修正筛积等于截断奇异级数乘以精确
+Mertens 积:
+
+  V(N) = 𝔖_trunc(N, z-1) · primeProduct(z-1)
+
+这是把 `X·V(N)` 变成 `X·𝔖·primeProduct(z-1)` 型主项的精确接缝: 由
+`correctedChenSelbergSum_mul_singularSeriesTruncated`
+(`selbergSum·𝔖 = primeProduct⁻¹`) 与 `selbergSum = V⁻¹` 取倒数即得. -/
+theorem correctedChenSieveProduct_eq_singularSeries_mul_primeProduct (N : ℕ) (hN : Even N) :
+    correctedChenSieveProduct N =
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) := by
+  have h1 := correctedChenSelbergSum_mul_singularSeriesTruncated N hN
+  have hsel := correctedChenSelbergSum_eq_sieveProduct_inv N
+  rw [hsel] at h1
+  have hVnz : correctedChenSieveProduct N ≠ 0 := by
+    unfold correctedChenSieveProduct
+    exact ne_of_gt (Finset.prod_pos (fun p hp => by
+      have hpP : p.Prime := Nat.prime_of_mem_primeFactors hp
+      have hpcond := (prime_dvd_correctedChenSiftingProduct hpP).mp
+        (Nat.dvd_of_mem_primeFactors hp)
+      have hlt : correctedChenNu p < 1 :=
+        AnalyticNumberTheory.Sieve.goldbachNu_lt_one_of_prime hpP hpcond.2.1
+      linarith))
+  have h𝔖nz : AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) ≠ 0 := by
+    apply ne_of_gt
+    apply AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos
+    unfold correctedChenZ
+    have hmax : 2 ≤ max 2 (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ))) := le_max_left _ _
+    omega
+  have hppnz : MertensTheorem.primeProduct (correctedChenZ N - 1) ≠ 0 :=
+    ne_of_gt (primeProduct_pos (correctedChenZ N - 1))
+  have h3 : (correctedChenSieveProduct N)⁻¹ =
+      (MertensTheorem.primeProduct (correctedChenZ N - 1) *
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))⁻¹ := by
+    have h := congrArg (fun t : ℝ =>
+        t * (AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))⁻¹) h1
+    rw [mul_assoc, mul_inv_cancel₀ h𝔖nz, mul_one] at h
+    -- h : V⁻¹ = primeProduct⁻¹ * 𝔖⁻¹ ; 目标: V⁻¹ = (primeProduct * 𝔖)⁻¹
+    rw [mul_inv]
+    ring_nf
+    exact h
+  calc
+    correctedChenSieveProduct N
+        = ((correctedChenSieveProduct N)⁻¹)⁻¹ := by simp
+    _ = (MertensTheorem.primeProduct (correctedChenZ N - 1) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))⁻¹⁻¹ := by
+          rw [h3]
+    _ = MertensTheorem.primeProduct (correctedChenZ N - 1) *
+        AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) := by
+          simp
+    _ = AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) := by
+          ring
+
+/-- **一致主项下界 (chen 侧)**: 存在 `c > 0` 与阈值 `N₀`, 使得对所有
+`N ≥ N₀` 的偶数 `N`, `X·V(N) ≥ c·N/log²N`.
+
+量词顺序: `c`、`N₀` 先于 `∀ N` (一致版本, 常数不得依赖 `N`). 由
+`correctedChenMainTerm_lower_of_estimates` 从三个标准解析输入推出:
+(1) `𝔖_trunc` 的一致下界; (2) `primeProduct` 的 Mertens 下界;
+(3) `log(z-1) ≤ C·log N` 的参数估计. -/
+def CorrectedChenMainTermLower : Prop :=
+  ∃ c : ℝ, 0 < c ∧ ∃ N₀ : ℕ,
+    ∀ N : ℕ, N₀ ≤ N → Even N →
+      c * (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+        (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N
+
+/-- **主项下界 (逐点组装)**: 给定 (1) 截断奇异级数下界 `c𝔖 ≤ 𝔖_trunc`,
+(2) Mertens 下界 `cpp/log(z-1) ≤ primeProduct(z-1)`, (3) 参数估计
+`log(z-1) ≤ Clog·log N`, 则
+
+  `c𝔖·cpp/Clog · N/log²N ≤ X·V(N)`.
+
+证明只用 `V = 𝔖_trunc·primeProduct(z-1)` 精确恒等式与正性/倒数算术. -/
+theorem correctedChenMainTerm_lower_of_estimates (N : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
+    (hz : 2 ≤ correctedChenZ N - 1)
+    {c𝔖 cpp Clog : ℝ} (hc𝔖 : 0 < c𝔖) (hcpp : 0 < cpp) (hClog : 0 < Clog)
+    (h𝔖 : c𝔖 ≤ AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1))
+    (hpp : cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤
+      MertensTheorem.primeProduct (correctedChenZ N - 1))
+    (hlog : log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ Clog * log (N : ℝ)) :
+    c𝔖 * cpp / Clog * (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+      (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N := by
+  have hV : correctedChenSieveProduct N =
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) :=
+    correctedChenSieveProduct_eq_singularSeries_mul_primeProduct N hN
+  have hlogN : 0 < log (N : ℝ) := by
+    have : (1 : ℝ) < N := by exact_mod_cast (by omega : 1 < N)
+    exact Real.log_pos this
+  have hlogz : 0 < log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
+    have : (1 : ℝ) < (correctedChenZ N - 1 : ℕ) := by exact_mod_cast (by omega : 1 < correctedChenZ N - 1)
+    exact Real.log_pos this
+  have h𝔖pos : 0 < AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos N (correctedChenZ N - 1) (by omega)
+  have hX : (correctedChenBoundingSieve N).totalMass = (N : ℝ) / log (N : ℝ) := rfl
+  have h𝔖pp : c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ)) ≤
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        MertensTheorem.primeProduct (correctedChenZ N - 1) := by
+    exact mul_le_mul h𝔖 hpp (le_of_lt (div_pos hcpp hlogz)) (le_of_lt h𝔖pos)
+  have hle : c𝔖 * cpp / (Clog * log (N : ℝ)) ≤
+      c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ)) := by
+    have hone : (Clog * log (N : ℝ))⁻¹ ≤ (log ((correctedChenZ N - 1 : ℕ) : ℝ))⁻¹ :=
+      (inv_le_inv₀ (mul_pos hClog hlogN) hlogz).mpr hlog
+    have hnonneg : 0 ≤ c𝔖 * cpp := mul_nonneg (le_of_lt hc𝔖) (le_of_lt hcpp)
+    calc
+      c𝔖 * cpp / (Clog * log (N : ℝ)) =
+          c𝔖 * cpp * (Clog * log (N : ℝ))⁻¹ := by
+            field_simp [ne_of_gt (mul_pos hClog hlogN)]
+      _ ≤ c𝔖 * cpp * (log ((correctedChenZ N - 1 : ℕ) : ℝ))⁻¹ := by
+            exact mul_le_mul_of_nonneg_left hone hnonneg
+      _ = c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ)) := by
+            field_simp [hlogz.ne']
+  calc
+    c𝔖 * cpp / Clog * (N : ℝ) / (log (N : ℝ)) ^ 2
+        = (N : ℝ) / log (N : ℝ) * (c𝔖 * cpp / (Clog * log (N : ℝ))) := by
+          field_simp [hlogN.ne']
+    _ ≤ (N : ℝ) / log (N : ℝ) * (c𝔖 * (cpp / log ((correctedChenZ N - 1 : ℕ) : ℝ))) := by
+          exact mul_le_mul_of_nonneg_left hle (div_nonneg (by positivity) (le_of_lt hlogN))
+    _ ≤ (correctedChenBoundingSieve N).totalMass *
+          (AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            MertensTheorem.primeProduct (correctedChenZ N - 1)) := by
+          rw [hX]
+          exact mul_le_mul_of_nonneg_left h𝔖pp (div_nonneg (by positivity) (le_of_lt hlogN))
+    _ = (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N := by
+          rw [hV]
+
+/-- 三个一致解析输入打包成 `CorrectedChenMainTermLower`:
+(1) `𝔖_trunc` 一致下界; (2) `primeProduct` 的 Mertens 一致下界;
+(3) `log(z-1) ≤ Clog·log N` 参数估计; 外加 (4) 参数条件
+(`2 ≤ N`、`2 ≤ z-1`、`M₀ ≤ z-1`). -/
+theorem CorrectedChenMainTermLower_of_uniform_estimates
+    {c𝔖 cpp Clog : ℝ} {M₀ N₀'' : ℕ}
+    (hc𝔖 : 0 < c𝔖) (hcpp : 0 < cpp) (hClog : 0 < Clog)
+    (h𝔖 : ∀ N : ℕ, ∀ z : ℕ, 2 ≤ z →
+      c𝔖 ≤ AnalyticNumberTheory.Sieve.singularSeriesTruncated N z)
+    (hpp : ∀ m : ℕ, M₀ ≤ m → 2 ≤ m →
+      cpp / log (m : ℝ) ≤ MertensTheorem.primeProduct m)
+    (hlog : ∀ N : ℕ, 2 ≤ N →
+      log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ Clog * log (N : ℝ))
+    (hparams : ∀ N : ℕ, N₀'' ≤ N →
+      2 ≤ N ∧ 2 ≤ correctedChenZ N - 1 ∧ M₀ ≤ correctedChenZ N - 1) :
+    CorrectedChenMainTermLower := by
+  refine ⟨c𝔖 * cpp / Clog, ?_, ⟨N₀'', ?_⟩⟩
+  · positivity
+  · intro N hN hEven
+    rcases hparams N hN with ⟨hN2, hz, hM⟩
+    exact correctedChenMainTerm_lower_of_estimates N hEven hN2 hz hc𝔖 hcpp hClog
+      (h𝔖 N (correctedChenZ N - 1) hz)
+      (hpp (correctedChenZ N - 1) hM hz)
+      (hlog N hN2)
+
+/-! ## 4.8 参数估计与 Mertens/奇异级数接线 -/
+
+/-- 参数估计 1: 修正筛水平满足 `z - 1 ≤ N` (实数). -/
+theorem correctedChenZ_sub_one_le_N {N : ℕ} (hN : 1 ≤ N) :
+    ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ N := by
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have hx0 : 0 ≤ x := by
+    dsimp [x]
+    exact Real.rpow_nonneg (by exact_mod_cast (Nat.zero_le N)) _
+  by_cases hf : 2 ≤ Nat.floor x
+  · have hz : correctedChenZ N = Nat.floor x := by
+      unfold correctedChenZ
+      exact max_eq_right hf
+    have hxle : x ≤ (N : ℝ) := by
+      have hx1 : 1 ≤ (N : ℝ) := by exact_mod_cast hN
+      have hpow := Real.rpow_le_rpow_of_exponent_le hx1 (by norm_num : (1 / 10 : ℝ) ≤ 1)
+      -- hpow : N^(1/10) ≤ N^1
+      simpa [x] using hpow
+    calc
+      ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ (correctedChenZ N : ℝ) := by
+        exact_mod_cast (Nat.sub_le (correctedChenZ N) 1)
+      _ = (Nat.floor x : ℝ) := by rw [hz]
+      _ ≤ x := Nat.floor_le hx0
+      _ ≤ (N : ℝ) := hxle
+  · have hz : correctedChenZ N = 2 := by
+      unfold correctedChenZ
+      change max 2 (Nat.floor x) = 2
+      exact max_eq_left (by omega)
+    rw [hz]
+    norm_num
+    exact_mod_cast hN
+
+/-- 参数估计 2: 对 `N ≥ 3^10 = 59049`, 修正筛水平满足 `2 ≤ z - 1`. -/
+theorem correctedChenZ_sub_one_ge_two_of_large {N : ℕ} (hN : 59049 ≤ N) :
+    2 ≤ correctedChenZ N - 1 := by
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have h3le : (3 : ℝ) ≤ x := by
+    dsimp [x]
+    -- 3 = (3^10)^(1/10) ≤ N^(1/10)
+    have h310 : (3 : ℝ) ^ (10 : ℝ) ≤ (N : ℝ) := by
+      have hnat : (3 : ℝ) ^ 10 ≤ (N : ℝ) := by
+        norm_num at hN ⊢
+        exact_mod_cast hN
+      simpa [Real.rpow_natCast] using hnat
+    have hstep := Real.rpow_le_rpow (by positivity : 0 ≤ (3 : ℝ) ^ (10 : ℝ)) h310
+      (by norm_num : 0 ≤ (1 / 10 : ℝ))
+    -- hstep : ((3:ℝ)^(10:ℝ))^(1/10:ℝ) ≤ x ; LHS 化简为 3
+    have hrew : ((3 : ℝ) ^ (10 : ℝ)) ^ (1 / 10 : ℝ) = (3 : ℝ) := by
+      rw [← Real.rpow_mul (by norm_num : 0 ≤ (3 : ℝ))]
+      norm_num
+    rwa [hrew] at hstep
+  have hfloor : 3 ≤ Nat.floor x := Nat.le_floor h3le
+  have hz : correctedChenZ N = Nat.floor x := by
+    unfold correctedChenZ
+    change max 2 (Nat.floor x) = Nat.floor x
+    exact max_eq_right (le_trans (by norm_num : (2 : ℕ) ≤ 3) hfloor)
+  rw [hz]
+  omega
+
+/-- 参数估计 3: `log(z - 1) ≤ log N` (即 `Clog = 1` 的参数估计). -/
+theorem correctedChenZ_log_le_logN {N : ℕ} (hN : 2 ≤ N) :
+    log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ log (N : ℝ) := by
+  have hle := correctedChenZ_sub_one_le_N (by omega : 1 ≤ N)
+  have hpos : 0 < (correctedChenZ N - 1 : ℕ) := by
+    have hz2 : 2 ≤ correctedChenZ N := by
+      unfold correctedChenZ
+      exact le_max_left _ _
+    omega
+  exact Real.log_le_log (by exact_mod_cast hpos) hle
+
+/-- 一致主项下界由两个标准输入推出: (1) `𝔖_trunc` 的一致下界 `h𝔖`
+(C₂ 级, 待证), (2) Mertens 积的 `primeProduct_asymptotic_order` (已证)
+加参数估计 (已证). 剩余唯一解析输入是 `h𝔖`. -/
+theorem CorrectedChenMainTermLower_of_singularSeries_bound
+    {c𝔖 : ℝ} (hc𝔖 : 0 < c𝔖)
+    (h𝔖 : ∀ N : ℕ, ∀ z : ℕ, 2 ≤ z →
+      c𝔖 ≤ AnalyticNumberTheory.Sieve.singularSeriesTruncated N z) :
+    CorrectedChenMainTermLower := by
+  obtain ⟨c₁₀, c₂₀, hc₁₀, hPP⟩ := MertensTheorem.primeProduct_asymptotic_order
+  exact CorrectedChenMainTermLower_of_uniform_estimates
+    (c𝔖 := c𝔖) (cpp := c₁₀) (Clog := 1) (M₀ := 2) (N₀'' := 59049)
+    hc𝔖 hc₁₀ (by norm_num)
+    h𝔖
+    (fun m _hm h2 => (hPP m h2).1)
+    (fun N hN => by
+      have hlog := correctedChenZ_log_le_logN hN
+      simpa using hlog)
+    (fun N hN => by
+      refine ⟨by omega, ?_, ?_⟩
+      · exact correctedChenZ_sub_one_ge_two_of_large hN
+      · exact correctedChenZ_sub_one_ge_two_of_large hN)
+
+/-- **截断奇异级数的一致下界** (issue #5 的最后一个解析输入).
+
+对任意 `N` 与 `z ≥ 2`: `1/2 ≤ 𝔖_trunc(N, z)`. 经典证明 (孪生素数常数
+`C₂ ≈ 0.66` 级):
+
+  𝔖_trunc(N,z) ≥ ∏_{2<p≤z}(1 − 1/(p−1)²) ≥ 1 − Σ_{p>2} 1/(p−1)²
+                  ≥ 1 − (1/4)·Σ_{k≥1} 1/k² ≥ 1/2,
+
+其中第二步行由 `∏(1−x_i) ≥ 1−Σx_i`, 第三行用 `p−1` 为偶数的子集包含
+(素数 > 2 均为奇数), 最后一行用望远镜求和 `Σ_{k≥1}1/k² ≤ 2`. 该命题
+的证明 = 纯有限组合/实数引理, 已精确陈述; 由它经
+`CorrectedChenMainTermLower_of_singularSeries_lower` 直接闭合主项下界. -/
+def SingularSeriesTruncatedLowerBound : Prop :=
+  ∀ N z : ℕ, 2 ≤ z → (1 / 2 : ℝ) ≤
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated N z
+
+/-- 截断奇异级数一致下界 (取 `c𝔖 = 1/2`) 推出 `CorrectedChenMainTermLower`. -/
+theorem CorrectedChenMainTermLower_of_singularSeries_lower
+    (h𝔖 : SingularSeriesTruncatedLowerBound) :
+    CorrectedChenMainTermLower := by
+  exact CorrectedChenMainTermLower_of_singularSeries_bound (c𝔖 := 1 / 2) (by norm_num)
+    (fun N z hz => h𝔖 N z hz)
+
+/-! ## 4.9 截断奇异级数一致下界 (sub-issue #3 的解析核心)
+
+以下引理是通用解析事实 (与具体筛问题无关), 按边界规则应迁入
+`analytic-number-theory-lean` 的 `AnalyticNumberTheory/Sieve/SingularSeries.lean`;
+在 ant PR #8 合并前先在本文件证明 (迁移注记). -/
+
+/-- 有限集合上 `∏(1 - x_i) ≥ 1 - Σ x_i` (0 ≤ x_i ≤ 1). -/
+theorem prod_one_sub_ge_one_sub_sum {s : Finset ℕ} {x : ℕ → ℝ}
+    (hx0 : ∀ i ∈ s, 0 ≤ x i) (hx1 : ∀ i ∈ s, x i ≤ 1) :
+    1 - ∑ i ∈ s, x i ≤ ∏ i ∈ s, (1 - x i) := by
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert a s ha ih =>
+      have hx0s : ∀ i ∈ s, 0 ≤ x i := fun i hi => hx0 i (Finset.mem_insert_of_mem hi)
+      have hx1s : ∀ i ∈ s, x i ≤ 1 := fun i hi => hx1 i (Finset.mem_insert_of_mem hi)
+      have hx0a : 0 ≤ x a := hx0 a (by simp)
+      have hx1a : x a ≤ 1 := hx1 a (by simp)
+      have hS : 0 ≤ ∑ i ∈ s, x i := Finset.sum_nonneg hx0s
+      rw [Finset.sum_insert ha]
+      calc
+        1 - (x a + ∑ i ∈ s, x i) ≤ (1 - x a) * (1 - ∑ i ∈ s, x i) := by
+          nlinarith [mul_nonneg hx0a hS]
+        _ ≤ (1 - x a) * ∏ i ∈ s, (1 - x i) := by
+          exact mul_le_mul_of_nonneg_left (ih hx0s hx1s) (sub_nonneg.mpr hx1a)
+        _ = ∏ i ∈ insert a s, (1 - x i) := by
+          rw [Finset.prod_insert ha]
+
+/-- `Σ_{p 素数, 2 < p ≤ z} 1/(p−1)² ≤ 1/2`.
+
+素数 > 2 均为奇数, 故 `p−1 = 2k` 为偶数; 经注入 `p ↦ (p−1)/2` 化到
+`Σ_{k} 1/(2k)² = (1/4)Σ_k 1/k²`, 再用望远镜求和
+`Σ_{k≥1} 1/k² ≤ 1 + Σ_{k≥2} 1/((k−1)k) ≤ 2`. -/
+theorem sum_sq_recip_primes_ge_three_le_half (z : ℕ) :
+    (∑ p ∈ (Finset.range (z + 1)).filter (fun p => p.Prime ∧ 2 < p),
+      1 / ((p - 1 : ℕ) : ℝ) ^ 2) ≤ (1 / 2 : ℝ) := by
+  let S : Finset ℕ := (Finset.range (z + 1)).filter (fun p => p.Prime ∧ 2 < p)
+  have hinj : Set.InjOn (fun p : ℕ => (p - 1) / 2) ↑S := by
+    intro a ha b hb hab
+    rcases Finset.mem_filter.mp ha with ⟨ha1, ha2⟩
+    rcases Finset.mem_filter.mp hb with ⟨hb1, hb2⟩
+    have hodd_a : Odd a := ha2.1.odd_of_ne_two (by omega : a ≠ 2)
+    have hodd_b : Odd b := hb2.1.odd_of_ne_two (by omega : b ≠ 2)
+    rcases hodd_a with ⟨ka, hka⟩
+    rcases hodd_b with ⟨kb, hkb⟩
+    have ha' : a - 1 = 2 * ka := by omega
+    have hb' : b - 1 = 2 * kb := by omega
+    have hka' : (a - 1) / 2 = ka := by
+      rw [ha']
+      exact Nat.mul_div_right ka (by norm_num : 0 < 2)
+    have hkb' : (b - 1) / 2 = kb := by
+      rw [hb']
+      exact Nat.mul_div_right kb (by norm_num : 0 < 2)
+    change (a - 1) / 2 = (b - 1) / 2 at hab
+    have hk : ka = kb := by rwa [hka', hkb'] at hab
+    omega
+  have himg := Finset.sum_image (f := fun k : ℕ => 1 / ((2 * k : ℕ) : ℝ) ^ 2)
+    (g := fun p : ℕ => (p - 1) / 2) (s := S) hinj
+  have hcong : (∑ p ∈ S, 1 / ((2 * ((p - 1) / 2) : ℕ) : ℝ) ^ 2) =
+      ∑ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2 := by
+    apply Finset.sum_congr rfl
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨hp1, hp2⟩
+    have hodd : Odd p := hp2.1.odd_of_ne_two (by omega : p ≠ 2)
+    rcases hodd with ⟨k, hk⟩
+    have hsub : p - 1 = 2 * k := by omega
+    have hdiv : 2 ∣ p - 1 := ⟨k, by rw [hsub]⟩
+    have hmul : (p - 1) / 2 * 2 = p - 1 := Nat.div_mul_cancel hdiv
+    rw [show (2 * ((p - 1) / 2) : ℕ) = p - 1 by rw [mul_comm, hmul]]
+  have hsubset : S.image (fun p : ℕ => (p - 1) / 2) ⊆ Finset.range (z + 1) := by
+    intro k hk
+    rcases Finset.mem_image.mp hk with ⟨p, hp, rfl⟩
+    rcases Finset.mem_filter.mp hp with ⟨hp1, hp2⟩
+    rw [Finset.mem_range]
+    have hple : p ≤ z := by
+      rcases Finset.mem_range.mp hp1 with h
+      omega
+    omega
+  have hle1 : (∑ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2) ≤
+      ∑ k ∈ Finset.range (z + 1), 1 / ((2 * k : ℕ) : ℝ) ^ 2 := by
+    calc
+      (∑ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2)
+          = ∑ k ∈ S.image (fun p : ℕ => (p - 1) / 2), 1 / ((2 * k : ℕ) : ℝ) ^ 2 := by
+            rw [← hcong]
+            exact himg.symm
+      _ ≤ ∑ k ∈ Finset.range (z + 1), 1 / ((2 * k : ℕ) : ℝ) ^ 2 := by
+            exact Finset.sum_le_sum_of_subset_of_nonneg hsubset
+              (fun k hk hknot => by positivity)
+  have hfour : (∑ k ∈ Finset.range (z + 1), 1 / ((2 * k : ℕ) : ℝ) ^ 2) =
+      (1 / 4 : ℝ) * ∑ k ∈ Finset.range (z + 1), 1 / (k : ℝ) ^ 2 := by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro k hk
+    have h2k : ((2 * k : ℕ) : ℝ) = 2 * (k : ℝ) := by norm_num
+    rw [h2k]
+    field_simp
+    ring
+  have htel : (∑ i ∈ Finset.range z, 1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ))) ≤ 1 := by
+    have h := Finset.sum_range_sub' (f := fun i : ℕ => 1 / ((i : ℝ) + 1)) (n := z)
+    -- h : Σ_{i ∈ range z} (1/((i:ℝ)+1) − 1/((i:ℝ)+2)) = 1 − 1/((z:ℝ)+1)
+    have hrew : (∑ i ∈ Finset.range z,
+        1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ))) =
+        ∑ i ∈ Finset.range z, (1 / ((i : ℝ) + 1) - 1 / ((i : ℝ) + 2)) := by
+      apply Finset.sum_congr rfl
+      intro i hi
+      have h1 : ((i + 1 : ℕ) : ℝ) = (i : ℝ) + 1 := by norm_num
+      have h2 : ((i + 2 : ℕ) : ℝ) = (i : ℝ) + 2 := by norm_num
+      rw [h1, h2]
+      field_simp
+      ring
+    rw [hrew]
+    have hval : (∑ i ∈ Finset.range z, (1 / ((i : ℝ) + 1) - 1 / ((i : ℝ) + 2))) =
+        ∑ i ∈ Finset.range z, (1 / ((i : ℝ) + 1) - 1 / (((i + 1 : ℕ) : ℝ) + 1)) := by
+      apply Finset.sum_congr rfl
+      intro i hi
+      norm_num [Nat.cast_add, Nat.cast_one]
+      ring
+    rw [hval, h]
+    have hc : 1 / ((0 : ℝ) + 1) = 1 := by norm_num
+    have hpos : 0 ≤ 1 / ((z : ℝ) + 1) := by positivity
+    linarith
+  -- 平方倒数上界: Σ_{k=0}^{z} 1/k² ≤ 2
+  have hsq : (∑ k ∈ Finset.range (z + 1), 1 / (k : ℝ) ^ 2) ≤ 2 := by
+    let A : Finset ℕ := (Finset.range (z + 1)).filter (fun k => k ≤ 1)
+    let B : Finset ℕ := (Finset.range (z + 1)).filter (fun k => 2 ≤ k)
+    have hpart : A ∪ B = Finset.range (z + 1) := by
+      ext k
+      simp only [Finset.mem_union, Finset.mem_filter, Finset.mem_range, A, B]
+      omega
+    have hdisj : Disjoint A B := by
+      rw [Finset.disjoint_filter]
+      intro k hk1 hk2
+      omega
+    have hA : (∑ k ∈ A, 1 / (k : ℝ) ^ 2) ≤ 1 := by
+      have hsub : A ⊆ ({0, 1} : Finset ℕ) := by
+        intro k hk
+        rcases Finset.mem_filter.mp hk with ⟨hk1, hk2⟩
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        omega
+      calc
+        (∑ k ∈ A, 1 / (k : ℝ) ^ 2) ≤ ∑ k ∈ ({0, 1} : Finset ℕ), 1 / (k : ℝ) ^ 2 := by
+          exact Finset.sum_le_sum_of_subset_of_nonneg hsub (fun k hk hknot => by positivity)
+        _ = 1 := by norm_num
+    have hB : (∑ k ∈ B, 1 / (k : ℝ) ^ 2) ≤
+        ∑ i ∈ Finset.range z, 1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ)) := by
+      have hle : (∑ k ∈ B, 1 / (k : ℝ) ^ 2) ≤
+          ∑ k ∈ B, 1 / (((k - 1 : ℕ) : ℝ) * (k : ℝ)) := by
+        apply Finset.sum_le_sum
+        intro k hk
+        rcases Finset.mem_filter.mp hk with ⟨hk1, hk2⟩
+        have hpos1 : 0 < ((k - 1 : ℕ) : ℝ) := by
+          have hkm1 : (1 : ℕ) ≤ k - 1 := by omega
+          exact_mod_cast (lt_of_lt_of_le (by norm_num : (0 : ℕ) < 1) hkm1)
+        have hpos2 : 0 < (k : ℝ) := by
+          have : (1 : ℝ) < k := by exact_mod_cast (by omega : 1 < k)
+          linarith
+        have hleprod : ((k - 1 : ℕ) : ℝ) * (k : ℝ) ≤ (k : ℝ) ^ 2 := by
+          have hsub : (k - 1 : ℕ) ≤ k := Nat.sub_le _ _
+          nlinarith [show ((k - 1 : ℕ) : ℝ) ≤ k by exact_mod_cast hsub]
+        exact one_div_le_one_div_of_le (mul_pos hpos1 hpos2) hleprod
+      have hinj2 : Set.InjOn (fun k : ℕ => k - 2) ↑B := by
+        intro a ha b hb hab
+        change a ∈ B at ha
+        rcases Finset.mem_filter.mp ha with ⟨_, ha2⟩
+        change b ∈ B at hb
+        rcases Finset.mem_filter.mp hb with ⟨_, hb2⟩
+        have ha' : a = (a - 2) + 2 := by omega
+        have hb' : b = (b - 2) + 2 := by omega
+        change a - 2 = b - 2 at hab
+        rw [ha', hb', hab]
+      have himg2 := Finset.sum_image
+        (f := fun i : ℕ => 1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ)))
+        (g := fun k : ℕ => k - 2) (s := B) hinj2
+      have hcong2 : (∑ k ∈ B, 1 / (((k - 1 : ℕ) : ℝ) * (k : ℝ))) =
+          ∑ i ∈ B.image (fun k : ℕ => k - 2),
+            1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ)) := by
+        rw [himg2]
+        apply Finset.sum_congr rfl
+        intro k hk
+        have hk2 : 2 ≤ k := (Finset.mem_filter.mp hk).2
+        have hshift : (k - 2 : ℕ) + 1 = k - 1 := by omega
+        have hshift2 : (k - 2 : ℕ) + 2 = k := by omega
+        rw [hshift, hshift2]
+      have hsub2 : B.image (fun k : ℕ => k - 2) ⊆ Finset.range z := by
+        intro i hi
+        rcases Finset.mem_image.mp hi with ⟨k, hk, rfl⟩
+        rw [Finset.mem_range]
+        rcases Finset.mem_filter.mp hk with ⟨hk1, hk2⟩
+        rcases Finset.mem_range.mp hk1 with h
+        omega
+      calc
+        (∑ k ∈ B, 1 / (k : ℝ) ^ 2) ≤ ∑ k ∈ B, 1 / (((k - 1 : ℕ) : ℝ) * (k : ℝ)) := hle
+        _ = ∑ i ∈ B.image (fun k : ℕ => k - 2),
+            1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ)) := hcong2
+        _ ≤ ∑ i ∈ Finset.range z, 1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ)) := by
+              exact Finset.sum_le_sum_of_subset_of_nonneg hsub2
+                (fun i hi hnot => by positivity)
+    calc
+      (∑ k ∈ Finset.range (z + 1), 1 / (k : ℝ) ^ 2)
+          = (∑ k ∈ A, 1 / (k : ℝ) ^ 2) + (∑ k ∈ B, 1 / (k : ℝ) ^ 2) := by
+            rw [← hpart, Finset.sum_union hdisj]
+      _ ≤ 1 + (∑ i ∈ Finset.range z, 1 / (((i + 1 : ℕ) : ℝ) * ((i + 2 : ℕ) : ℝ))) := by
+            exact add_le_add hA hB
+      _ ≤ 1 + 1 := by
+            exact add_le_add (le_refl (1 : ℝ)) htel
+      _ = 2 := by norm_num
+  calc
+    (∑ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2)
+        ≤ (1 / 4 : ℝ) * ∑ k ∈ Finset.range (z + 1), 1 / (k : ℝ) ^ 2 := by
+          calc
+            (∑ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2)
+                ≤ ∑ k ∈ Finset.range (z + 1), 1 / ((2 * k : ℕ) : ℝ) ^ 2 := hle1
+            _ = (1 / 4 : ℝ) * ∑ k ∈ Finset.range (z + 1), 1 / (k : ℝ) ^ 2 := hfour
+    _ ≤ (1 / 4 : ℝ) * 2 := by
+          exact mul_le_mul_of_nonneg_left hsq (by norm_num)
+    _ = 1 / 2 := by norm_num
+
+/-- **截断奇异级数一致下界**: 对任意 `N` 与 `z ≥ 2`, `1/2 ≤ 𝔖_trunc(N, z)`.
+
+经典路线 (孪生素数常数 `C₂` 级): 局部因子按 `p=2`、`p|N`、`p∤N` 分类,
+`𝔖_trunc ≥ ∏_{2<p≤z}(1 − 1/(p−1)²)`, 再由
+`∏(1−x_i) ≥ 1−Σx_i` 与 `Σ_{p>2}1/(p−1)² ≤ 1/2` 得到下界. -/
+theorem singularSeriesTruncated_ge_half {N z : ℕ} (hz : 2 ≤ z) :
+    (1 / 2 : ℝ) ≤ AnalyticNumberTheory.Sieve.singularSeriesTruncated N z := by
+  let S : Finset ℕ := (Finset.range (z + 1)).filter (fun p => p.Prime ∧ 2 < p)
+  have hsplit : (Finset.range (z + 1)).filter Nat.Prime = insert 2 S := by
+    ext p
+    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_insert, S]
+    constructor
+    · intro hp
+      rcases hp with ⟨hpz, hpp⟩
+      by_cases hp2 : p = 2
+      · exact Or.inl hp2
+      · exact Or.inr ⟨hpz, hpp, lt_of_le_of_ne hpp.two_le (Ne.symm hp2)⟩
+    · intro hp
+      rcases hp with hpeq | hpS
+      · subst p
+        exact ⟨by omega, Nat.prime_two⟩
+      · rcases hpS with ⟨hpz, hpp, hp2⟩
+        exact ⟨hpz, hpp⟩
+  have hlf2 : (1 : ℝ) ≤ AnalyticNumberTheory.Sieve.localFactor 2 N := by
+    unfold AnalyticNumberTheory.Sieve.localFactor
+    by_cases h2dvd : 2 ∣ N
+    · simp [h2dvd]
+    · simp [h2dvd]
+  have hprod_le : (∏ p ∈ S, (1 - 1 / ((p - 1 : ℕ) : ℝ) ^ 2)) ≤
+      ∏ p ∈ S, AnalyticNumberTheory.Sieve.localFactor p N := by
+    apply Finset.prod_le_prod
+    · intro p hp
+      rcases Finset.mem_filter.mp hp with ⟨hp1, hp2⟩
+      have hpm1 : (2 : ℝ) ≤ ((p - 1 : ℕ) : ℝ) := by
+        have hp3n : (2 : ℕ) ≤ p - 1 := by omega
+        exact_mod_cast hp3n
+      have hx2 : (4 : ℝ) ≤ ((p - 1 : ℕ) : ℝ) ^ 2 := by
+        nlinarith [sq_nonneg (((p - 1 : ℕ) : ℝ) - 2)]
+      have h14 : 1 / ((p - 1 : ℕ) : ℝ) ^ 2 ≤ 1 / 4 := by
+        exact one_div_le_one_div_of_le (by norm_num : 0 < (4 : ℝ)) hx2
+      -- 0 ≤ 1 − 1/(p−1)²
+      have hpos : 0 ≤ 1 / ((p - 1 : ℕ) : ℝ) ^ 2 := by positivity
+      linarith
+    · intro p hp
+      rcases Finset.mem_filter.mp hp with ⟨hp1, hp2⟩
+      have hpp : p.Prime := hp2.1
+      have hp2p : 2 < p := hp2.2
+      by_cases hpdvd : p ∣ N
+      · rw [AnalyticNumberTheory.Sieve.localFactor_of_dvd hpp hp2p hpdvd]
+        have hle1 : 1 - 1 / ((p - 1 : ℕ) : ℝ) ^ 2 ≤ 1 := by
+          have hpos : 0 ≤ 1 / ((p - 1 : ℕ) : ℝ) ^ 2 := by positivity
+          linarith
+        have hle2 : (1 : ℝ) ≤ (p : ℝ) / (p - 1) := by
+          have hp1 : 0 < (p : ℝ) - 1 := by
+            have : (2 : ℝ) < p := by exact_mod_cast hp2p
+            linarith
+          rw [le_div_iff₀ hp1]
+          linarith
+        linarith
+      · rw [AnalyticNumberTheory.Sieve.localFactor_of_not_dvd hpp hp2p hpdvd]
+        have hcast : ((p - 1 : ℕ) : ℝ) = (p : ℝ) - 1 := by
+          simpa using (Nat.cast_sub (R := ℝ) (by omega : 1 ≤ p))
+        have hp1 : (p : ℝ) - 1 ≠ 0 := by
+          have : (2 : ℝ) < p := by exact_mod_cast hp2p
+          linarith
+        have heq : 1 - 1 / ((p - 1 : ℕ) : ℝ) ^ 2 =
+            (p : ℝ) * (p - 2) / ((p - 1 : ℕ) : ℝ) ^ 2 := by
+          rw [hcast]
+          field_simp [hp1]
+          ring
+        rw [heq, hcast]
+  have h𝔖 : AnalyticNumberTheory.Sieve.singularSeriesTruncated N z =
+      AnalyticNumberTheory.Sieve.localFactor 2 N *
+        ∏ p ∈ S, AnalyticNumberTheory.Sieve.localFactor p N := by
+    unfold AnalyticNumberTheory.Sieve.singularSeriesTruncated
+    rw [hsplit]
+    rw [Finset.prod_insert]
+    · intro h2S
+      rcases Finset.mem_filter.mp h2S with ⟨h1, h2⟩
+      omega
+  have hprod_ge : (1 / 2 : ℝ) ≤ ∏ p ∈ S, (1 - 1 / ((p - 1 : ℕ) : ℝ) ^ 2) := by
+    have hx0 : ∀ p ∈ S, 0 ≤ 1 / ((p - 1 : ℕ) : ℝ) ^ 2 := by
+      intro p hp
+      positivity
+    have hx1 : ∀ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2 ≤ 1 := by
+      intro p hp
+      rcases Finset.mem_filter.mp hp with ⟨hp1, hp2⟩
+      have hpm1 : (2 : ℝ) ≤ ((p - 1 : ℕ) : ℝ) := by
+        have hp3n : (2 : ℕ) ≤ p - 1 := by omega
+        exact_mod_cast hp3n
+      have hx2 : (4 : ℝ) ≤ ((p - 1 : ℕ) : ℝ) ^ 2 := by
+        nlinarith [sq_nonneg (((p - 1 : ℕ) : ℝ) - 2)]
+      have h14 : 1 / ((p - 1 : ℕ) : ℝ) ^ 2 ≤ 1 / 4 := by
+        exact one_div_le_one_div_of_le (by norm_num : 0 < (4 : ℝ)) hx2
+      calc
+        1 / ((p - 1 : ℕ) : ℝ) ^ 2 ≤ 1 / 4 := h14
+        _ ≤ 1 := by norm_num
+    calc
+      (1 / 2 : ℝ) ≤ 1 - ∑ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2 := by
+        have hle := sum_sq_recip_primes_ge_three_le_half z
+        have hleS : (∑ p ∈ S, 1 / ((p - 1 : ℕ) : ℝ) ^ 2) ≤ 1 / 2 := by
+          simpa [S] using hle
+        linarith
+      _ ≤ ∏ p ∈ S, (1 - 1 / ((p - 1 : ℕ) : ℝ) ^ 2) := by
+            exact prod_one_sub_ge_one_sub_sum hx0 hx1
+  calc
+    (1 / 2 : ℝ) ≤ ∏ p ∈ S, (1 - 1 / ((p - 1 : ℕ) : ℝ) ^ 2) := hprod_ge
+    _ ≤ ∏ p ∈ S, AnalyticNumberTheory.Sieve.localFactor p N := hprod_le
+    _ ≤ AnalyticNumberTheory.Sieve.localFactor 2 N *
+        ∏ p ∈ S, AnalyticNumberTheory.Sieve.localFactor p N := by
+          have hnonneg : 0 ≤ ∏ p ∈ S, AnalyticNumberTheory.Sieve.localFactor p N := by
+            apply Finset.prod_nonneg
+            intro p hp
+            rcases Finset.mem_filter.mp hp with ⟨hp1, hp2⟩
+            exact le_of_lt (AnalyticNumberTheory.Sieve.localFactor_pos hp2.1)
+          exact le_mul_of_one_le_left hnonneg hlf2
+    _ = AnalyticNumberTheory.Sieve.singularSeriesTruncated N z := h𝔖.symm
+
+/-- 实例化: `SingularSeriesTruncatedLowerBound` 成立 (子 issue #3 闭合). -/
+theorem singularSeriesTruncatedLowerBound_ge_half : SingularSeriesTruncatedLowerBound := by
+  intro N z hz
+  exact singularSeriesTruncated_ge_half hz
+
+/-- `𝔖_trunc` 一致下界 ⇒ 一致主项下界: 主项侧现在完全闭合 (无剩余解析输入). -/
+theorem CorrectedChenMainTermLower_of_singularSeries_lower_bound :
+    CorrectedChenMainTermLower := by
+  exact CorrectedChenMainTermLower_of_singularSeries_lower singularSeriesTruncatedLowerBound_ge_half
+
 /-- **主项渐近阶**: the corrected Selberg divisor sum for the corrected sieve
 is `Θ(log (z-1) / 𝔖(N, z-1))`.
 
@@ -2060,6 +2806,20 @@ Unlike the historical `chenOmega`, its factor multiplicity is explicit.  No
 analytic upper bound or counting bridge is claimed for it yet. -/
 noncomputable def correctedChenOmega (N : ℕ) : ℝ :=
   (correctedChenCandidates N).sum (correctedChenPenalty N)
+
+/-- 由下界接缝得到正性的最终化简: 只要主项 `X·V(N)` 严格大于
+`errSum(1) + Ω/2`, 修正计数就是正的.
+
+这正是 `CorrectedChenAnalyticPositivity` 的完整下界侧化简: 三个解析输入
+(`V(N)` 的 Mertens 下界、#7 的 errSum 控制、#6 的 Ω 上界) 最终都只用于
+验证这一条显式实数不等式. -/
+theorem correctedChenPositivity_of_mainTerm_beats_error (N : ℕ)
+    (hV : (correctedChenBoundingSieve N).errSum (fun _ => 1) +
+        correctedChenOmega N / 2 <
+      (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N) :
+    0 < ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 := by
+  have hlow := correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum N
+  linarith
 
 /-- The corrected penalty is exactly the amount subtracted by the existing
 Chen weight.  This gives a concrete interpretation to the future `/ 2` in a
@@ -2324,6 +3084,524 @@ constant or bound from the refuted historical switching model is imported. -/
 def CorrectedChenAnalyticPositivity : Prop :=
   ∀ N : ℕ, Even N → 1000 ≤ N →
     0 < ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2
+/-! ## 4.10 最终组装 (sub-issue #8): 一致主项 → 正性 -/
+
+/-- Mertens 下界 (显式常数 `1/3`): `∃ M₀, ∀ m ≥ M₀, 2 ≤ m →
+`(1/3)/log m ≤ primeProduct m`.
+
+由 ant 精确 Mertens (`|pp − e^{-γ}/log m| ≤ C/log²m`) 与 `e^{-γ} > 1/3`
+(由 `γ < 2/3` 与 `e < 3` 导出) 推出. -/
+theorem primeProduct_lower_explicit :
+    ∃ M₀ : ℕ, ∀ m : ℕ, M₀ ≤ m → 2 ≤ m →
+      (1 / 3 : ℝ) / log (m : ℝ) ≤ MertensTheorem.primeProduct m := by
+  obtain ⟨C, hC, hb⟩ := AnalyticNumberTheory.Mertens.primeProduct_mertens_nat
+  have hγ : eulerMascheroniConstant < 2 / 3 := Real.eulerMascheroniConstant_lt_two_thirds
+  have hδ : (1 / 3 : ℝ) < Real.exp (-eulerMascheroniConstant) := by
+    have hmono : Real.exp (-(2 / 3 : ℝ)) < Real.exp (-eulerMascheroniConstant) :=
+      Real.exp_lt_exp.mpr (by linarith)
+    have he23 : Real.exp ((2 / 3 : ℝ)) < 3 := by
+      exact lt_trans (Real.exp_lt_exp.mpr (by norm_num)) Real.exp_one_lt_three
+    have h13 : (1 / 3 : ℝ) < Real.exp (-(2 / 3 : ℝ)) := by
+      rw [Real.exp_neg]
+      have h3inv : (1 / 3 : ℝ) = (3 : ℝ)⁻¹ := by norm_num
+      rw [h3inv]
+      exact (inv_lt_inv₀ (by norm_num : 0 < (3 : ℝ)) (Real.exp_pos _)).mpr he23
+    exact lt_trans h13 hmono
+  let δ : ℝ := Real.exp (-eulerMascheroniConstant) - (1 / 3 : ℝ)
+  have hδpos : 0 < δ := sub_pos.mpr hδ
+  let T : ℝ := C / δ
+  let M₀ : ℕ := Nat.ceil (Real.exp T) + 1
+  refine ⟨M₀, ?_⟩
+  intro m hm h2m
+  have hlog : 0 < log (m : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < m))
+  have hT : T < log (m : ℝ) := by
+    have hce : Real.exp T ≤ (Nat.ceil (Real.exp T) : ℝ) := Nat.le_ceil (Real.exp T)
+    have hcm : (Nat.ceil (Real.exp T) : ℝ) < (m : ℝ) := by
+      have h1 : (Nat.ceil (Real.exp T) + 1 : ℕ) ≤ m := hm
+      have h1r : ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h1
+      have hlt : (Nat.ceil (Real.exp T) : ℝ) < ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) := by
+        exact_mod_cast (Nat.lt_succ_self (Nat.ceil (Real.exp T)))
+      exact lt_of_lt_of_le hlt h1r
+    have hstrict : Real.exp T < (m : ℝ) := lt_of_le_of_lt hce hcm
+    have hloglt : Real.log (Real.exp T) < log (m : ℝ) :=
+      Real.log_lt_log (Real.exp_pos T) hstrict
+    rwa [Real.log_exp] at hloglt
+  have hCδ : C / log (m : ℝ) < δ := by
+    have hposT : 0 < T := by
+      dsimp [T]
+      exact div_pos hC hδpos
+    have hinvT : (1 / log (m : ℝ)) < 1 / T := by
+      exact one_div_lt_one_div_of_lt hposT hT
+    calc
+      C / log (m : ℝ) = C * (1 / log (m : ℝ)) := by field_simp [hlog.ne']
+      _ < C * (1 / T) := mul_lt_mul_of_pos_left hinvT hC
+      _ = δ := by
+        dsimp [T]
+        field_simp [hδpos.ne', hC.ne']
+  have hb' := hb m h2m
+  have hlow : Real.exp (-eulerMascheroniConstant) / log (m : ℝ) - C / (log (m : ℝ)) ^ 2 ≤
+      MertensTheorem.primeProduct m := by
+    change Real.exp (-eulerMascheroniConstant) / log (m : ℝ) - C / (log (m : ℝ)) ^ 2 ≤
+      AnalyticNumberTheory.Mertens.primeProduct m
+    have habs1 := (abs_le.mp hb').1
+    nlinarith
+  have hstep : C / (log (m : ℝ)) ^ 2 <
+      (Real.exp (-eulerMascheroniConstant) - 1 / 3) / log (m : ℝ) := by
+    have hc2 : C / (log (m : ℝ)) ^ 2 = (C / log (m : ℝ)) / log (m : ℝ) := by field_simp [hlog.ne']
+    rw [hc2]
+    exact div_lt_div_of_pos_right hCδ hlog
+  have hgoal : (1 / 3 : ℝ) / log (m : ℝ) <
+      Real.exp (-eulerMascheroniConstant) / log (m : ℝ) - C / (log (m : ℝ)) ^ 2 := by
+    have hrew : (Real.exp (-eulerMascheroniConstant) - 1 / 3) / log (m : ℝ) =
+        Real.exp (-eulerMascheroniConstant) / log (m : ℝ) - (1 / 3) / log (m : ℝ) := by
+      field_simp [hlog.ne']
+    have hstep' : C / (log (m : ℝ)) ^ 2 <
+        Real.exp (-eulerMascheroniConstant) / log (m : ℝ) - (1 / 3) / log (m : ℝ) := by
+      rwa [hrew] at hstep
+    nlinarith
+  exact le_of_lt (lt_of_lt_of_le hgoal hlow)
+
+/-- 参数估计 (上界方向, 精确系数): `log(z-1) ≤ (1/10)·log N`. -/
+theorem correctedChenZ_log_le_logN_div_ten {N : ℕ} (hN : 2 ≤ N) :
+    log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ (1 / 10 : ℝ) * log (N : ℝ) := by
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have hx0 : 0 ≤ x := by
+    dsimp [x]
+    exact Real.rpow_nonneg (by exact_mod_cast (Nat.zero_le N)) _
+  have hzle : (correctedChenZ N - 1 : ℕ) ≤ Nat.floor x := by
+    unfold correctedChenZ
+    by_cases hf : 2 ≤ Nat.floor x
+    · rw [max_eq_right hf]
+      exact Nat.sub_le _ _
+    · have hx1 : 1 ≤ x := by
+        dsimp [x]
+        exact Real.one_le_rpow (by exact_mod_cast (by omega : 1 ≤ N)) (by norm_num)
+      rw [max_eq_left (by omega : Nat.floor x ≤ 2)]
+      have hfl : (1 : ℕ) ≤ Nat.floor x := by
+        exact Nat.le_floor (by simpa [x] using hx1)
+      change (1 : ℕ) ≤ Nat.floor x
+      exact hfl
+  have hlogz : 0 < ((correctedChenZ N - 1 : ℕ) : ℝ) := by
+    have hz2 : 2 ≤ correctedChenZ N := by
+      unfold correctedChenZ
+      exact le_max_left _ _
+    have hpos : 0 < correctedChenZ N - 1 := by omega
+    exact_mod_cast hpos
+  have hfl0 : 0 < Nat.floor x := by
+    have hz2 : 2 ≤ correctedChenZ N := by
+      unfold correctedChenZ
+      exact le_max_left _ _
+    have h1 : (1 : ℕ) ≤ correctedChenZ N - 1 := by omega
+    have : (1 : ℕ) ≤ Nat.floor x := le_trans h1 hzle
+    exact lt_of_lt_of_le (by norm_num : (0 : ℕ) < 1) this
+  calc
+    log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ log ((Nat.floor x : ℕ) : ℝ) := by
+      exact Real.log_le_log hlogz (by exact_mod_cast hzle)
+    _ ≤ log x := by
+      exact Real.log_le_log (by exact_mod_cast hfl0) (Nat.floor_le hx0)
+    _ = (1 / 10 : ℝ) * log (N : ℝ) := by
+      dsimp [x]
+      rw [Real.log_rpow (by exact_mod_cast (by omega : 0 < N))]
+
+/-- 广义参数估计: 对 `N ≥ (k+1)^10`, `k ≤ z-1` (z = ⌈N^{1/10}⌉). -/
+theorem correctedChenZ_sub_one_ge_of_N_ge {k N : ℕ} (hk : 2 ≤ k) (hN : (k + 1) ^ 10 ≤ N) :
+    k ≤ correctedChenZ N - 1 := by
+  let x : ℝ := (N : ℝ) ^ (1 / 10 : ℝ)
+  have hk1 : (k + 1 : ℕ) ≤ Nat.floor x := by
+    have hk1r : ((k + 1 : ℕ) : ℝ) ≤ x := by
+      dsimp [x]
+      have hpow : ((k + 1 : ℕ) : ℝ) ^ (10 : ℝ) ≤ (N : ℝ) := by
+        have hnat : ((k + 1 : ℕ) : ℝ) ^ 10 ≤ (N : ℝ) := by
+          exact_mod_cast hN
+        simpa [Real.rpow_natCast] using hnat
+      have hstep := Real.rpow_le_rpow (by positivity : 0 ≤ ((k + 1 : ℕ) : ℝ) ^ (10 : ℝ)) hpow
+        (by norm_num : 0 ≤ (1 / 10 : ℝ))
+      have hrew : ((((k + 1 : ℕ) : ℝ) ^ (10 : ℝ)) ^ (1 / 10 : ℝ)) = ((k + 1 : ℕ) : ℝ) := by
+        rw [← Real.rpow_mul (by positivity : 0 ≤ ((k + 1 : ℕ) : ℝ))]
+        norm_num
+      rwa [hrew] at hstep
+    exact Nat.le_floor hk1r
+  have hz : correctedChenZ N = Nat.floor x := by
+    unfold correctedChenZ
+    change max 2 (Nat.floor x) = Nat.floor x
+    exact max_eq_right (le_trans (by omega : (2 : ℕ) ≤ k + 1) hk1)
+  rw [hz]
+  omega
+
+/-- **主项一致下界 (奇异级数单位)**: `(10/3)·𝔖_trunc·N/log²N ≤ X·V(N)`.
+
+组合: 精确接缝 `X·V = X·𝔖·primeProduct(z−1)` + Mertens 下界
+`primeProduct ≥ (1/3)/log(z−1)` + 参数上界 `log(z−1) ≤ (1/10)·log N`. -/
+theorem CorrectedChenMainTermLower_singularSeries_units :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N₀ ≤ N → Even N →
+      (10 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 ≤
+        (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N := by
+  obtain ⟨M₀, hpp⟩ := primeProduct_lower_explicit
+  let N₀ : ℕ := max ((M₀ + 3) ^ 10) 59049
+  refine ⟨N₀, ?_⟩
+  intro N hN hEven
+  have hN2 : 2 ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hz : 2 ≤ correctedChenZ N - 1 := correctedChenZ_sub_one_ge_two_of_large (by
+    dsimp [N₀] at hN
+    omega)
+  have hM : M₀ ≤ correctedChenZ N - 1 := by
+    have hk := correctedChenZ_sub_one_ge_of_N_ge (k := M₀ + 2) (by omega : 2 ≤ M₀ + 2) (by
+      have hle : (M₀ + 3) ^ 10 ≤ N := by
+        dsimp [N₀] at hN
+        omega
+      -- 目标: ((M₀+2)+1)^10 ≤ N, 即 (M₀+3)^10 ≤ N
+      simpa [show (M₀ + 2) + 1 = M₀ + 3 by omega] using hle)
+    omega
+  have hlogz : 0 < log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
+    have : (1 : ℝ) < (correctedChenZ N - 1 : ℕ) := by exact_mod_cast (by omega : 1 < correctedChenZ N - 1)
+    exact Real.log_pos this
+  have hlogN : 0 < log (N : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < N))
+  have hparam := correctedChenZ_log_le_logN_div_ten hN2
+  have hpp' : (1 / 3 : ℝ) / log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤
+      MertensTheorem.primeProduct (correctedChenZ N - 1) := hpp (correctedChenZ N - 1) hM hz
+  have hparam10 : (10 : ℝ) / log (N : ℝ) ≤ 1 / log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
+    have hrew : log (N : ℝ) / 10 = (1 / 10 : ℝ) * log (N : ℝ) := by ring
+    have hzle : log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ log (N : ℝ) / 10 := by
+      rw [hrew]
+      exact hparam
+    have hrew2 : (10 : ℝ) / log (N : ℝ) = 1 / (log (N : ℝ) / 10) := by
+      field_simp [hlogN.ne']
+    rw [hrew2]
+    exact one_div_le_one_div_of_le hlogz hzle
+  have h10' : (10 / 3 : ℝ) / log (N : ℝ) ≤ (1 / 3 : ℝ) / log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
+    rw [div_le_div_iff₀ hlogN hlogz]
+    have h10z : (10 : ℝ) * log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ log (N : ℝ) := by
+      nlinarith [hparam]
+    nlinarith
+  have h𝔖pos : 0 < AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos N (correctedChenZ N - 1) (by omega)
+  have hseam := correctedChenSieveProduct_eq_singularSeries_mul_primeProduct N hEven
+  have hX : 0 ≤ (N : ℝ) / log (N : ℝ) := div_nonneg (by positivity) (le_of_lt hlogN)
+  calc
+    (10 / 3 : ℝ) *
+          AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2
+        = (N : ℝ) / log (N : ℝ) *
+            (AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              ((10 / 3 : ℝ) / log (N : ℝ))) := by
+          field_simp [hlogN.ne']
+    _ ≤ (N : ℝ) / log (N : ℝ) *
+            (AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              ((1 / 3 : ℝ) / log ((correctedChenZ N - 1 : ℕ) : ℝ))) := by
+          exact mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_left h10' (le_of_lt h𝔖pos)) hX
+    _ ≤ (N : ℝ) / log (N : ℝ) *
+            (AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              MertensTheorem.primeProduct (correctedChenZ N - 1)) := by
+          exact mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_left hpp' (le_of_lt h𝔖pos)) hX
+    _ = (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N := by
+          rw [← hseam]
+          rfl
+
+/-- **Ω 上界目标 (issue #7)**: 一致 `correctedChenOmega ≤ cΩ·𝔖_trunc·N/log²N`,
+且数值条件 `(10/3) > cΩ/2` (主项系数严格大于 Ω/2 系数). -/
+def CorrectedChenOmegaUpperBound : Prop :=
+  ∃ cΩ : ℝ, (10 / 3 : ℝ) > cΩ / 2 ∧ ∃ N₀ : ℕ,
+    ∀ N : ℕ, N₀ ≤ N → Even N →
+      correctedChenOmega N ≤
+        cΩ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2
+
+/-- 经典常数兼容性: 主项系数 `10/3` 严格大于经典 Ω 上界系数的一半
+`3.9404/2`. 因此 `CorrectedChenOmegaUpperBound` 的数值条件允许取
+`cΩ = 3.9404` (Chen 1973 的经典常数). -/
+theorem omega_upper_bound_compatible_with_39404 :
+    (10 / 3 : ℝ) > 3.9404 / 2 := by
+  norm_num
+
+/-- 若 Ω 上界以经典常数 `3.9404` 成立 (且主项系数条件满足), 组装直接可用.
+该定理把 `CorrectedChenOmegaUpperBound` 的实例化条件显式化: 只需证明
+`∃ N₀, ∀ N ≥ N₀ Even, correctedChenOmega N ≤ 3.9404·𝔖_trunc·N/log²N`. -/
+theorem CorrectedChenOmegaUpperBound_of_39404
+    (hbound : ∃ N₀ : ℕ, ∀ N : ℕ, N₀ ≤ N → Even N →
+      correctedChenOmega N ≤
+        3.9404 * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2) :
+    CorrectedChenOmegaUpperBound := by
+  rcases hbound with ⟨N₀, hN₀⟩
+  exact ⟨3.9404, omega_upper_bound_compatible_with_39404, N₀, hN₀⟩
+
+/-- **最终组装 (sub-issue #8)**: 主项一致下界 (已证) + Ω 上界 (输入 #7) +
+加权 Pan errSum 控制 (输入 #6) ⇒ 充分大偶数的修正计数正性. -/
+theorem CorrectedChenPositivity_large_of_inputs
+    (hPan : ChenWeightedPanInput) (hΩ : CorrectedChenOmegaUpperBound) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N₀ ≤ N → Even N →
+      0 < ((correctedChenCandidates N).card : ℝ) - correctedChenOmega N / 2 := by
+  obtain ⟨N₀main, hmain⟩ := CorrectedChenMainTermLower_singularSeries_units
+  obtain ⟨cΩ, hnum, N₀Ω, hΩ'⟩ := hΩ
+  rcases hPan 3 (by norm_num : 0 < (3 : ℝ)) with ⟨C, hC, hbound⟩
+  have hErr : ∀ N : ℕ, 1000 ≤ N → Even N →
+      (correctedChenBoundingSieve N).errSum (fun _ => 1) ≤ C * (N : ℝ) / (log (N : ℝ)) ^ 3 := by
+    intro N hN hEven
+    exact le_trans (correctedChenErrSum_le_weightedPanInput N) (by
+      simpa [Real.rpow_natCast] using hbound N hN hEven)
+  let d : ℝ := (10 / 3 : ℝ) - cΩ / 2
+  have hd : 0 < d := sub_pos.mpr hnum
+  let T : ℝ := 2 * C / d
+  let M : ℕ := Nat.ceil (Real.exp T) + 1
+  let N₀ : ℕ := max (max N₀main N₀Ω) (max (max 1000 M) 59049)
+  refine ⟨N₀, ?_⟩
+  intro N hN_large hN_even
+  have hNmain : N₀main ≤ N := by
+    exact le_trans (le_trans (le_max_left _ _) (le_max_left _ _)) hN_large
+  have hNΩ : N₀Ω ≤ N := by
+    exact le_trans (le_trans (le_max_right _ _) (le_max_left _ _)) hN_large
+  have hN1000 : 1000 ≤ N := by
+    exact le_trans (le_trans (le_trans (le_max_left 1000 M) (le_max_left _ _))
+      (le_max_right _ _)) hN_large
+  have hNM : M ≤ N := by
+    exact le_trans (le_trans (le_trans (le_max_right 1000 M) (le_max_left _ _))
+      (le_max_right _ _)) hN_large
+  have hN59049 : 59049 ≤ N := by
+    exact le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) hN_large
+  have hlogN : 0 < log (N : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < N))
+  have hT : T < log (N : ℝ) := by
+    have hce : Real.exp T ≤ (Nat.ceil (Real.exp T) : ℝ) := Nat.le_ceil (Real.exp T)
+    have hcm : (Nat.ceil (Real.exp T) : ℝ) < (N : ℝ) := by
+      have h1 : (Nat.ceil (Real.exp T) + 1 : ℕ) ≤ N := hNM
+      have h1r : ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) ≤ (N : ℝ) := by exact_mod_cast h1
+      have hlt : (Nat.ceil (Real.exp T) : ℝ) < ((Nat.ceil (Real.exp T) + 1 : ℕ) : ℝ) := by
+        exact_mod_cast (Nat.lt_succ_self (Nat.ceil (Real.exp T)))
+      exact lt_of_lt_of_le hlt h1r
+    have hstrict : Real.exp T < (N : ℝ) := lt_of_le_of_lt hce hcm
+    have hloglt : Real.log (Real.exp T) < log (N : ℝ) :=
+      Real.log_lt_log (Real.exp_pos T) hstrict
+    rwa [Real.log_exp] at hloglt
+  have hCdiv : C / log (N : ℝ) < d / 2 := by
+    have hT' : (2 * C) / d < log (N : ℝ) := by
+      simpa [T] using hT
+    have hmul := mul_lt_mul_of_pos_right hT' hd
+    -- (2C/d)·d = 2C < d·log N
+    have hcross : C * 2 < d * log (N : ℝ) := by
+      field_simp [hd.ne'] at hmul ⊢
+      nlinarith
+    -- C/log N < d/2 ⟺ 2C < d·log N
+    rw [div_lt_iff₀ hlogN]
+    have hrew2 : (d / 2) * log (N : ℝ) = (d * log (N : ℝ)) / 2 := by ring
+    rw [hrew2, lt_div_iff₀ (by norm_num : 0 < (2 : ℝ))]
+    exact hcross
+  have hz : 2 ≤ correctedChenZ N - 1 := correctedChenZ_sub_one_ge_two_of_large hN59049
+  have h𝔖 : (1 / 2 : ℝ) ≤
+      AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    singularSeriesTruncated_ge_half hz
+  have h𝔖pos : 0 < AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+    AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos N (correctedChenZ N - 1) (by omega)
+  have hmainN := hmain N hNmain hN_even
+  have hΩN := hΩ' N hNΩ hN_even
+  have herrN := hErr N hN1000 hN_even
+  have hV : (correctedChenBoundingSieve N).errSum (fun _ => 1) + correctedChenOmega N / 2 <
+      (correctedChenBoundingSieve N).totalMass * correctedChenSieveProduct N := by
+    have hO : correctedChenOmega N / 2 ≤
+        (cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+      have hΩ2 : correctedChenOmega N ≤
+          cΩ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 := hΩN
+      have hdiv2 : correctedChenOmega N / 2 ≤
+          (cΩ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2) / 2 := by
+        exact div_le_div_of_nonneg_right hΩ2 (by norm_num : 0 ≤ (2 : ℝ))
+      have hrew : (cΩ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2) / 2 =
+          (cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+        field_simp
+      rwa [hrew] at hdiv2
+    have hsum : C * (N : ℝ) / (log (N : ℝ)) ^ 3 +
+          (cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 <
+        (10 / 3 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+      -- C/log N < d/2 ≤ d·𝔖 ⇒ C·X/logN < d·𝔖·X
+      have hd𝔖 : d / 2 ≤ d * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) := by
+        have hmul := mul_le_mul_of_nonneg_left h𝔖 (le_of_lt hd)
+        have hrew : d * (1 / 2 : ℝ) = d / 2 := by ring
+        rwa [hrew] at hmul
+      have hC𝔖 : C / log (N : ℝ) <
+          d * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) :=
+        lt_of_lt_of_le hCdiv hd𝔖
+      have hX2 : 0 < (N : ℝ) / (log (N : ℝ)) ^ 2 := by positivity
+      have hstrict : C * (N : ℝ) / (log (N : ℝ)) ^ 3 <
+          d * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+        have hmul := mul_lt_mul_of_pos_right hC𝔖 hX2
+        have hrewL : C * (N : ℝ) / (log (N : ℝ)) ^ 3 =
+            (C / log (N : ℝ)) * ((N : ℝ) / (log (N : ℝ)) ^ 2) := by
+          field_simp [hlogN.ne']
+        have hrewR : d * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2 =
+            (d * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1)) *
+              ((N : ℝ) / (log (N : ℝ)) ^ 2) := by
+          field_simp [hlogN.ne']
+        rw [hrewL, hrewR]
+        exact hmul
+      have hadd : C * (N : ℝ) / (log (N : ℝ)) ^ 3 +
+            (cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2 <
+          d * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2 +
+            (cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+          simpa [add_comm] using (add_lt_add_right hstrict
+            ((cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2))
+      have hrew : d * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2 +
+            (cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2 =
+          (10 / 3 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+              (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+        dsimp [d]
+        ring_nf
+      rwa [hrew] at hadd
+    have hle : (correctedChenBoundingSieve N).errSum (fun _ => 1) + correctedChenOmega N / 2 ≤
+        C * (N : ℝ) / (log (N : ℝ)) ^ 3 +
+          (cΩ / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+      exact add_le_add herrN hO
+    exact lt_of_lt_of_le (lt_of_le_of_lt hle hsum) hmainN
+  exact correctedChenPositivity_of_mainTerm_beats_error N hV
+
+/-- **无条件陈氏定理 (模两个解析输入)**: 由 `CorrectedChenPositivity_large_of_inputs`
+经 `corrected_key_inequality_implies_chen_at` 得到最终 `∃ N₀` 形式. -/
+theorem corrected_chens_theorem_of_inputs
+    (hPan : ChenWeightedPanInput) (hΩ : CorrectedChenOmegaUpperBound) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N ≥ N₀ → Even N →
+      ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧ Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q := by
+  obtain ⟨N₀', hpos⟩ := CorrectedChenPositivity_large_of_inputs hPan hΩ
+  refine ⟨max N₀' 1000, ?_⟩
+  intro N hN hEven
+  exact corrected_key_inequality_implies_chen_at (N := N) (by omega) (hpos N (by omega) hEven)
+
+/-
+
+## 4.11 Ω 上界的有限核心 (chen issue #7 的有限部分)
+
+`correctedChenOmega` 的惩罚计数拆成素幂部分与三因子部分, 并把素幂部分化为
+"重数 ≤ 素幂个数"的有限计数 — 这是任何切换筛 Ω 上界都需要的第一步
+(与并行 `selberg-omega-upper` 分支的 Selberg 主项链互补). -/
+
+/-- 素幂部分: `primePowerSum n z y` 等于在 `[z, y)` 中整除 `n` 的素数之
+重数和 (filter 条件 `∃ k ≥ 1, exactDiv q k n` 等价于 `q ∣ n`). -/
+theorem primePowerSum_eq_sum_factorization_of_dvd {n z y : ℕ} (hn : n ≠ 0) :
+    primePowerSum n z y =
+      (∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n),
+        (n.factorization q : ℝ)) := by
+  unfold primePowerSum
+  have hfilter : (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧
+      ∃ k : ℕ, 1 ≤ k ∧ exactDiv q k n) =
+      (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n) := by
+    apply Finset.filter_congr
+    intro q hq
+    constructor
+    · intro h
+      rcases h with ⟨hp, hz, hk⟩
+      rcases hk with ⟨k, hk1, hkdiv⟩
+      exact ⟨hp, hz, dvd_trans (by simpa using (pow_dvd_pow q (by omega : 1 ≤ k))) hkdiv.1⟩
+    · intro h
+      rcases h with ⟨hp, hz, hdvd⟩
+      refine ⟨hp, hz, ?_⟩
+      let a : ℕ := n.factorization q
+      have hpow : q ^ a ∣ n := (Nat.Prime.pow_dvd_iff_le_factorization hp hn).mpr le_rfl
+      have hnot : ¬ q ^ (a + 1) ∣ n := by
+        intro hbad
+        have : a + 1 ≤ a := (Nat.Prime.pow_dvd_iff_le_factorization hp hn).mp hbad
+        omega
+      have h1le : 1 ≤ a := (Nat.Prime.pow_dvd_iff_le_factorization hp hn).mp (by simpa using hdvd)
+      exact ⟨a, h1le, hpow, hnot⟩
+  rw [hfilter]
+
+/-- 重数 ≤ 素幂个数: `n.factorization q ≤ #{k : q^(k+1) ∣ n}`. -/
+theorem factorization_le_card_pow_dvd {n q : ℕ} (hq : q.Prime) (hn : n ≠ 0) :
+    n.factorization q ≤
+      ((Finset.range (n + 1)).filter (fun k => q ^ (k + 1) ∣ n)).card := by
+  let a : ℕ := n.factorization q
+  have hle_a_n : a ≤ n := by
+    by_cases ha : a = 0
+    · simp [ha]
+    · have hpow : q ^ a ∣ n := (Nat.Prime.pow_dvd_iff_le_factorization hq hn).mpr le_rfl
+      have hq2 : 2 ≤ q := hq.two_le
+      have hlt : a < q ^ a := lt_of_lt_of_le Nat.lt_two_pow_self
+        (pow_le_pow_left₀ (by norm_num) hq2 a)
+      exact le_trans (le_of_lt hlt) (Nat.le_of_dvd (Nat.pos_of_ne_zero hn) hpow)
+  have hsubset : (Finset.range a) ⊆ (Finset.range (n + 1)).filter
+      (fun k => q ^ (k + 1) ∣ n) := by
+    intro k hk
+    rw [Finset.mem_filter, Finset.mem_range]
+    constructor
+    · have hk' : k < a := Finset.mem_range.mp hk
+      have : k < n := lt_of_lt_of_le hk' hle_a_n
+      omega
+    · exact (Nat.Prime.pow_dvd_iff_le_factorization hq hn).mpr (by
+        have : k + 1 ≤ a := by
+          have hk' : k < a := Finset.mem_range.mp hk
+          omega
+        exact this)
+  have hcard : (Finset.range a).card = a := Finset.card_range a
+  have hle := Finset.card_le_card hsubset
+  rwa [hcard] at hle
+
+/-- 素幂部分的一致有限上界: `primePowerSum n z y ≤ Σ_{q ∈ [z,y)} Σ_k [q^(k+1) | n]`. -/
+theorem primePowerSum_le_powerCount (n z y : ℕ) :
+    primePowerSum n z y ≤
+      ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+        ∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0 := by
+  by_cases hn : n = 0
+  · subst n
+    unfold primePowerSum
+    simp [exactDiv]
+  · have hident := primePowerSum_eq_sum_factorization_of_dvd (n := n) (z := z) (y := y) hn
+    rw [hident]
+    have hper : ∀ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+        (n.factorization q : ℝ) ≤
+          ∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0 := by
+      intro q hq
+      rcases Finset.mem_filter.mp hq with ⟨hqr, hqp⟩
+      have hcard := factorization_le_card_pow_dvd hqp.1 hn
+      have hsum_eq : (∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0) =
+          ((Finset.range (n + 1)).filter (fun k => q ^ (k + 1) ∣ n)).card := by
+        rw [Finset.sum_boole]
+      have hle1 : (n.factorization q : ℝ) ≤
+          ((Finset.range (n + 1)).filter (fun k => q ^ (k + 1) ∣ n)).card := by
+        exact_mod_cast hcard
+      exact le_trans hle1 (by rw [hsum_eq])
+    calc
+      (∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n),
+          (n.factorization q : ℝ))
+          ≤ ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+              ∑ k ∈ Finset.range (n + 1), if q ^ (k + 1) ∣ n then (1 : ℝ) else 0 := by
+            have hsub : (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n) ⊆
+                (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q) := by
+              intro q hq
+              rcases Finset.mem_filter.mp hq with ⟨hq1, hq2⟩
+              exact Finset.mem_filter.mpr ⟨hq1, hq2.1, hq2.2.1⟩
+            have hle0 : (∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q ∧ q ∣ n),
+                  (n.factorization q : ℝ)) ≤
+                ∑ q ∈ (Finset.range y).filter (fun q => q.Prime ∧ z ≤ q),
+                  (n.factorization q : ℝ) := by
+              exact Finset.sum_le_sum_of_subset_of_nonneg hsub (fun q hq hnot => by positivity)
+            exact le_trans hle0 (Finset.sum_le_sum hper)
+
+/-- `correctedChenOmega` 拆成素幂部分与三因子部分. -/
+theorem correctedChenOmega_eq_primePower_add_triple (N : ℕ) :
+    correctedChenOmega N =
+      (correctedChenCandidates N).sum
+          (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) +
+      (correctedChenCandidates N).sum
+          (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N)) := by
+  unfold correctedChenOmega correctedChenPenalty
+  rw [Finset.sum_add_distrib]
+
 
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge

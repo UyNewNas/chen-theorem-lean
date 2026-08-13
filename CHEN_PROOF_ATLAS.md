@@ -268,6 +268,120 @@ bound for `mainSum(μ⁻)` (the corrected sieve analogue of
 `2.6408·2.6408·N/log² N`) is therefore the single remaining input on the
 lower side of `CorrectedChenAnalyticPositivity`.
 
+**2026-08-12 update — the lower side is closed at the fundamental-lemma
+level.**  For the corrected candidate definition (only "no prime factor below
+`z`"), the plain Möbius function is itself a lower-Möbius sequence and its
+Selberg main term is *exactly* `V(N) = ∏_{p | P}(1 − ν(p))`.  Hence
+`correctedChenCandidates_card_ge_X_mul_sieveProduct_sub_errSum` proves
+unconditionally, for every `N`:
+
+`card(correctedChenCandidates N) ≥ X·V(N) − errSum(1)`.
+
+No sieve-function asymptotics (`f(s)`, Buchstab recursion) is needed for this
+candidate set; the classical Jurkat--Richert weighted-sieve lower bound
+applies to the historical W-count with the extra medium-interval condition.
+The remaining lower-side analytic inputs are now exactly:
+
+1. a Mertens-type lower bound on `V(N)` (turns `X·V(N)` into the
+   `𝔖(N)·N/log²N` main term),
+2. the averaged Pan control of `errSum(1)` (#7, already conditionally closed),
+3. a uniform upper bound for `correctedChenOmega` (#6).
+
+`correctedChenPositivity_of_mainTerm_beats_error` reduces all three to the
+single explicit real inequality `X·V(N) > errSum(1) + Ω/2`.
+
+**2026-08-12 update — the main term is now an exact singular-series seam.**
+`correctedChenSieveProduct_eq_singularSeries_mul_primeProduct` proves
+
+`V(N) = 𝔖_trunc(N, z−1) · primeProduct(z−1)`
+
+from the Selberg sum identity (`selbergSum · 𝔖 = primeProduct⁻¹`) and
+`selbergSum = V⁻¹`.  So `X·V(N)` is exactly
+`X·𝔖_trunc(N, z−1)·primeProduct(z−1)`, and the uniform lower bound
+`CorrectedChenMainTermLower` (`∃ c > 0, ∃ N₀, ∀ N ≥ N₀ Even: c·N/log²N ≤ X·V(N)`)
+is assembled (`correctedChenMainTerm_lower_of_estimates`,
+`CorrectedChenMainTermLower_of_uniform_estimates`) from three standard inputs:
+
+1. a uniform lower bound on the truncated singular series `𝔖_trunc ≥ c𝔖`
+   (finite-product/tail argument, `2C₂`-level);
+2. the Mertens lower bound `primeProduct(m) ≥ cpp/log m`
+   (from the exact Mertens product formula);
+3. the parameter estimate `log(z−1) ≤ Clog·log N`
+   (`z = ⌈N^{1/10}⌉`).
+
+Each of the three is an independent, standard estimate; the algebraic
+assembly around them is fully kernel-checked.
+
+**2026-08-12 update — parameter estimates done; one input remains.**  The
+parameter estimate `log(z−1) ≤ log N` and the cutoff facts
+(`correctedChenZ_sub_one_le_N`, `correctedChenZ_sub_one_ge_two_of_large`,
+`correctedChenZ_log_le_logN`) are proved, and the Mertens lower bound is
+already available (`primeProduct_asymptotic_order`).
+`CorrectedChenMainTermLower_of_singularSeries_bound` (with the
+`c𝔖 = 1/2` corollary) reduces the uniform main-term lower bound to the
+single remaining input `SingularSeriesTruncatedLowerBound`:
+
+`∀ N z, 2 ≤ z → 1/2 ≤ 𝔖_trunc(N, z)`.
+
+That statement is the pure finite-combinatorics tail of the twin-prime
+constant (`∏(1−x_i) ≥ 1−Σx_i` + even-subset sum bound); once proved,
+`CorrectedChenMainTermLower_of_singularSeries_lower` closes the lower side.
+
+**2026-08-12 update — `SingularSeriesTruncatedLowerBound` is proved.**  The
+chain is now complete:
+
+- `prod_one_sub_ge_one_sub_sum`: `∏(1−x_i) ≥ 1 − Σx_i`;
+- `sum_sq_recip_primes_ge_three_le_half`: `Σ_{p>2} 1/(p−1)² ≤ 1/2`
+  (even-subset injection `p ↦ (p−1)/2` + telescoping `Σ 1/k² ≤ 2`);
+- `singularSeriesTruncated_ge_half`: `∀ N z, 2 ≤ z → 1/2 ≤ 𝔖_trunc(N,z)`
+  (local-factor classification + the two lemmas above);
+- `CorrectedChenMainTermLower_of_singularSeries_lower_bound`:
+  **`CorrectedChenMainTermLower` is now a theorem** — the uniform main-term
+  lower bound `∃ c > 0, ∃ N₀, ∀ N ≥ N₀ Even: c·N/log²N ≤ X·V(N)` holds
+  unconditionally, with no remaining analytic input on the main-term side.
+
+Remaining inputs for `CorrectedChenAnalyticPositivity` are exactly #6
+(`correctedChenOmega` Selberg upper bound) and #7 (weighted Pan errSum
+control); the final assembly is sub-issue #8.
+
+**2026-08-12 update — the final assembly is a theorem.**  The chain is now:
+
+- `primeProduct_lower_explicit`: Mertens lower bound with the explicit
+  constant `1/3` (from the exact ant Mertens and `e^{-γ} > 1/3`);
+- `correctedChenZ_log_le_logN_div_ten`: `log(z−1) ≤ (1/10)·log N`;
+- `CorrectedChenMainTermLower_singularSeries_units`: the main term in
+  singular-series units, `(10/3)·𝔖_trunc·N/log²N ≤ X·V(N)`, for large even
+  `N` (exact seam + Mertens + parameter estimate);
+- `CorrectedChenOmegaUpperBound`: the issue-#7 target (uniform
+  `Ω ≤ cΩ·𝔖_trunc·N/log²N` with `(10/3) > cΩ/2`);
+- `CorrectedChenPositivity_large_of_inputs`: **main term + Ω upper bound +
+  weighted Pan errSum control ⇒ positivity for all sufficiently large even
+  `N`** (the error budget `C/log N < d/2` closes via `𝔖_trunc ≥ 1/2`);
+- `corrected_chens_theorem_of_inputs`: the **unconditional Chen theorem
+  modulo the two analytic inputs** (`ChenWeightedPanInput` and
+  `CorrectedChenOmegaUpperBound`).
+
+Remaining open inputs are exactly: the Pan theorem proof (ant issue #7
+statement, consumed as `ChenWeightedPanInput`) and the Ω upper-bound proof
+(chen issue #7). Everything structural — the finite sieve, the
+singular-series main term, the error budget, and the final reduction — is
+kernel-checked.
+
+**2026-08-12 update — Ω upper bound, finite core.**  The penalty sum is
+decomposed and its prime-power part is reduced to a finite power count:
+
+- `correctedChenOmega_eq_primePower_add_triple`: `Ω = (prime-power part) +
+  (triple part)`;
+- `primePowerSum_eq_sum_factorization_of_dvd`: the prime-power part is the
+  multiplicity sum over `[z,y)`-primes dividing `N−p` (the `exactDiv` filter
+  is equivalent to divisibility);
+- `factorization_le_card_pow_dvd`: `n.factorization q ≤ #{k : q^(k+1) | n}`;
+- `primePowerSum_le_powerCount`: `primePowerSum n z y ≤ Σ_q Σ_k [q^(k+1)|n]`.
+
+These are the first finite steps of any switching-sieve Ω bound (chen #7);
+the analytic part (BV-type counts + the parallel Selberg main-term chain)
+remains to be attached.
+
 ## Dependency sketch
 
 ```text
