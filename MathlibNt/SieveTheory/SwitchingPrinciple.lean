@@ -52,6 +52,7 @@ namespace MathlibNt.SieveTheory.SwitchingPrinciple
 open Real Finset
 
 open scoped Classical
+open scoped Asymptotics
 
 /-! ## 1. 权重函数 w(n) -/
 
@@ -4357,6 +4358,96 @@ theorem hPrimePower_of_q1Count_bound
     _ = (Cq + 1 / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
           (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
           exact hXeq
+
+/-- **真幂可忽略阈值 (chen #18 结构侧)**: 对充分大的偶数 `N`,
+`60·N^{9/10} ≤ (1/2)·𝔖_trunc·N/log²N` — 由 `𝔖 ≥ 1/2` 与初等增长界
+`240·log²N ≤ N^{1/10}` (`log = o(N^{1/20})`) 直接得到. 这消解了
+`hPrimePower_of_q1Count_bound` 的 `hneg` 输入, 使 `hPrimePower` 只依赖 q¹ 分布界. -/
+theorem properPower_negligible_threshold :
+    ∃ Nn : ℕ, ∀ N : ℕ, Nn ≤ N → Even N →
+      60 * (N : ℝ) ^ (9 / 10 : ℝ) ≤
+        (1 / 2 : ℝ) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+  have hlog : Real.log =o[Filter.atTop] (fun x : ℝ => x ^ (1 / 20 : ℝ)) :=
+    isLittleO_log_rpow_atTop (by norm_num : (0 : ℝ) < 1 / 20)
+  have hlogN : (fun n : ℕ => Real.log (n : ℝ)) =o[Filter.atTop]
+      (fun n : ℕ => (n : ℝ) ^ (1 / 20 : ℝ)) :=
+    hlog.comp_tendsto tendsto_natCast_atTop_atTop
+  have hN0ev : ∀ᶠ n : ℕ in Filter.atTop,
+      |Real.log (n : ℝ)| ≤ (1 / 16 : ℝ) * |(n : ℝ) ^ (1 / 20 : ℝ)| :=
+    (Asymptotics.isLittleO_iff.mp hlogN) (by norm_num : 0 < (1 / 16 : ℝ))
+  rcases Filter.eventually_atTop.mp hN0ev with ⟨N₀, hN₀⟩
+  refine ⟨max (max N₀ 1) 59049, ?_⟩
+  intro N hN hEven
+  have hN₀' : N₀ ≤ N := by
+    omega
+  have hN1 : 1 ≤ N := by
+    omega
+  have hN59049 : 59049 ≤ N := by
+    omega
+  have hNpos : 0 < (N : ℝ) := by exact_mod_cast (by omega : 0 < N)
+  have hlogpos : 0 < Real.log (N : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < N))
+  have hlogN' : Real.log (N : ℝ) ≤ (1 / 16 : ℝ) * (N : ℝ) ^ (1 / 20 : ℝ) := by
+    have hx1 : (1 : ℝ) ≤ N := by exact_mod_cast hN1
+    have hlog0 : 0 ≤ Real.log (N : ℝ) := Real.log_nonneg hx1
+    have hpow0 : 0 ≤ (N : ℝ) ^ (1 / 20 : ℝ) :=
+      Real.rpow_nonneg (le_of_lt hNpos) _
+    have hN₀abs := hN₀ N hN₀'
+    have hlogabs : |Real.log (N : ℝ)| = Real.log (N : ℝ) := abs_of_nonneg hlog0
+    have hpowabs : |(N : ℝ) ^ (1 / 20 : ℝ)| = (N : ℝ) ^ (1 / 20 : ℝ) := abs_of_nonneg hpow0
+    rwa [hlogabs, hpowabs] at hN₀abs
+  have hsq : (Real.log (N : ℝ)) ^ 2 ≤ (1 / 256 : ℝ) * (N : ℝ) ^ (1 / 10 : ℝ) := by
+    have hlog0 : 0 ≤ Real.log (N : ℝ) := Real.log_nonneg (by exact_mod_cast hN1)
+    have hsq' : (Real.log (N : ℝ)) ^ 2 ≤ ((1 / 16 : ℝ) * (N : ℝ) ^ (1 / 20 : ℝ)) ^ 2 :=
+      by simpa [pow_two] using mul_self_le_mul_self hlog0 hlogN'
+    calc
+      (Real.log (N : ℝ)) ^ 2 ≤ ((1 / 16 : ℝ) * (N : ℝ) ^ (1 / 20 : ℝ)) ^ 2 := hsq'
+      _ = (1 / 256 : ℝ) * (N : ℝ) ^ (1 / 10 : ℝ) := by
+            rw [mul_pow]
+            have hpow : ((N : ℝ) ^ (1 / 20 : ℝ)) ^ 2 = (N : ℝ) ^ (1 / 10 : ℝ) := by
+              rw [pow_two]
+              rw [← Real.rpow_add hNpos]
+              norm_num
+            rw [hpow]
+            norm_num
+  have hgrowth : 240 * (Real.log (N : ℝ)) ^ 2 ≤ (N : ℝ) ^ (1 / 10 : ℝ) := by
+    nlinarith [hsq]
+  have hlogsq : (Real.log (N : ℝ)) ^ 2 ≤ (1 / 240 : ℝ) * (N : ℝ) ^ (1 / 10 : ℝ) := by
+    have h240 : 0 < (240 : ℝ) := by norm_num
+    have hgrowth' : (Real.log (N : ℝ)) ^ 2 * 240 ≤ (N : ℝ) ^ (1 / 10 : ℝ) := by
+      simpa [mul_comm] using hgrowth
+    have hdiv : (Real.log (N : ℝ)) ^ 2 ≤ (N : ℝ) ^ (1 / 10 : ℝ) / 240 := by
+      rw [le_div_iff₀ h240]
+      exact hgrowth'
+    simpa [div_eq_mul_inv, one_div, mul_comm] using hdiv
+  have hpow910 : (N : ℝ) ^ (9 / 10 : ℝ) * (N : ℝ) ^ (1 / 10 : ℝ) = (N : ℝ) := by
+    rw [← Real.rpow_add hNpos]
+    norm_num
+  have hmul : 60 * (N : ℝ) ^ (9 / 10 : ℝ) * (Real.log (N : ℝ)) ^ 2 ≤
+      (1 / 4 : ℝ) * (N : ℝ) := by
+    calc
+      60 * (N : ℝ) ^ (9 / 10 : ℝ) * (Real.log (N : ℝ)) ^ 2
+          ≤ 60 * (N : ℝ) ^ (9 / 10 : ℝ) * ((1 / 240 : ℝ) * (N : ℝ) ^ (1 / 10 : ℝ)) := by
+              gcongr
+      _ = (1 / 4 : ℝ) * (N : ℝ) := by
+            calc
+              60 * (N : ℝ) ^ (9 / 10 : ℝ) * ((1 / 240 : ℝ) * (N : ℝ) ^ (1 / 10 : ℝ))
+                  = (60 * (1 / 240 : ℝ)) * ((N : ℝ) ^ (9 / 10 : ℝ) * (N : ℝ) ^ (1 / 10 : ℝ)) := by ring
+              _ = (1 / 4 : ℝ) * (N : ℝ) := by rw [hpow910]; ring
+  have hmain : 60 * (N : ℝ) ^ (9 / 10 : ℝ) ≤
+      (1 / 4 : ℝ) * (N : ℝ) / (Real.log (N : ℝ)) ^ 2 := by
+    exact (le_div_iff₀ (by positivity : 0 < (Real.log (N : ℝ)) ^ 2)).mpr hmul
+  let 𝔖 : ℝ := AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1)
+  have hz : 2 ≤ correctedChenZ N - 1 := correctedChenZ_sub_one_ge_two_of_large hN59049
+  have h𝔖 : (1 / 2 : ℝ) ≤ 𝔖 := singularSeriesTruncated_ge_half hz
+  have hX0 : 0 ≤ (N : ℝ) / (Real.log (N : ℝ)) ^ 2 := by positivity
+  have hfinal : (1 / 4 : ℝ) * (N : ℝ) / (Real.log (N : ℝ)) ^ 2 ≤
+      (1 / 2 : ℝ) * 𝔖 * (N : ℝ) / (Real.log (N : ℝ)) ^ 2 := by
+    have hcoef : (1 / 4 : ℝ) ≤ (1 / 2 : ℝ) * 𝔖 := by nlinarith [h𝔖]
+    have hprod : (1 / 4 : ℝ) * (N : ℝ) ≤ (1 / 2 : ℝ) * 𝔖 * (N : ℝ) := by
+      simpa [mul_assoc] using mul_le_mul_of_nonneg_right hcoef (by positivity : 0 ≤ (N : ℝ))
+    exact div_le_div_of_nonneg_right hprod (by positivity : 0 ≤ (Real.log (N : ℝ)) ^ 2)
+  exact le_trans hmain hfinal
 
 /-- 逐候选: 三因子惩罚 ≤ 切换权重 (对 `(p₁,p₂)` 对的计数, 丢掉
 `p₁ < p₂`、`p₂ ≤ p₃` 等约束后仍为上界; `p₃` 由等式唯一决定). -/
