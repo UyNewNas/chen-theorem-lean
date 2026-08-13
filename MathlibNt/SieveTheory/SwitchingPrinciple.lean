@@ -4825,6 +4825,54 @@ theorem switchingCount_eq_zero_of_N_lt_two_mul (N a : ℕ) (hN : N < 2 * a) :
   rw [hsub]
   simp
 
+/-- **三因子主项的区域限制 (ant #17 归约)**: `a = p₁p₂ > N/2` 的配对
+`switchingCount = 0` (由 `switchingCount_eq_zero_of_N_lt_two_mul`), 故三因子
+主项和只含 `2·p₁p₂ ≤ N` 的配对 — 该区域正是 π 上界 (`N/a ≥ 2`) 与后续
+分布输入适用的区域. -/
+theorem switchingCount_sum_eq_zero_region (N : ℕ) :
+    (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+      ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+        (switchingCount N (p₁ * p₂) : ℝ)) =
+    (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+      ∑ p₂ ∈ ((Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂)).filter
+          (fun p₂ => 2 * (p₁ * p₂) ≤ N),
+        (switchingCount N (p₁ * p₂) : ℝ)) := by
+  apply Finset.sum_congr rfl
+  intro p₁ hp₁
+  symm
+  rw [← Finset.sum_filter_add_sum_filter_not
+    ((Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂))
+    (fun p₂ => 2 * (p₁ * p₂) ≤ N) (fun p₂ => switchingCount N (p₁ * p₂))]
+  have hnot : (∑ p₂ ∈ ((Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂)).filter
+      (fun p₂ => ¬ 2 * (p₁ * p₂) ≤ N), switchingCount N (p₁ * p₂)) = 0 := by
+    apply Finset.sum_eq_zero
+    intro p₂ hp₂
+    have hp₂' : ¬ 2 * (p₁ * p₂) ≤ N := (Finset.mem_filter.mp hp₂).2
+    have hNlt : N < 2 * (p₁ * p₂) := by omega
+    exact switchingCount_eq_zero_of_N_lt_two_mul N (p₁ * p₂) hNlt
+  rw [hnot]
+  simp
+
+/-- **三因子主项的 π 归约 (ant #17 归约)**: 区域限制后每个配对
+`switchingCount N a ≤ #{p ≤ N/a : p 素数}` (`switchingCount_le_pi`), 求和得
+主项 ≤ `Σ_{2p₁p₂ ≤ N} π(N/(p₁p₂))` — 三因子主项的初等目标形态. -/
+theorem switchingCount_sum_le_pi_sum (N : ℕ) :
+    (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+      ∑ p₂ ∈ ((Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂)).filter
+          (fun p₂ => 2 * (p₁ * p₂) ≤ N),
+        (switchingCount N (p₁ * p₂) : ℝ)) ≤
+    (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+      ∑ p₂ ∈ ((Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂)).filter
+          (fun p₂ => 2 * (p₁ * p₂) ≤ N),
+        (((Finset.range (N / (p₁ * p₂) + 1)).filter Nat.Prime).card : ℝ)) := by
+  apply Finset.sum_le_sum
+  intro p₁ hp₁
+  apply Finset.sum_le_sum
+  intro p₂ hp₂
+  have hp₁2 : 2 ≤ p₁ := (Finset.mem_filter.mp hp₁).2.1.two_le
+  have hp₂2 : 2 ≤ p₂ := (Finset.mem_filter.mp (Finset.mem_filter.mp hp₂).1).2.1.two_le
+  exact switchingCount_le_pi N (p₁ * p₂) (by nlinarith [hp₁2, hp₂2])
+
 /-- **切换计数 ≤ 切换筛的筛后和**: 候选 `p` 的 `p₃ = (N−p)/a` 落在支撑内、
 与筛积互素 (候选条件 ⟺ `p₃` 无 `< z` 的素因子, 因 `a = p₁p₂` 的素因子 ≥ z). -/
 theorem switchingCount_le_siftedSum (N a : ℕ) :
