@@ -117,3 +117,5 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingSieve_upper_bound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingSieve_upper_bound_optimal
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenOmega_triple_le_switchingSieveMainErr
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenOmegaUpperBound_of_analytic_inputs
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.corrected_chens_theorem_of_omega_inputs

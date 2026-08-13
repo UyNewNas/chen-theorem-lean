@@ -3331,6 +3331,7 @@ theorem CorrectedChenOmegaUpperBound_of_39404
   rcases hbound with ⟨N₀, hN₀⟩
   exact ⟨3.9404, omega_upper_bound_compatible_with_39404, N₀, hN₀⟩
 
+
 /-- **最终组装 (sub-issue #8)**: 主项一致下界 (已证) + Ω 上界 (输入 #7) +
 加权 Pan errSum 控制 (输入 #6) ⇒ 充分大偶数的修正计数正性. -/
 theorem CorrectedChenPositivity_large_of_inputs
@@ -4458,6 +4459,208 @@ theorem correctedChenOmega_triple_le_switchingSieveMainErr (N : ℕ) :
               switchingSieveMainErr N p₁ p₂ := by
             exact Finset.sum_le_sum (fun p₁ hp₁ => Finset.sum_le_sum
               (fun p₂ hp₂ => hpair p₁ hp₁ p₂ hp₂))
+
+/-! ## 4.13 Ω 上界的最终组装 (chen issue #7)
+
+把 P2 (三因子切换筛上界, PR #14) 与 P3 (素幂一致界, PR #13) 连同三个解析
+输入组装成 `CorrectedChenOmegaUpperBound`:
+
+  1. `hTripleMain`: 三因子主项双素数和的经典估计 (3.9404 常数的来源);
+  2. `hTripleErr`: 切换筛 `errSum(Λ²w*)` 的加权 Pan 控制;
+  3. `hPrimePower`: 素幂部分的最终一致界 (q¹ 分布输入 + q² 可忽略);
+  4. `hNeg`: `Cerr·N/log³N` 的可忽略性 (初等阈值);
+  5. `hnum`: 数值条件 `(10/3) > (cₘ + Cₚ + 1)/2`.
+
+有限部分 (Ω 分解、P2 三因子界、P3、`𝔖 ≥ 1/2`) 已在 main 上, 全部内核核验. -/
+theorem CorrectedChenOmegaUpperBound_of_analytic_inputs
+    {cₘ Cₚ Cerr : ℝ} {N₀ₘ N₀ₚ N₀ₑ : ℕ}
+    (hTripleMain : ∀ N : ℕ, N₀ₘ ≤ N → Even N →
+      (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+          (switchingSieve N (p₁ * p₂)).totalMass *
+            MertensTheorem.primeProduct (correctedChenZ N - 1)) ≤
+        cₘ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hTripleErr : ∀ N : ℕ, N₀ₑ ≤ N → Even N →
+      (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+          (switchingSieve N (p₁ * p₂)).errSum (BoundingSieve.lambdaSquared
+            (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N (p₁ * p₂))))) ≤
+        Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3)
+    (hPrimePower : ∀ N : ℕ, N₀ₚ ≤ N → Even N →
+      (correctedChenCandidates N).sum
+          (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+        Cₚ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hNeg : ∀ N : ℕ, N₀ₑ ≤ N → Even N →
+      Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤
+        (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hnum : (10 / 3 : ℝ) > (cₘ + Cₚ + 1) / 2) :
+    CorrectedChenOmegaUpperBound := by
+  let N₀ : ℕ := max (max N₀ₘ N₀ₚ) (max N₀ₑ 59049)
+  refine ⟨cₘ + Cₚ + 1, hnum, N₀, ?_⟩
+  intro N hN hEven
+  let S₁ : Finset ℕ := (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁)
+  let S₂ : Finset ℕ := (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂)
+  let X : ℝ := (N : ℝ) / (log (N : ℝ)) ^ 2
+  let 𝔖 : ℝ := AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1)
+  have hNm : N₀ₘ ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hNp : N₀ₚ ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hNe : N₀ₑ ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hN59049 : 59049 ≤ N := by
+    dsimp [N₀] at hN
+    omega
+  have hN2 : 2 ≤ N := by omega
+  have hlogN : 0 < log (N : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < N))
+  have hz : 2 ≤ correctedChenZ N - 1 := correctedChenZ_sub_one_ge_two_of_large hN59049
+  have h𝔖 : (1 / 2 : ℝ) ≤ 𝔖 := singularSeriesTruncated_ge_half hz
+  have h𝔖pos : 0 < 𝔖 := by
+    dsimp [𝔖]
+    exact AnalyticNumberTheory.Sieve.singularSeriesTruncated_pos N (correctedChenZ N - 1) (by omega)
+  have hXpos : 0 < X := by
+    dsimp [X]
+    positivity
+  -- 分解 Ω = 素幂 + 三因子
+  have hdecomp := correctedChenOmega_eq_primePower_add_triple N
+  -- 三因子 ≤ 主项和 + 误差和 (P2)
+  have hsplit : (∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂, switchingSieveMainErr N p₁ p₂) =
+      (∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂,
+          (switchingSieve N (p₁ * p₂)).totalMass *
+            MertensTheorem.primeProduct (correctedChenZ N - 1)) +
+      (∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂,
+          (switchingSieve N (p₁ * p₂)).errSum (BoundingSieve.lambdaSquared
+            (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N (p₁ * p₂))))) := by
+    simp_rw [switchingSieveMainErr, Finset.sum_add_distrib]
+  have htriple' : (correctedChenCandidates N).sum
+        (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+      cₘ * 𝔖 * X + Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 := by
+    calc
+      (correctedChenCandidates N).sum
+          (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N))
+          ≤ ∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂, switchingSieveMainErr N p₁ p₂ :=
+            correctedChenOmega_triple_le_switchingSieveMainErr N
+      _ = (∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂,
+              (switchingSieve N (p₁ * p₂)).totalMass *
+                MertensTheorem.primeProduct (correctedChenZ N - 1)) +
+          (∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂,
+              (switchingSieve N (p₁ * p₂)).errSum (BoundingSieve.lambdaSquared
+                (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N (p₁ * p₂))))) := hsplit
+      _ ≤ cₘ * 𝔖 * X + Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 := by
+            -- 主项: hTripleMain (𝔖·X 形态); 误差: hTripleErr
+            have hmain' : (∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂,
+                (switchingSieve N (p₁ * p₂)).totalMass *
+                  MertensTheorem.primeProduct (correctedChenZ N - 1)) ≤ cₘ * 𝔖 * X := by
+              have hb := hTripleMain N hNm hEven
+              dsimp [S₁, S₂, 𝔖, X] at hb ⊢
+              have hXeq : cₘ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+                    ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+                  cₘ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+                    (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+                ring
+              rwa [hXeq]
+            have herr' : (∑ p₁ ∈ S₁, ∑ p₂ ∈ S₂,
+                (switchingSieve N (p₁ * p₂)).errSum (BoundingSieve.lambdaSquared
+                  (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N (p₁ * p₂))))) ≤
+                Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 := by
+              have hb := hTripleErr N hNe hEven
+              dsimp [S₁, S₂] at hb ⊢
+              exact hb
+            exact add_le_add hmain' herr'
+  -- 素幂部分: hPrimePower
+  have hpow' : (correctedChenCandidates N).sum
+        (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤ Cₚ * 𝔖 * X := by
+    have hb := hPrimePower N hNp hEven
+    dsimp [𝔖, X] at hb ⊢
+    have hXeq : Cₚ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+        Cₚ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+      ring
+    rwa [hXeq]
+  -- 合并
+  have hneg' : Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤ (1 / 2 : ℝ) * 𝔖 * X := by
+    have hb := hNeg N hNe hEven
+    -- (1/4)·X ≤ (1/2)·𝔖·X (𝔖 ≥ 1/2)
+    have h14 : (1 / 4 : ℝ) * X ≤ (1 / 2 : ℝ) * 𝔖 * X := by
+      have h12 : (1 / 2 : ℝ) ≤ 𝔖 := h𝔖
+      nlinarith [hXpos]
+    have hb' : Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤ (1 / 4 : ℝ) * X := by
+      dsimp [X] at hb ⊢
+      have hXeq : (1 / 4 : ℝ) * ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+          (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+        ring
+      rwa [hXeq]
+    exact le_trans hb' h14
+  have hΩ : correctedChenOmega N ≤ (cₘ + Cₚ + 1) * 𝔖 * X := by
+    calc
+      correctedChenOmega N
+          = (correctedChenCandidates N).sum
+                (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) +
+            (correctedChenCandidates N).sum
+                (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N)) := hdecomp
+      _ ≤ Cₚ * 𝔖 * X + (cₘ * 𝔖 * X + Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3) :=
+            add_le_add hpow' htriple'
+      _ = (cₘ + Cₚ) * 𝔖 * X + Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 := by
+            ring
+      _ ≤ (cₘ + Cₚ + 1) * 𝔖 * X := by
+            have h1 : Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤ (1 : ℝ) * 𝔖 * X := by
+              -- (1/2)·𝔖·X ≤ 1·𝔖·X
+              calc
+                Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤ (1 / 2 : ℝ) * 𝔖 * X := hneg'
+                _ ≤ (1 : ℝ) * 𝔖 * X := by
+                      have : (1 / 2 : ℝ) * 𝔖 * X ≤ (1 : ℝ) * 𝔖 * X := by nlinarith [hXpos, h𝔖pos]
+                      exact this
+            nlinarith [hXpos, h𝔖pos]
+  -- 目标形态: cΩ·𝔖_trunc·N/log²N
+  dsimp [X, 𝔖] at hΩ ⊢
+  have hXeq : (cₘ + Cₚ + 1) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        ((N : ℝ) / (log (N : ℝ)) ^ 2) =
+      (cₘ + Cₚ + 1) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+    ring
+  rwa [hXeq] at hΩ
+
+/-- **#8 结构闭合**: 加权 Pan 输入 + 四个解析输入 ⇒ 无条件陈氏定理
+(`∃ N₀, ∀ N ≥ N₀ Even: N = p + q`, `q` 至多二素因子).
+
+完整链: `corrected_chens_theorem_of_inputs` (已证) + `CorrectedChenOmegaUpperBound_of_analytic_inputs`
+(本文件) — 剩余全部是解析定理的证明 (Pan 定理、三因子主项双素数和、切换 errSum、
+素幂一致界、可忽略阈值). -/
+theorem corrected_chens_theorem_of_omega_inputs
+    {cₘ Cₚ Cerr : ℝ} {N₀ₘ N₀ₚ N₀ₑ : ℕ}
+    (hPan : ChenWeightedPanInput)
+    (hTripleMain : ∀ N : ℕ, N₀ₘ ≤ N → Even N →
+      (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+          (switchingSieve N (p₁ * p₂)).totalMass *
+            MertensTheorem.primeProduct (correctedChenZ N - 1)) ≤
+        cₘ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hTripleErr : ∀ N : ℕ, N₀ₑ ≤ N → Even N →
+      (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+          (switchingSieve N (p₁ * p₂)).errSum (BoundingSieve.lambdaSquared
+            (AnalyticNumberTheory.Sieve.optimalSelbergWeight (switchingSieve N (p₁ * p₂))))) ≤
+        Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3)
+    (hPrimePower : ∀ N : ℕ, N₀ₚ ≤ N → Even N →
+      (correctedChenCandidates N).sum
+          (fun p => primePowerSum (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+        Cₚ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hNeg : ∀ N : ℕ, N₀ₑ ≤ N → Even N →
+      Cerr * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤
+        (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2)
+    (hnum : (10 / 3 : ℝ) > (cₘ + Cₚ + 1) / 2) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N ≥ N₀ → Even N →
+      ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧ Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q := by
+  exact corrected_chens_theorem_of_inputs hPan
+    (CorrectedChenOmegaUpperBound_of_analytic_inputs hTripleMain hTripleErr hPrimePower hNeg hnum)
 
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge
