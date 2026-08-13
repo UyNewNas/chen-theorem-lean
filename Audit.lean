@@ -15,6 +15,7 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.MertensTheorem.mertens_second_theorem
 #print axioms MathlibNt.SieveTheory.MertensTheorem.mertens_product_formula
 #print axioms MathlibNt.SieveTheory.MertensTheorem.primeProduct_asymptotic_order
+#print axioms MathlibNt.SieveTheory.MertensTheorem.primeProduct_lower_bound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chen_pointwise_analytic_bounds_at
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chen_key_inequality_of_error_budget
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.range_sub_eq_one_card_le_one
@@ -29,6 +30,10 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenSiftedCard_eq_correctedCandidateCard
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenBoundingSieve_siftedSum_eq_card
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenTotalMass_eq
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenLogZ_upper_bound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.singularSeriesTruncated_lower_bound
+#print axioms MathlibNt.SieveTheory.SingularSeries.localFactor_dvd_le
+#print axioms MathlibNt.SieveTheory.SingularSeries.localFactor_not_dvd_lt_one
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenMultSum_eq_multiples_card
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenMultiples_card_eq_primeSupport
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenMultSum_eq_modEq_count
