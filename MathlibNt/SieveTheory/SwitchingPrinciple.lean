@@ -3602,6 +3602,380 @@ theorem correctedChenOmega_eq_primePower_add_triple (N : ℕ) :
   unfold correctedChenOmega correctedChenPenalty
   rw [Finset.sum_add_distrib]
 
+/-! ## chen issue #7 (P3): 素幂一致界 -/
+
+/-- `#{p < N : m | N−p} ≤ N/m + 1`: `p` 与商 `(N−p)/m` 一一对应 (`1 ≤ m`). -/
+private theorem range_dvd_count_le (N m : ℕ) (hm : 1 ≤ m) :
+    ((Finset.range N).filter (fun p => m ∣ N - p)).card ≤ N / m + 1 := by
+  classical
+  let s : Finset ℕ := (Finset.range N).filter (fun p => m ∣ N - p)
+  have hmap : ∀ p ∈ s, (N - p) / m ∈ Finset.range (N / m + 1) := by
+    intro p hp
+    rcases Finset.mem_filter.mp hp with ⟨hpN, hdvd⟩
+    have hle : (N - p) / m ≤ N / m := Nat.div_le_div_right (by omega : N - p ≤ N)
+    rw [Finset.mem_range]
+    omega
+  have hinj : Set.InjOn (fun p => (N - p) / m) (↑s : Set ℕ) := by
+    intro p hp q hq hpq
+    rcases Finset.mem_filter.mp hp with ⟨hpN, hpd⟩
+    rcases Finset.mem_filter.mp hq with ⟨hqN, hqd⟩
+    have hpc : N - p = (N - p) / m * m := (Nat.div_mul_cancel hpd).symm
+    have hqc : N - q = (N - q) / m * m := (Nat.div_mul_cancel hqd).symm
+    have hpN' : p < N := by simpa using hpN
+    have hqN' : q < N := by simpa using hqN
+    have hd : (N - p) / m * m = (N - q) / m * m := by
+      simpa using congrArg (fun x => x * m) hpq
+    have hpq' : N - p = N - q := by
+      rw [hpc, hqc]
+      exact hd
+    omega
+  have himg : s.image (fun p => (N - p) / m) ⊆ Finset.range (N / m + 1) := by
+    intro x hx
+    rcases Finset.mem_image.mp hx with ⟨p, hp, rfl⟩
+    exact hmap p hp
+  have hcardimg : (s.image (fun p => (N - p) / m)).card = s.card :=
+    Finset.card_image_of_injOn hinj
+  calc
+    s.card = (s.image (fun p => (N - p) / m)).card := hcardimg.symm
+    _ ≤ (Finset.range (N / m + 1)).card := Finset.card_le_card himg
+    _ = N / m + 1 := by simp
+
+/-- `Σ_{n ∈ Ico a b} 1/(n(n−1)) = 1/(a−1) − 1/(b−1)` (`2 ≤ a ≤ b`). -/
+private theorem inv_mul_sub_one_Ico_sum (a b : ℕ) (ha : 2 ≤ a) (hab : a ≤ b) :
+    (Finset.Ico a b).sum (fun n : ℕ => (1 : ℝ) / ((n : ℝ) * ((n : ℝ) - 1))) =
+      1 / ((a : ℝ) - 1) - 1 / ((b : ℝ) - 1) := by
+  have hfac : ∀ n ∈ Finset.Ico a b,
+      (1 : ℝ) / ((n : ℝ) * ((n : ℝ) - 1)) = 1 / ((n : ℝ) - 1) - 1 / (n : ℝ) := by
+    intro n hn
+    rcases Finset.mem_Ico.mp hn with ⟨han, hnb⟩
+    have hn2 : 2 ≤ n := by omega
+    have hn1 : (n : ℝ) - 1 ≠ 0 := by
+      have : (2 : ℝ) ≤ n := by exact_mod_cast hn2
+      linarith
+    have hn0 : (n : ℝ) ≠ 0 := by exact_mod_cast (by omega : n ≠ 0)
+    field_simp [hn1, hn0]
+    ring
+  rw [Finset.sum_congr rfl hfac]
+  let g : ℕ → ℝ := fun k => 1 / (((a + k : ℕ) : ℝ) - 1)
+  have hshift : Finset.Ico a b = (Finset.range (b - a)).image (fun k => a + k) := by
+    ext n
+    constructor
+    · intro hn
+      rcases Finset.mem_Ico.mp hn with ⟨han, hnb⟩
+      refine Finset.mem_image.mpr ⟨n - a, ?_, ?_⟩
+      · rw [Finset.mem_range]
+        omega
+      · omega
+    · intro hn
+      rcases Finset.mem_image.mp hn with ⟨k, hk, rfl⟩
+      rw [Finset.mem_Ico]
+      have hklt : k < b - a := by simpa using (Finset.mem_range.mp hk)
+      constructor <;> omega
+  have hinj : Set.InjOn (fun k => a + k) (↑(Finset.range (b - a)) : Set ℕ) := by
+    intro k hk l hl hkl
+    have hkl' : a + k = a + l := by simpa using hkl
+    omega
+  rw [hshift, Finset.sum_image hinj]
+  have hstep : ∀ k : ℕ, (Nat.cast (a + (k + 1)) : ℝ) - 1 = (Nat.cast (a + k) : ℝ) := by
+    intro k
+    norm_num [Nat.cast_add]
+    ring
+  have hterm : ∀ k ∈ Finset.range (b - a),
+      1 / ((Nat.cast (a + k) : ℝ) - 1) - 1 / (Nat.cast (a + k) : ℝ) =
+        g k - g (k + 1) := by
+    intro k hk
+    unfold g
+    rw [hstep k]
+  rw [Finset.sum_congr rfl hterm]
+  have hsum := Finset.sum_range_sub (f := g) (n := b - a)
+  have hneg : (Finset.range (b - a)).sum (fun k => g k - g (k + 1)) = g 0 - g (b - a) := by
+    calc
+      (Finset.range (b - a)).sum (fun k => g k - g (k + 1))
+          = (Finset.range (b - a)).sum (fun k => -(g (k + 1) - g k)) := by
+              apply Finset.sum_congr rfl
+              intro k hk
+              ring
+      _ = -((Finset.range (b - a)).sum (fun k => g (k + 1) - g k)) := by
+              rw [Finset.sum_neg_distrib]
+      _ = -(g (b - a) - g 0) := by rw [hsum]
+      _ = g 0 - g (b - a) := by ring
+  rw [hneg]
+  unfold g
+  norm_num [Nat.cast_sub hab, Nat.cast_add]
+
+
+/-- **素幂一致界 (P3 第一步: 真幂部分)**: 修正候选上满足 `q² | N−p`
+(`q ∈ [z,y)` 素数) 的 `(p,q)` 对数的一致上界 `≤ 6·N^{9/10}`. -/
+theorem correctedChenPrimePowerProperCountBound :
+    ∃ C : ℝ, 0 < C ∧ ∃ N₀ : ℕ,
+      ∀ N : ℕ, N₀ ≤ N → Even N →
+        (correctedChenCandidates N).sum (fun p =>
+          ((Finset.range (correctedChenY N)).filter
+            (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card) ≤
+          C * (N : ℝ) ^ (9 / 10 : ℝ) := by
+  refine ⟨6, by norm_num, 2 ^ 110 + 1, ?_⟩
+  intro N hN hEven
+  have hNbig : 2 ^ 110 < N := by omega
+  have hN2 : 2 ≤ N := by
+    have h : 2 ^ 110 ≤ N := le_of_lt hNbig
+    omega
+  let Q : Finset ℕ := (Finset.range (correctedChenY N)).filter
+    (fun q => q.Prime ∧ correctedChenZ N ≤ q)
+  have hz2 : 2 ≤ correctedChenZ N := by
+    unfold correctedChenZ
+    exact le_max_left _ _
+  have hz_ge : (N : ℝ) ^ (1 / 10 : ℝ) / 2 ≤ (correctedChenZ N : ℝ) :=
+    chenZ_ge_root_half N hNbig
+  have hy_le : (correctedChenY N : ℝ) ≤ 2 * (N : ℝ) ^ (1 / 3 : ℝ) := by
+    unfold correctedChenY
+    have hcu : (Nat.ceil ((N : ℝ) ^ (1 / 3 : ℝ)) : ℝ) ≤ (N : ℝ) ^ (1 / 3 : ℝ) + 1 := by
+      have hc := Nat.ceil_le_floor_add_one ((N : ℝ) ^ (1 / 3 : ℝ))
+      have hfl := Nat.floor_le (by positivity : 0 ≤ (N : ℝ) ^ (1 / 3 : ℝ))
+      have hc' : (Nat.ceil ((N : ℝ) ^ (1 / 3 : ℝ)) : ℝ) ≤
+          (Nat.floor ((N : ℝ) ^ (1 / 3 : ℝ)) : ℝ) + 1 := by exact_mod_cast hc
+      linarith
+    have hN13 : (1 : ℝ) ≤ (N : ℝ) ^ (1 / 3 : ℝ) :=
+      Real.one_le_rpow (by exact_mod_cast (by omega : 1 ≤ N)) (by norm_num)
+    linarith
+  have hzle_y : correctedChenZ N ≤ correctedChenY N := by
+    have hzr : (correctedChenZ N : ℝ) ≤ (correctedChenY N : ℝ) := by
+      have hzle10 : (correctedChenZ N : ℝ) ≤ (N : ℝ) ^ (1 / 10 : ℝ) + 1 := by
+        unfold correctedChenZ
+        have hfl : (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ)) : ℝ) ≤ (N : ℝ) ^ (1 / 10 : ℝ) :=
+          Nat.floor_le (by positivity)
+        rw [Nat.cast_max]
+        apply max_le_iff.mpr
+        constructor
+        · have hx1 : (1 : ℝ) ≤ (N : ℝ) ^ (1 / 10 : ℝ) :=
+            Real.one_le_rpow (by exact_mod_cast (by omega : 1 ≤ N)) (by norm_num)
+          linarith
+        · linarith
+      have hyge : (N : ℝ) ^ (1 / 3 : ℝ) ≤ (correctedChenY N : ℝ) := by
+        unfold correctedChenY
+        exact Nat.le_ceil _
+      have h1 : (N : ℝ) ^ (1 / 10 : ℝ) + 1 ≤ 2 * (N : ℝ) ^ (1 / 10 : ℝ) := by
+        have hN10 : (1 : ℝ) ≤ (N : ℝ) ^ (1 / 10 : ℝ) :=
+          Real.one_le_rpow (by exact_mod_cast (by omega : 1 ≤ N)) (by norm_num)
+        linarith
+      have h2 : 2 * (N : ℝ) ^ (1 / 10 : ℝ) ≤ (N : ℝ) ^ (1 / 3 : ℝ) := by
+        have hbig : (2 : ℝ) ≤ (N : ℝ) ^ (7 / 30 : ℝ) := by
+          have hNbigr : (2 : ℝ) ^ (110 : ℝ) ≤ (N : ℝ) := by
+            have hc : ((2 ^ 110 : ℕ) : ℝ) = (2 : ℝ) ^ (110 : ℝ) := by
+              norm_num [Real.rpow_natCast]
+            rw [← hc]
+            exact_mod_cast (le_of_lt hNbig)
+          have hpow : ((2 : ℝ) ^ (110 : ℝ)) ^ (7 / 30 : ℝ) ≤ (N : ℝ) ^ (7 / 30 : ℝ) := by
+            apply Real.rpow_le_rpow (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (110 : ℝ))
+            · exact hNbigr
+            · norm_num
+          have hval : ((2 : ℝ) ^ (30 / 7 : ℝ)) ^ (7 / 30 : ℝ) = (2 : ℝ) ^ (1 : ℝ) := by
+            rw [← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2) (30 / 7 : ℝ) (7 / 30 : ℝ)]
+            norm_num
+          have hbase : (2 : ℝ) ^ (30 / 7 : ℝ) ≤ (2 : ℝ) ^ (110 : ℝ) := by
+            exact Real.rpow_le_rpow_of_exponent_le (by norm_num : (1 : ℝ) ≤ 2)
+              (by norm_num : (30 / 7 : ℝ) ≤ 110)
+          calc
+            (2 : ℝ) = (2 : ℝ) ^ (1 : ℝ) := by rw [Real.rpow_one]
+            _ = ((2 : ℝ) ^ (30 / 7 : ℝ)) ^ (7 / 30 : ℝ) := hval.symm
+            _ ≤ ((2 : ℝ) ^ (110 : ℝ)) ^ (7 / 30 : ℝ) := by
+              apply Real.rpow_le_rpow (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (30 / 7 : ℝ))
+              · exact hbase
+              · norm_num
+            _ ≤ (N : ℝ) ^ (7 / 30 : ℝ) := hpow
+        have hNpos : (0 : ℝ) < N := by exact_mod_cast (by omega : 0 < N)
+        have h10 : (N : ℝ) ^ (1 / 10 : ℝ) * 2 ≤ (N : ℝ) ^ (1 / 10 : ℝ) *
+            (N : ℝ) ^ (7 / 30 : ℝ) := by
+          exact mul_le_mul_of_nonneg_left hbig
+            (Real.rpow_nonneg (by exact_mod_cast (by omega : 0 ≤ N)) _)
+        have hsum : (N : ℝ) ^ (1 / 10 : ℝ) * (N : ℝ) ^ (7 / 30 : ℝ) =
+            (N : ℝ) ^ ((1 / 10 : ℝ) + (7 / 30 : ℝ)) := by
+          rw [← Real.rpow_add hNpos]
+        have h10' : (N : ℝ) ^ (1 / 10 : ℝ) * 2 ≤ (N : ℝ) ^ ((1 / 10 : ℝ) + (7 / 30 : ℝ)) := by
+          exact le_trans h10 (le_of_eq hsum)
+        have hfrac : (1 / 10 : ℝ) + 7 / 30 = 1 / 3 := by norm_num
+        rw [← hfrac]
+        simpa [mul_comm] using h10'
+      linarith
+    exact_mod_cast hzr
+  have hper : ∀ q ∈ Q, ((correctedChenCandidates N).filter (fun p => q ^ 2 ∣ N - p)).card ≤
+      N / q ^ 2 + 1 := by
+    intro q hq
+    have hsub : (correctedChenCandidates N).filter (fun p => q ^ 2 ∣ N - p) ⊆
+        (Finset.range N).filter (fun p => q ^ 2 ∣ N - p) := by
+      intro p hp
+      rcases Finset.mem_filter.mp hp with ⟨hpc, hdvd⟩
+      rcases Finset.mem_filter.mp hpc with ⟨hpN, _⟩
+      exact Finset.mem_filter.mpr ⟨hpN, hdvd⟩
+    have hq2 : 2 ≤ q ^ 2 := by
+      have hq' : q.Prime := (Finset.mem_filter.mp hq).2.1
+      nlinarith [hq'.two_le]
+    exact le_trans (Finset.card_le_card hsub)
+      (range_dvd_count_le N (q ^ 2) (by omega))
+  have htelesc : (∑ q ∈ Q, (1 : ℝ) / ((q : ℝ) ^ 2)) ≤ 2 / (correctedChenZ N : ℝ) := by
+    have hsubq : Q ⊆ Finset.Ico (correctedChenZ N) (correctedChenY N) := by
+      intro q hq
+      rcases Finset.mem_filter.mp hq with ⟨hqy, hcond⟩
+      rw [Finset.mem_Ico]
+      constructor
+      · exact hcond.2
+      · simpa using hqy
+    have hle1 : (∑ q ∈ Q, (1 : ℝ) / ((q : ℝ) ^ 2)) ≤
+        ∑ q ∈ Finset.Ico (correctedChenZ N) (correctedChenY N), (1 : ℝ) / ((q : ℝ) ^ 2) := by
+      exact Finset.sum_le_sum_of_subset_of_nonneg hsubq (fun q hq hnot => by positivity)
+    have hinv : ∀ q ∈ Finset.Ico (correctedChenZ N) (correctedChenY N),
+        (1 : ℝ) / ((q : ℝ) ^ 2) ≤ (1 : ℝ) / ((q : ℝ) * ((q : ℝ) - 1)) := by
+      intro q hq
+      rcases Finset.mem_Ico.mp hq with ⟨hzq, hqy⟩
+      have hq2n : 2 ≤ q := by omega
+      have hqpos : (0 : ℝ) < q := by exact_mod_cast (by omega : 0 < q)
+      have hq1 : (0 : ℝ) < (q : ℝ) - 1 := by
+        have : (2 : ℝ) ≤ q := by exact_mod_cast hq2n
+        linarith
+      rw [div_le_div_iff₀ (sq_pos_of_pos hqpos) (mul_pos hqpos hq1)]
+      have hsq : (q : ℝ) * ((q : ℝ) - 1) ≤ (q : ℝ) ^ 2 := by
+        nlinarith
+      simpa [mul_one] using hsq
+    have hle2 : (∑ q ∈ Finset.Ico (correctedChenZ N) (correctedChenY N),
+          (1 : ℝ) / ((q : ℝ) ^ 2)) ≤
+        ∑ q ∈ Finset.Ico (correctedChenZ N) (correctedChenY N),
+          (1 : ℝ) / ((q : ℝ) * ((q : ℝ) - 1)) := by
+      exact Finset.sum_le_sum hinv
+    have htel := inv_mul_sub_one_Ico_sum (correctedChenZ N) (correctedChenY N) hz2 hzle_y
+    have htail : 1 / ((correctedChenZ N : ℝ) - 1) - 1 / ((correctedChenY N : ℝ) - 1) ≤
+        2 / (correctedChenZ N : ℝ) := by
+      have hzpos : (0 : ℝ) < (correctedChenZ N : ℝ) - 1 := by
+        have : (2 : ℝ) ≤ correctedChenZ N := by exact_mod_cast hz2
+        linarith
+      have hfrac : 1 / ((correctedChenZ N : ℝ) - 1) ≤ 2 / (correctedChenZ N : ℝ) := by
+        rw [div_le_div_iff₀ hzpos (by exact_mod_cast (by omega : 0 < correctedChenZ N))]
+        have hz2r : (2 : ℝ) ≤ correctedChenZ N := by exact_mod_cast hz2
+        nlinarith
+      have hy2 : 2 ≤ correctedChenY N := by
+        have : correctedChenZ N ≤ correctedChenY N := hzle_y
+        omega
+      have hy1 : (0 : ℝ) < (correctedChenY N : ℝ) - 1 := by
+        have : (2 : ℝ) ≤ correctedChenY N := by exact_mod_cast hy2
+        linarith
+      have hnonneg : (0 : ℝ) ≤ 1 / ((correctedChenY N : ℝ) - 1) := by positivity
+      linarith
+    calc
+      (∑ q ∈ Q, (1 : ℝ) / ((q : ℝ) ^ 2)) ≤
+          ∑ q ∈ Finset.Ico (correctedChenZ N) (correctedChenY N), (1 : ℝ) / ((q : ℝ) ^ 2) := hle1
+      _ ≤ ∑ q ∈ Finset.Ico (correctedChenZ N) (correctedChenY N),
+            (1 : ℝ) / ((q : ℝ) * ((q : ℝ) - 1)) := hle2
+      _ = 1 / ((correctedChenZ N : ℝ) - 1) - 1 / ((correctedChenY N : ℝ) - 1) := htel
+      _ ≤ 2 / (correctedChenZ N : ℝ) := htail
+  have hmain : (∑ q ∈ Q, (N : ℝ) / (q : ℝ) ^ 2) ≤ 4 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+    calc
+      (∑ q ∈ Q, (N : ℝ) / (q : ℝ) ^ 2) = (N : ℝ) * (∑ q ∈ Q, (1 : ℝ) / (q : ℝ) ^ 2) := by
+        rw [Finset.mul_sum]
+        congr 1
+        ext q
+        ring
+      _ ≤ (N : ℝ) * (2 / (correctedChenZ N : ℝ)) := by
+        exact mul_le_mul_of_nonneg_left htelesc (by exact_mod_cast (by omega : 0 ≤ N))
+      _ ≤ 4 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+        have hNpos : (0 : ℝ) < N := by exact_mod_cast (by omega : 0 < N)
+        have hdiv : (N : ℝ) * (2 / (correctedChenZ N : ℝ)) ≤
+            (N : ℝ) * (2 / ((N : ℝ) ^ (1 / 10 : ℝ) / 2)) := by
+          have hzpos2 : (0 : ℝ) < correctedChenZ N := by
+            exact_mod_cast (by omega : 0 < correctedChenZ N)
+          have hxpos2 : (0 : ℝ) < (N : ℝ) ^ (1 / 10 : ℝ) / 2 := by positivity
+          have hdiv2 : 2 / (correctedChenZ N : ℝ) ≤
+              2 / ((N : ℝ) ^ (1 / 10 : ℝ) / 2) := by
+            rw [div_le_div_iff₀ hzpos2 hxpos2]
+            have hx2z : (N : ℝ) ^ (1 / 10 : ℝ) ≤ 2 * (correctedChenZ N : ℝ) := by
+              linarith [hz_ge]
+            nlinarith
+          exact mul_le_mul_of_nonneg_left
+            hdiv2 (le_of_lt hNpos)
+        have hmain4 : (N : ℝ) * (2 / ((N : ℝ) ^ (1 / 10 : ℝ) / 2)) ≤
+            4 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+          have hx : (N : ℝ) ^ (1 / 10 : ℝ) ≠ 0 := ne_of_gt (Real.rpow_pos_of_pos hNpos _)
+          have hN1 : (N : ℝ) ^ (1 : ℝ) = N := Real.rpow_one (N : ℝ)
+          have h2 : (2 : ℝ) / ((N : ℝ) ^ (1 / 10 : ℝ) / 2) = 4 / (N : ℝ) ^ (1 / 10 : ℝ) := by
+            ring_nf
+          have hsub10 : (N : ℝ) ^ (1 : ℝ) / (N : ℝ) ^ (1 / 10 : ℝ) =
+              (N : ℝ) ^ (9 / 10 : ℝ) := by
+            have h := Real.rpow_sub hNpos (1 : ℝ) (1 / 10 : ℝ)
+            have hfrac : (1 : ℝ) - 1 / 10 = 9 / 10 := by norm_num
+            rw [hfrac, hN1] at h
+            rw [hN1]
+            exact h.symm
+          calc
+            (N : ℝ) * (2 / ((N : ℝ) ^ (1 / 10 : ℝ) / 2)) =
+                4 * ((N : ℝ) / (N : ℝ) ^ (1 / 10 : ℝ)) := by
+                  rw [h2]
+                  ring_nf
+             _ ≤ 4 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+                  have hstep : ((N : ℝ) / (N : ℝ) ^ (1 / 10 : ℝ)) =
+                      (N : ℝ) ^ (1 : ℝ) / (N : ℝ) ^ (1 / 10 : ℝ) :=
+                    congrArg (fun x : ℝ => x / (N : ℝ) ^ (1 / 10 : ℝ)) hN1.symm
+                  rw [hstep]
+                  rw [hsub10]
+        exact le_trans hdiv hmain4
+  have hone : (∑ q ∈ Q, (1 : ℝ)) ≤ 2 * (N : ℝ) ^ (1 / 3 : ℝ) := by
+    have hsub : Q ⊆ Finset.range (correctedChenY N) := by
+      intro q hq
+      exact (Finset.mem_filter.mp hq).1
+    calc
+      (∑ q ∈ Q, (1 : ℝ)) = (Q.card : ℝ) := by simp
+      _ ≤ ((Finset.range (correctedChenY N)).card : ℝ) := by
+        exact_mod_cast Finset.card_le_card hsub
+      _ = (correctedChenY N : ℝ) := by simp
+      _ ≤ 2 * (N : ℝ) ^ (1 / 3 : ℝ) := hy_le
+  have hone6 : 2 * (N : ℝ) ^ (1 / 3 : ℝ) ≤ 2 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+    have hmono : (N : ℝ) ^ (1 / 3 : ℝ) ≤ (N : ℝ) ^ (9 / 10 : ℝ) :=
+      Real.rpow_le_rpow_of_exponent_le (by exact_mod_cast (by omega : 1 ≤ N))
+        (by norm_num : (1 / 3 : ℝ) ≤ 9 / 10)
+    exact mul_le_mul_of_nonneg_left hmono (by norm_num)
+  calc
+    (correctedChenCandidates N).sum (fun p =>
+        ((Finset.range (correctedChenY N)).filter
+          (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card)
+        = ∑ q ∈ Q, (((correctedChenCandidates N).filter (fun p => q ^ 2 ∣ N - p)).card : ℝ) := by
+          unfold Q
+          calc
+            (correctedChenCandidates N).sum (fun p =>
+              ((Finset.range (correctedChenY N)).filter
+                (fun q => q.Prime ∧ correctedChenZ N ≤ q ∧ q ^ 2 ∣ N - p)).card)
+                = (correctedChenCandidates N).sum (fun p =>
+                    ∑ q ∈ Q, if q ^ 2 ∣ N - p then (1 : ℝ) else 0) := by
+                  rw [Nat.cast_sum]
+                  apply Finset.sum_congr rfl
+                  intro p hp
+                  rw [Finset.card_filter]
+                  rw [Nat.cast_sum]
+                  simp only [Nat.cast_ite, Nat.cast_one, Nat.cast_zero]
+                  simp [Q, Finset.sum_filter, and_assoc, and_left_comm, and_comm]
+                  congr 1
+                  ext x
+                  simp [Finset.mem_filter, and_assoc, and_left_comm, and_comm]
+            _ = ∑ q ∈ Q, (correctedChenCandidates N).sum (fun p =>
+                  if q ^ 2 ∣ N - p then (1 : ℝ) else 0) := by
+                  rw [Finset.sum_comm]
+            _ = ∑ q ∈ Q, (((correctedChenCandidates N).filter (fun p => q ^ 2 ∣ N - p)).card : ℝ) := by
+                  apply Finset.sum_congr rfl
+                  intro q hq
+                  rw [Finset.sum_boole]
+    _ ≤ ∑ q ∈ Q, ((N / q ^ 2 + 1 : ℕ) : ℝ) := by
+        apply Finset.sum_le_sum
+        intro q hq
+        exact_mod_cast hper q hq
+    _ ≤ (∑ q ∈ Q, (N : ℝ) / (q : ℝ) ^ 2) + (∑ q ∈ Q, (1 : ℝ)) := by
+        rw [← Finset.sum_add_distrib]
+        apply Finset.sum_le_sum
+        intro q hq
+        rw [Nat.cast_add, ← Nat.cast_pow]
+        have hmain_le : ((N / q ^ 2 : ℕ) : ℝ) ≤ (N : ℝ) / (q ^ 2 : ℕ) :=
+          Nat.cast_div_le (α := ℝ)
+        simpa using add_le_add_left hmain_le (1 : ℝ)
+    _ ≤ 4 * (N : ℝ) ^ (9 / 10 : ℝ) + 2 * (N : ℝ) ^ (1 / 3 : ℝ) := by
+        exact add_le_add hmain hone
+    _ ≤ 4 * (N : ℝ) ^ (9 / 10 : ℝ) + 2 * (N : ℝ) ^ (9 / 10 : ℝ) := by
+        linarith
+    _ = 6 * (N : ℝ) ^ (9 / 10 : ℝ) := by ring
+
 
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge
