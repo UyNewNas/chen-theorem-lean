@@ -3976,6 +3976,148 @@ theorem correctedChenPrimePowerProperCountBound :
         linarith
     _ = 6 * (N : ℝ) ^ (9 / 10 : ℝ) := by ring
 
+/-- 逐候选: 三因子惩罚 ≤ 切换权重 (对 `(p₁,p₂)` 对的计数, 丢掉
+`p₁ < p₂`、`p₂ ≤ p₃` 等约束后仍为上界; `p₃` 由等式唯一决定). -/
+theorem tripleFactorCount_le_switchingWeight {n z y : ℕ} :
+    tripleFactorCount n z y ≤
+      ∑ p₁ ∈ (Finset.range y).filter (fun p₁ => p₁.Prime ∧ z ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂),
+          if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n then (1 : ℝ) else 0 := by
+  unfold tripleFactorCount
+  let T : Finset ℕ := (Finset.range (n + 1)).filter (fun p₁ =>
+    p₁.Prime ∧ z ≤ p₁ ∧ p₁ < y ∧
+    ∃ p₂ p₃, p₂.Prime ∧ p₃.Prime ∧ y ≤ p₂ ∧ p₂ ≤ p₃ ∧
+      p₁ * p₂ * p₃ = n ∧ p₁ < p₂ ∧ p₂ ≤ p₃)
+  have h1 : ∀ p₁ ∈ T, (1 : ℝ) ≤
+      ∑ p₂ ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂),
+        if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n then (1 : ℝ) else 0 := by
+    intro p₁ hp₁
+    rcases Finset.mem_filter.mp hp₁ with ⟨h1r, h1c⟩
+    rcases h1c with ⟨hpp, hz, hy, hw⟩
+    rcases hw with ⟨p₂, p₃, hp₂p, hp₃p, hy₂, h₂₃, hprod, h₁₂, h₂₃'⟩
+    have hmem : p₂ ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂) := by
+      rw [Finset.mem_filter, Finset.mem_range]
+      constructor
+      · -- p₂ ≤ n: p₂ ≤ p₂·p₃ ≤ p₁·p₂·p₃ = n
+        have h1a : p₂ ≤ p₂ * p₃ := Nat.le_mul_of_pos_right p₂ hp₃p.pos
+        have h1b : p₂ * p₃ ≤ p₁ * (p₂ * p₃) := Nat.le_mul_of_pos_left (p₂ * p₃) hpp.pos
+        have hle : p₂ ≤ p₁ * p₂ * p₃ := by
+          calc p₂ ≤ p₂ * p₃ := h1a
+            _ ≤ p₁ * (p₂ * p₃) := h1b
+            _ = p₁ * p₂ * p₃ := by rw [mul_assoc]
+        rw [← hprod]
+        omega
+      · exact ⟨hp₂p, hy₂⟩
+    have hterm : (if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n then (1 : ℝ) else 0) = 1 := by
+      have hw' : ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n := ⟨p₃, hp₃p, hprod⟩
+      simp [hw']
+    have hnonneg : ∀ q ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂),
+        q ∉ ({p₂} : Finset ℕ) →
+        0 ≤ (if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * q * p₃ = n then (1 : ℝ) else 0) := by
+      intro q hq hnot
+      by_cases h : ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * q * p₃ = n
+      · simp [h]
+      · simp [h]
+    have hs := Finset.sum_le_sum_of_subset_of_nonneg
+      (show ({p₂} : Finset ℕ) ⊆ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂) from by
+        intro q hq
+        rw [Finset.mem_singleton] at hq
+        subst q
+        exact hmem) hnonneg
+    have hsing : ({p₂} : Finset ℕ).sum
+        (fun q => if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * q * p₃ = n then (1 : ℝ) else 0) = 1 := by
+      simp [hw']
+    rwa [hsing] at hs
+  have hTsub : T ⊆ (Finset.range y).filter (fun p₁ => p₁.Prime ∧ z ≤ p₁) := by
+    intro p₁ hp₁
+    rcases Finset.mem_filter.mp hp₁ with ⟨h1r, h1c⟩
+    rcases h1c with ⟨hpp, hz, hy, hw⟩
+    exact Finset.mem_filter.mpr ⟨by
+      rw [Finset.mem_range]
+      omega, hpp, hz⟩
+  have hTle : (∑ p₁ ∈ T, (1 : ℝ)) ≤
+      ∑ p₁ ∈ (Finset.range y).filter (fun p₁ => p₁.Prime ∧ z ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂),
+          if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n then (1 : ℝ) else 0 := by
+    calc
+      (∑ p₁ ∈ T, (1 : ℝ)) ≤ ∑ p₁ ∈ T,
+          ∑ p₂ ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂),
+            if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n then (1 : ℝ) else 0 := by
+            exact Finset.sum_le_sum h1
+      _ ≤ ∑ p₁ ∈ (Finset.range y).filter (fun p₁ => p₁.Prime ∧ z ≤ p₁),
+            ∑ p₂ ∈ (Finset.range (n + 1)).filter (fun p₂ => p₂.Prime ∧ y ≤ p₂),
+              if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n then (1 : ℝ) else 0 := by
+            exact Finset.sum_le_sum_of_subset_of_nonneg hTsub (fun p₁ hp₁ hnot => by
+              apply Finset.sum_nonneg
+              intro p₂ hp₂
+              by_cases h : ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = n
+              · simp [h]
+              · simp [h])
+  have hcard : (T.card : ℝ) = ∑ p₁ ∈ T, (1 : ℝ) := by
+    exact_mod_cast (Finset.card_eq_sum_ones T)
+  rw [hcard]
+  exact hTle
+
+/-- 三因子部分一致有限展开: 候选上的三因子惩罚和 ≤ 切换集合上的计数
+(`(p₁,p₂)` 对 → 满足 `p₁p₂p₃ = N−p` 的候选数). -/
+theorem correctedChenOmega_triple_le_switchingCount (N : ℕ) :
+    (correctedChenCandidates N).sum
+        (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N)) ≤
+      ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+        ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+          ((correctedChenCandidates N).filter
+            (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p)).card := by
+  have hper : ∀ p ∈ correctedChenCandidates N,
+      tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N) ≤
+        ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+          ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+            if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p then (1 : ℝ) else 0 := by
+    intro p hp
+    have h := tripleFactorCount_le_switchingWeight
+      (n := N - p) (z := correctedChenZ N) (y := correctedChenY N)
+    calc
+      tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N) ≤
+          ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+            ∑ p₂ ∈ (Finset.range (N - p + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+              if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p then (1 : ℝ) else 0 := h
+      _ ≤ ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+            ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+              if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p then (1 : ℝ) else 0 := by
+            apply Finset.sum_le_sum
+            intro p₁ hp₁
+            apply Finset.sum_le_sum_of_subset_of_nonneg
+            · intro p₂ hp₂
+              rw [Finset.mem_filter, Finset.mem_range] at hp₂ ⊢
+              constructor
+              · omega
+              · exact hp₂.2
+            · intro p₂ hp₂ hnot
+              by_cases h : ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p
+              · simp [h]
+              · simp [h]
+  calc
+    (correctedChenCandidates N).sum
+        (fun p => tripleFactorCount (N - p) (correctedChenZ N) (correctedChenY N))
+        ≤ (correctedChenCandidates N).sum (fun p =>
+            ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+              ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+                if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p then (1 : ℝ) else 0) :=
+          Finset.sum_le_sum hper
+    _ = ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+          ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+            (correctedChenCandidates N).sum (fun p =>
+              if ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p then (1 : ℝ) else 0) := by
+          rw [Finset.sum_comm]
+          rw [Finset.sum_comm]
+    _ ≤ ∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+          ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+            ((correctedChenCandidates N).filter
+              (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ p₁ * p₂ * p₃ = N - p)).card := by
+          apply Finset.sum_le_sum
+          intro p₁ hp₁
+          apply Finset.sum_le_sum
+          intro p₂ hp₂
+          rw [Finset.sum_boole]
 
 /-- Conditional Chen theorem for the corrected development.  Its unique
 assumption is precisely `CorrectedChenAnalyticPositivity`; the finite bridge
