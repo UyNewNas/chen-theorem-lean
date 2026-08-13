@@ -4343,6 +4343,109 @@ noncomputable def switchingSieve (N a : ℕ) : BoundingSieve where
 noncomputable def switchingCount (N a : ℕ) : ℝ :=
   ((correctedChenCandidates N).filter (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p)).card
 
+/-- **p₃ 素性计数引理 (ant #17, 里程碑 1)**: 固定 `a ≥ 1` 时,
+`switchingCount N a = #{p ∈ C(N) : a·p₃ = N−p, p₃ 素数}` 经 `p ↦ (N−p)/a`
+注入到素数 `p₃ ≤ N/a`, 故
+
+    switchingCount N a ≤ #{p ≤ N/a : p 素数}.
+
+这是三因子主项估计的第一步: 计数自动带上 p₃ 素性 (上界 `1/log(N/a)` 的初等来源),
+无需 PNT in AP; 候选集在等差类中的分布 (ant #15) 将在此上收紧. -/
+theorem switchingCount_le_pi (N a : ℕ) (ha : 1 ≤ a) :
+    switchingCount N a ≤
+      (((Finset.range (N / a + 1)).filter Nat.Prime).card : ℝ) := by
+  unfold switchingCount
+  let s : Finset ℕ := (correctedChenCandidates N).filter
+    (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p)
+  let t : Finset ℕ := (Finset.range (N / a + 1)).filter Nat.Prime
+  let f : ℕ → ℕ := fun p => (N - p) / a
+  have ha' : 0 < a := by omega
+  have hinj : Set.InjOn f (↑s : Set ℕ) := by
+    intro p hp q hq hpq
+    have hpw : ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p := (Finset.mem_filter.mp hp).2
+    have hqw : ∃ q₃ : ℕ, q₃.Prime ∧ a * q₃ = N - q := (Finset.mem_filter.mp hq).2
+    rcases hpw with ⟨p₃, hp₃p, hp₃eq⟩
+    rcases hqw with ⟨q₃, hq₃p, hq₃eq⟩
+    have hfp : (N - p) / a = p₃ := by
+      rw [← hp₃eq]
+      exact Nat.mul_div_right p₃ ha'
+    have hfq : (N - q) / a = q₃ := by
+      rw [← hq₃eq]
+      exact Nat.mul_div_right q₃ ha'
+    change (N - p) / a = (N - q) / a at hpq
+    have hp₃eqq₃ : p₃ = q₃ := by
+      rw [hfp, hfq] at hpq
+      exact hpq
+    have hpN : p < N := by
+      have hpC := (Finset.mem_filter.mp hp).1
+      simpa using (Finset.mem_filter.mp hpC).1
+    have hqN : q < N := by
+      have hqC := (Finset.mem_filter.mp hq).1
+      simpa using (Finset.mem_filter.mp hqC).1
+    calc
+      p = N - a * p₃ := by
+            rw [hp₃eq]
+            omega
+      _ = N - a * q₃ := by rw [hp₃eqq₃]
+      _ = q := by
+            rw [hq₃eq]
+            omega
+  have himg_le : (s.image f).card ≤ t.card := by
+    apply Finset.card_le_card
+    intro q hq
+    rw [Finset.mem_image] at hq
+    rcases hq with ⟨p, hp, rfl⟩
+    have hpw : ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p := (Finset.mem_filter.mp hp).2
+    rcases hpw with ⟨p₃, hp₃p, hp₃eq⟩
+    have hqeq : (N - p) / a = p₃ := by
+      rw [← hp₃eq]
+      exact Nat.mul_div_right p₃ ha'
+    rw [Finset.mem_filter]
+    constructor
+    · rw [Finset.mem_range]
+      change (N - p) / a < N / a + 1
+      rw [hqeq]
+      have hp3le : p₃ ≤ N / a := by
+        calc
+          p₃ = (N - p) / a := hqeq.symm
+          _ ≤ N / a := Nat.div_le_div_right (Nat.sub_le N p)
+      omega
+    · change Nat.Prime ((N - p) / a)
+      rwa [hqeq]
+  have hcard : (s.image f).card = s.card := Finset.card_image_of_injOn hinj
+  have hs_le : s.card ≤ t.card := by
+    calc
+      s.card = (s.image f).card := by rw [hcard]
+      _ ≤ t.card := himg_le
+  exact_mod_cast hs_le
+
+/-- **区域限制 (ant #17, 里程碑 1)**: 若 `N < 2a`, 则 `a·p₃ = N−p ≤ N` 无解
+(p₃ ≥ 2), 故 `switchingCount N a = 0`. 三因子主项和中 `a = p₁p₂ > N/2` 的配对
+贡献为零. -/
+theorem switchingCount_eq_zero_of_N_lt_two_mul (N a : ℕ) (hN : N < 2 * a) :
+    switchingCount N a = 0 := by
+  unfold switchingCount
+  have hsub : ((correctedChenCandidates N).filter
+      (fun p => ∃ p₃ : ℕ, p₃.Prime ∧ a * p₃ = N - p)) = ∅ := by
+    ext p
+    constructor
+    · intro hp
+      rw [Finset.mem_filter] at hp
+      rcases hp with ⟨hpC, hpw⟩
+      rcases hpw with ⟨p₃, hp₃p, hp₃eq⟩
+      have hp3ge2 : 2 ≤ p₃ := hp₃p.two_le
+      have hbig : 2 * a ≤ N - p := by
+        rw [← hp₃eq]
+        calc
+          2 * a ≤ a * 2 := by omega
+          _ ≤ a * p₃ := Nat.mul_le_mul_left a hp3ge2
+      have hle : N - p ≤ N := Nat.sub_le N p
+      simpa using (by omega : False)
+    · intro hp
+      simp at hp
+  rw [hsub]
+  simp
+
 /-- **切换计数 ≤ 切换筛的筛后和**: 候选 `p` 的 `p₃ = (N−p)/a` 落在支撑内、
 与筛积互素 (候选条件 ⟺ `p₃` 无 `< z` 的素因子, 因 `a = p₁p₂` 的素因子 ≥ z). -/
 theorem switchingCount_le_siftedSum (N a : ℕ) :
