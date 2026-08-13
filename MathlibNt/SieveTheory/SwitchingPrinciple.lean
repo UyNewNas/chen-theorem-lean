@@ -1179,6 +1179,92 @@ noncomputable def correctedChenBoundingSieve (N : ℕ) : BoundingSieve where
 theorem correctedChenTotalMass_eq (N : ℕ) :
     (correctedChenBoundingSieve N).totalMass = (N : ℝ) / log (N : ℝ) := rfl
 
+/-! ## chen issue #7: 消费 ant 的最优 Selberg 上界 (主项链) -/
+
+/-- 消费 ant #6 (`AnalyticNumberTheory.Sieve.selberg_upper_bound_optimal`):
+修正筛的筛后和被 `totalMass·(Σ selbergTerms)⁻¹ + errSum(Λ²w*)` 控制.
+这是经典 Selberg 上界筛 `S ≤ X/G(z) + R` 在 `correctedChenBoundingSieve`
+上的无条件实例. -/
+theorem correctedChenSelbergUpperBound (N : ℕ) :
+    ∃ w : ℕ → ℝ, w 1 = 1 ∧
+      (correctedChenBoundingSieve N).siftedSum ≤
+        (correctedChenBoundingSieve N).totalMass *
+          (∑ l ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+            (correctedChenBoundingSieve N).selbergTerms l)⁻¹ +
+        (correctedChenBoundingSieve N).errSum (BoundingSieve.lambdaSquared w) :=
+  AnalyticNumberTheory.Sieve.selberg_upper_bound_optimal (correctedChenBoundingSieve N)
+
+/-- 消费 ant #6 (`selbergMainTerm_eq_prod_one_sub_nu`): Selberg 主项等于筛积
+`∏_{p | P(N)} (1 − ν(p))`. -/
+theorem correctedChenSelbergMainTerm_eq_prod (N : ℕ) :
+    (∑ l ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms l)⁻¹ =
+    ∏ p ∈ (correctedChenBoundingSieve N).prodPrimes.primeFactors,
+      (1 - correctedChenNu p) :=
+  AnalyticNumberTheory.Sieve.selbergMainTerm_eq_prod_one_sub_nu (correctedChenBoundingSieve N)
+
+/-- 主项筛积等于 Goldbach 筛积 `MertensTheorem.goldbachSieveProduct N z`
+(偶数 N 下 p = 2 的因子在两侧都被 `p ∤ N` 排除). -/
+theorem correctedChenSelbergMainTerm_eq_goldbachSieveProduct (N : ℕ) (hN : Even N) :
+    (∑ l ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+      (correctedChenBoundingSieve N).selbergTerms l)⁻¹ =
+    MertensTheorem.goldbachSieveProduct N (correctedChenZ N) := by
+  rw [correctedChenSelbergMainTerm_eq_prod N]
+  unfold MertensTheorem.goldbachSieveProduct
+  change ∏ p ∈ (correctedChenSiftingProduct N).primeFactors, (1 - correctedChenNu p) =
+    ∏ p ∈ (Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ ¬ p ∣ N),
+      (1 - 1 / ((p : ℝ) - 1))
+  rw [correctedChenSiftingProduct_primeFactors N]
+  have hset : ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ ¬ p ∣ N)) =
+      ((Finset.range (correctedChenZ N)).filter (fun p => p.Prime ∧ 2 < p ∧ ¬ p ∣ N)) := by
+    ext p
+    constructor
+    · intro hp
+      rcases Finset.mem_filter.mp hp with ⟨hr, hc⟩
+      have hpne2 : p ≠ 2 := by
+        intro hp2
+        have h2dvd : 2 ∣ N := by
+          rcases hN with ⟨k, hk⟩
+          refine ⟨k, ?_⟩
+          rw [hk]
+          ring
+        exact hc.2 (by simpa [hp2] using h2dvd)
+      refine Finset.mem_filter.mpr ⟨hr, ⟨hc.1, ?_⟩⟩
+      rcases hc.1.eq_two_or_odd' with h | h
+      · exact absurd h hpne2
+      · have : 2 ≤ p := hc.1.two_le
+        omega
+    · intro hp
+      rcases Finset.mem_filter.mp hp with ⟨hr, hc⟩
+      exact Finset.mem_filter.mpr ⟨hr, ⟨hc.1, hc.2.2⟩⟩
+  rw [hset]
+  apply Finset.prod_congr rfl
+  intro p hp
+  rcases Finset.mem_filter.mp hp with ⟨_, hc⟩
+  have hp' : p.Prime := hc.1
+  have hnu : correctedChenNu p = 1 / ((p : ℝ) - 1) := by
+    unfold correctedChenNu
+    exact AnalyticNumberTheory.Sieve.goldbachNu_apply_prime hp'
+  rw [hnu]
+
+/-- 主项链: `totalMass·(Σ selbergTerms)⁻¹ =
+(N/log N)·primeProduct(z−1)·𝔖_trunc(N, z−1)`, 即
+`sieveProduct_identity` 在 Selberg 主项上的精确消费形态. -/
+theorem correctedChenSelbergMainTerm_eq_primeProduct_mul_singularSeries (N : ℕ)
+    (hN : Even N) :
+    (correctedChenBoundingSieve N).totalMass *
+      (∑ l ∈ (correctedChenBoundingSieve N).prodPrimes.divisors,
+        (correctedChenBoundingSieve N).selbergTerms l)⁻¹ =
+    ((N : ℝ) / log (N : ℝ)) * MertensTheorem.primeProduct (correctedChenZ N - 1) *
+      SingularSeries.singularSeriesTruncated N (correctedChenZ N - 1) := by
+  rw [correctedChenTotalMass_eq N,
+    correctedChenSelbergMainTerm_eq_goldbachSieveProduct N hN]
+  have hz2 : 2 ≤ correctedChenZ N := by
+    unfold correctedChenZ
+    exact le_max_left _ _
+  rw [MertensTheorem.sieveProduct_identity N (correctedChenZ N) hz2 hN]
+  ring
+
 /-- An element is coprime to the corrected sifting product exactly when no
 sieved prime (that is, no prime `2 < r < z` with `r ∤ N`) divides it. -/
 theorem coprime_correctedChenSiftingProduct_iff {N a : ℕ} :
