@@ -143,7 +143,7 @@ lemma sum_moebius_if_dvd_eq_if_gcd_one {P m : ℕ} (hP0 : P ≠ 0) :
       rw [Nat.mem_divisors] at ⊢
       rcases hd with ⟨hdg, hg0⟩
       constructor
-      · exact ⟨dvd_trans (Nat.gcd_dvd_right m P) hdg, hP0⟩
+      · exact ⟨(Nat.dvd_gcd_iff.mp hdg).2, hP0⟩
       · exact (Nat.dvd_gcd_iff.mp hdg).1
   rw [← Finset.sum_filter]
   rw [hdiv]
@@ -156,32 +156,23 @@ private lemma q1_lcm_odd {a b : ℕ} (ha : Odd a) (hb : Odd b) : Odd (Nat.lcm a 
   rw [← Nat.not_even_iff_odd]
   intro hev
   have h2 : 2 ∣ Nat.lcm a b := (even_iff_two_dvd).1 hev
-  have h2ab : 2 ∣ a * b := dvd_trans h2 (lcm_dvd_mul : Nat.lcm a b ∣ a * b)
+  have h2ab : 2 ∣ a * b := dvd_trans h2 (lcm_dvd_mul (α := ℕ) a b)
   rcases (Nat.prime_two.dvd_mul.mp h2ab) with h2a | h2b
   · exact ha.not_two_dvd_nat h2a
   · exact hb.not_two_dvd_nat h2b
-
-/-- 互素对乘积的右互素: (a·b) 与 c 互素. -/
-private lemma q1_coprime_mul_right {a b c : ℕ} (hab : a.Coprime c) (hbb : b.Coprime c) :
-    (a * b).Coprime c := by
-  apply Nat.coprime_of_dvd'
-  intro p hp hp_ab hp_c
-  rcases (hp.dvd_mul.mp hp_ab) with hp_a | hp_b
-  · exact (Nat.not_coprime_of_dvd_of_dvd hp.one_lt hp_a hp_c) hab
-  · exact (Nat.not_coprime_of_dvd_of_dvd hp.one_lt hp_b hp_c) hbb
 
 /-- 两两互素的 lcm 坍缩: lcm(lcm q d) e = q·d·e. -/
 private lemma q1_lcm_collapse {q d e : ℕ} (hqd : q.Coprime d) (hqe : q.Coprime e)
     (hde : d.Coprime e) : Nat.lcm (Nat.lcm q d) e = q * d * e := by
   have hqd_mul : Nat.lcm q d = q * d := Nat.Coprime.lcm_eq_mul hqd
-  have hqde : (q * d).Coprime e := q1_coprime_mul_right hqe hde
+  have hqde : (q * d).Coprime e := (Nat.coprime_mul_iff_left).mpr ⟨hqe, hde⟩
   rw [hqd_mul]
   rw [Nat.Coprime.lcm_eq_mul hqde]
 
 /-- 两两互素的欧拉函数乘积: φ(q·d·e) = φ(q)·φ(d)·φ(e). -/
 private lemma q1_phi_mul {q d e : ℕ} (hqd : q.Coprime d) (hqe : q.Coprime e)
     (hde : d.Coprime e) : Nat.totient (q * d * e) = Nat.totient q * Nat.totient d * Nat.totient e := by
-  have hqde : (q * d).Coprime e := q1_coprime_mul_right hqe hde
+  have hqde : (q * d).Coprime e := (Nat.coprime_mul_iff_left).mpr ⟨hqe, hde⟩
   rw [Nat.totient_mul hqde]
   rw [Nat.totient_mul hqd]
   ring
@@ -193,9 +184,7 @@ private lemma q1Mu_two_mul {a : ℕ} (h2a : (2 : ℕ).Coprime a) : q1Mu (2 * a) 
     (ArithmeticFunction.isMultiplicative_moebius.map_mul_of_coprime h2a)
   have hmu2 : (ArithmeticFunction.moebius 2 : ℤ) = -1 := by
     exact ArithmeticFunction.moebius_apply_prime (by norm_num : Nat.Prime 2)
-  unfold q1Mu
-  rw [hmult, hmu2]
-  norm_num
+  simp [q1Mu, hmult, hmu2]
 
 /-- 2 不整除筛积 P(N): 其素因子均 > 2. -/
 private theorem two_not_dvd_correctedChenSiftingProduct (N : ℕ) :
@@ -212,7 +201,7 @@ theorem two_dvd_correctedChenForbiddenProduct_of_three_le_z {N : ℕ} (hz3 : 3 �
     2 ∣ correctedChenForbiddenProduct N := by
   have h2mem : 2 ∈ (correctedChenForbiddenProduct N).primeFactors := by
     rw [correctedChenForbiddenProduct_primeFactors N]
-    exact Finset.mem_filter.mpr ⟨(by omega : 2 < correctedChenZ N), ⟨by norm_num, Or.inl (by norm_num)⟩⟩
+    exact Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (by omega : 2 < correctedChenZ N), ⟨by norm_num, Or.inl (by norm_num)⟩⟩
   exact Nat.dvd_of_mem_primeFactors h2mem
 
 /-- F(N) = 2·Fodd(N) (当 2 | F). -/
@@ -221,8 +210,9 @@ theorem forbiddenProduct_eq_two_mul_oddPart (N : ℕ) (h2F : 2 ∣ correctedChen
   unfold correctedChenForbiddenOddPart
   have h1 : correctedChenForbiddenProduct N / 2 * 2 = correctedChenForbiddenProduct N :=
     Nat.div_mul_cancel h2F
-  rw [← h1]
-  ring
+  calc
+    correctedChenForbiddenProduct N = correctedChenForbiddenProduct N / 2 * 2 := h1.symm
+    _ = 2 * (correctedChenForbiddenProduct N / 2) := by rw [mul_comm]
 
 /-- e | F 且 e 奇 ⟺ e | Fodd (当 2 | F). -/
 private theorem odd_divisor_forbidden_iff_mem {N e : ℕ} (h2F : 2 ∣ correctedChenForbiddenProduct N) :
@@ -243,7 +233,7 @@ private theorem odd_divisor_forbidden_iff_mem {N e : ℕ} (h2F : 2 ∣ corrected
         rcases (Nat.dvd_prime (by norm_num : (2 : ℕ).Prime)).mp hp_2 with h | h
         · exact False.elim (hp.ne_one h)
         · exact h
-      exact hne (by rw [← even_iff_two_dvd]; rwa [← hp2])
+      exact False.elim (hne (by rw [← even_iff_two_dvd]; rwa [← hp2]))
     have he_dvd_Fodd : e ∣ correctedChenForbiddenProduct N / 2 := by
       have he2 : e ∣ 2 * (correctedChenForbiddenProduct N / 2) := by rwa [hF]
       exact Nat.Coprime.dvd_of_dvd_mul_right hcop he2
@@ -290,7 +280,7 @@ theorem coprime_q_siftingProduct {N q : ℕ} (hq : q.Prime) (hqz : correctedChen
     · exact False.elim (hr.ne_one h)
     · exact h
   subst r
-  omega
+  exact False.elim (by omega)
 
 /-- q 与 Fodd 互素 (q ≥ z, Fodd 的素因子 < z). -/
 theorem coprime_q_forbiddenOddPart {N q : ℕ} (hq : q.Prime) (hqz : correctedChenZ N ≤ q)
@@ -307,7 +297,7 @@ theorem coprime_q_forbiddenOddPart {N q : ℕ} (hq : q.Prime) (hqz : correctedCh
     · exact False.elim (hr.ne_one h)
     · exact h
   subst r
-  omega
+  exact False.elim (by omega)
 
 /-- 筛积 P 与 Fodd 互素 (素因子集合不相交: p ∤ N 对 p | P, p | N 对 p | Fodd). -/
 theorem coprime_sifting_forbiddenOddPart (N : ℕ) (hz3 : 3 ≤ correctedChenZ N) :
