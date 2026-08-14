@@ -3,6 +3,7 @@ import MathlibNt.SieveTheory.BombieriVinogradov
 import MathlibNt.SieveTheory.LinearSieve
 import MathlibNt.SieveTheory.PanTruncation
 import MathlibNt.SieveTheory.PrimePair
+import MathlibNt.SieveTheory.PrimePairLinearForm
 import MathlibNt.SieveTheory.TripleMain
 
 /-!
