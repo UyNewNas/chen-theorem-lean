@@ -247,7 +247,9 @@ private theorem odd_divisor_forbidden_iff_mem {N e : ℕ} (h2F : 2 ∣ corrected
     have hFodd0 : correctedChenForbiddenProduct N / 2 ≠ 0 := by
       intro hz
       have : correctedChenForbiddenProduct N = 0 := by
-        simp [hF, hz]
+        rw [hF]
+        rw [hz]
+        norm_num
       exact hF0 this
     exact Nat.mem_divisors.mpr ⟨he_dvd_Fodd, hFodd0⟩
   · intro he
@@ -365,7 +367,6 @@ private lemma q1_APMainValue_split (N q d e : ℕ) (hqo : Odd q) (hdo : Odd d)
     unfold q1APMainValue q1APMainEvenValue
     rw [if_neg ((Nat.not_even_iff_odd).2 hodd)]
     rw [if_neg he]
-    rw [if_neg ((Nat.not_even_iff_odd).2 hodd)]
     rw [q1_lcm_collapse hqd hqe hde]
 
 /-- **奇偶分解 (精确)**: `q1CandidateAPMain N q =
@@ -510,21 +511,21 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
         (∑ d ∈ (correctedChenSiftingProduct N).divisors,
           q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
             q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
-          let A_d : ℝ := ∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+          let A_d : (d : ℕ) → ℝ := fun d => ∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
             q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))
-          let B_d : ℝ := ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+          let B_d : (d : ℕ) → ℝ := fun d => ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
             q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)
           calc
             (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                q1Mu d * (q1LogarithmicIntegral N * A_d + B_d))
+                q1Mu d * (q1LogarithmicIntegral N * A_d d + B_d d))
                 = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    q1LogarithmicIntegral N * (q1Mu d * A_d) + q1Mu d * B_d) := by
+                    q1LogarithmicIntegral N * (q1Mu d * A_d d) + q1Mu d * B_d d) := by
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
             _ = q1LogarithmicIntegral N *
-                  (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * A_d) +
-                (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * B_d) := by
+                  (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * A_d d) +
+                (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * B_d d) := by
                   rw [Finset.sum_add_distrib]
                   rw [← Finset.mul_sum]
 
