@@ -1636,6 +1636,62 @@ theorem unsiftedPrimeSupport_AP_count_eq_moebiusSum (N d : ℕ) :
                     p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p)).card : ℝ) := by
                   rw [Finset.sum_boole]
 
+/-! ## Pan 桥 step 3 (ant #25): lcm 合并 — 同余系统相容性 -/
+
+/-- 同余系统合并 (CRT, 相容情形): 对 `p < N`,
+`p ≡ N [MOD d]` 且 `e ∣ N - p` 当且仅当 `p ≡ N [MOD lcm d e]`. 这是
+`unsiftedPrimeSupport_AP_count_eq_moebiusSum` 内层条件
+`p ≡ N [MOD d] ∧ e | N−p` 合并为单一模数 `lcm(d,e)` 的精确依据:
+`e | N−p` 与 `p ≡ N [MOD e]` 等价 (ant `prime_dvd_complement_iff_modEq`),
+同余系统对同一 `N` 自动相容, 无需 `d,e` 互素. -/
+theorem modEq_and_dvd_complement_iff_modEq_lcm {N p d e : ℕ} (hp : p < N) :
+    (p ≡ N [MOD d] ∧ e ∣ N - p) ↔ p ≡ N [MOD Nat.lcm d e] := by
+  rw [AnalyticNumberTheory.Sieve.prime_dvd_complement_iff_modEq (N := N) (p := p) (d := e) hp]
+  constructor
+  · intro h
+    exact Nat.mod_lcm h.1 h.2
+  · intro h
+    constructor
+    · exact h.of_dvd (Nat.dvd_lcm_left d e)
+    · exact h.of_dvd (Nat.dvd_lcm_right d e)
+
+/-- lcm 合并的计数形态: Möbius 分解内层的
+`#{p < N : p ≡ N [MOD d] ∧ e | N−p}` 重写为 `#{p < N : p ≡ N [MOD lcm(d,e)]}`. -/
+theorem unsiftedPrimeSupport_AP_count_lcm_merge (N d e : ℕ) :
+    ((Finset.range N).filter (fun p =>
+      p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD d] ∧ e ∣ N - p)).card =
+    ((Finset.range N).filter (fun p =>
+      p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card := by
+  apply congrArg Finset.card
+  ext p
+  rw [Finset.mem_filter, Finset.mem_filter]
+  constructor
+  · rintro ⟨hp, h⟩
+    rcases h with ⟨hpp, htwo, hcong, hdvd⟩
+    exact ⟨hp, hpp, htwo,
+      (modEq_and_dvd_complement_iff_modEq_lcm (d := d) (e := e) (Finset.mem_range.mp hp)).mp
+        ⟨hcong, hdvd⟩⟩
+  · rintro ⟨hp, h⟩
+    rcases h with ⟨hpp, htwo, hcong⟩
+    rcases (modEq_and_dvd_complement_iff_modEq_lcm (d := d) (e := e) (Finset.mem_range.mp hp)).mpr
+        hcong with ⟨hcongd, hdvde⟩
+    exact ⟨hp, hpp, htwo, hcongd, hdvde⟩
+
+/-- **Möbius 分解的 lcm 形态**: 与 `unsiftedPrimeSupport_AP_count_eq_moebiusSum`
+相同, 但内层基计数按 `lcm(d,e)` 合并 — 每个基计数
+`#{p < N : p ≡ N [MOD lcm(d,e)]}` 正是 a=1 Pan 分布误差
+(经 `primesInAPBelow_one`/`panDistributionError_one`) 的输入. -/
+theorem unsiftedPrimeSupport_AP_count_eq_moebiusSum_lcm (N d : ℕ) :
+    (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD d])).card : ℝ) =
+      ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ) := by
+  rw [unsiftedPrimeSupport_AP_count_eq_moebiusSum N d]
+  apply Finset.sum_congr rfl
+  intro e he
+  congr 1
+  exact_mod_cast (unsiftedPrimeSupport_AP_count_lcm_merge N d e)
+
 /-- The unsifted complement support is definitionally the image of the prime
 support under `p ↦ N - p`. -/
 theorem correctedChenUnsiftedComplements_eq_image (N : ℕ) :
@@ -1834,6 +1890,687 @@ theorem correctedChenErrSum_uniform_of_weightedPanInput {A : ℝ} (hA : 0 < A)
   rcases hinput A hA with ⟨C, hC, hbound⟩
   refine ⟨C, hC, ?_⟩
   exact le_trans (correctedChenErrSum_le_weightedPanInput N) (hbound N hN hEven)
+
+/-! ## Pan 桥收官 (ant #25): PanMeanValueUniform ⇒ ChenWeightedPanInput -/
+
+/-- Pan 桥的 a=1 权重: `f(1) = 1`, 其余为 0 — 使 `panDistributionSum` 退化为
+`a = 1` 的分布误差 `Δ(y; 1, q, l)`. -/
+abbrev chenPanWeightOne (a : ℕ) : ℝ := if a = 1 then (1 : ℝ) else 0
+
+/-- **基计数 = a=1 的 Pan 缩放计数**: `#{p < N : p 素数, 2 ≤ N−p, p ≡ N [MOD q]}`
+恰为 `primesInAPBelow (N−2) 1 q (N % q)` (Liu 2022 §II 的 `a = 1` 情形;
+ant `primesInAPBelow_one` 的输入侧). -/
+theorem supportAPBaseCount_eq_primesInAPBelow (N q : ℕ) (hN : 2 ≤ N) :
+    ((Finset.range N).filter (fun p =>
+      p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD q])).card =
+      AnalyticNumberTheory.Sieve.primesInAPBelow (N - 2) 1 q (N % q) := by
+  unfold AnalyticNumberTheory.Sieve.primesInAPBelow
+  congr 1
+  ext p
+  simp only [Finset.mem_filter, Finset.mem_range]
+  constructor
+  · rintro ⟨hpN, hpp, htwo, hcong⟩
+    have hle : p ≤ N - 2 := by omega
+    refine ⟨?_, hpp, ?_, ?_⟩
+    · omega
+    · simpa [one_mul] using hle
+    · rw [Nat.ModEq] at hcong ⊢
+      simpa [one_mul, Nat.mod_mod] using hcong
+  · rintro ⟨hpN, hpp, hle, hcong⟩
+    have hle' : p ≤ N - 2 := by simpa [one_mul] using hle
+    refine ⟨?_, hpp, ?_, ?_⟩
+    · omega
+    · omega
+    · rw [Nat.ModEq] at hcong ⊢
+      simpa [Nat.mod_mod] using hcong
+
+/-- 基计数的分布误差 = a=1 的 Pan 分布误差:
+`(baseCount q) − li(N−2)/φ(q) = panDistributionError (N−2) 1 q (N % q)`,
+即 `Δ(N−2; 1, q, N mod q) = π(N−2; q, N mod q) − li(N−2)/φ(q)`. -/
+theorem supportAPBaseCount_distributionError (N q : ℕ) (hN : 2 ≤ N) :
+    ((((Finset.range N).filter (fun p =>
+      p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD q])).card : ℝ)) -
+      AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) / Nat.totient q =
+      AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 q (N % q) := by
+  unfold AnalyticNumberTheory.Sieve.panDistributionError
+  rw [AnalyticNumberTheory.Sieve.primesInAPBelow_one (N - 2) q (N % q)]
+  congr 1
+  · rw [← AnalyticNumberTheory.Sieve.primesInAPBelow_one (N - 2) q (N % q)]
+    exact_mod_cast (supportAPBaseCount_eq_primesInAPBelow N q hN)
+  · simp [Nat.cast_sub hN]
+
+/-- **Möbius 分解下的精确余项** (逐因子分解引理, ant #25): 对 `d | P(N)`,
+`rem d = Σ_{e | F(N)} μ(e)·baseCount(lcm(d,e)) − li(N)/φ(d)`,
+其中 `baseCount(q) = #{p < N : p 素数, 2 ≤ N−p, p ≡ N [MOD q]}` 是素数-AP 基计数.
+主项侧: `ν(d) = 1/φ(d)` (squarefree `d | P`), `totalMass = N/log N = li(N)`. -/
+theorem correctedChenRem_eq_moebiusBaseCount (N d : ℕ)
+    (hd : d ∣ correctedChenSiftingProduct N) :
+    (correctedChenBoundingSieve N).rem d =
+      (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)) -
+      (1 : ℝ) / (Nat.totient d : ℝ) * ((N : ℝ) / log (N : ℝ)) := by
+  rw [correctedChenRem_eq_modEq_count N d]
+  rw [unsiftedPrimeSupport_AP_count_eq_moebiusSum_lcm N d]
+  rw [correctedChenTotalMass_eq N]
+  have hnu : correctedChenNu d = (1 : ℝ) / (Nat.totient d : ℝ) := by
+    unfold correctedChenNu
+    exact AnalyticNumberTheory.Sieve.goldbachNu_squarefree_eq_inv_totient
+      (BoundingSieve.squarefree_of_dvd_prodPrimes (s := correctedChenBoundingSieve N) hd)
+  rw [hnu]
+
+/-- a=1 权重下 `panDistributionSum` 退化为 `panDistributionError`. -/
+theorem panDistributionSum_one_eq_distributionError (y X q l : ℕ) (hX : 1 ≤ X) :
+    AnalyticNumberTheory.Sieve.panDistributionSum y X q l chenPanWeightOne =
+      AnalyticNumberTheory.Sieve.panDistributionError y 1 q l := by
+  unfold AnalyticNumberTheory.Sieve.panDistributionSum
+  rw [Finset.sum_eq_single 1]
+  · have hc : (1 : ℕ).Coprime q := by
+      rw [Nat.coprime_iff_gcd_eq_one]
+      simp
+    simp [chenPanWeightOne, hc]
+  · intro b hb hbne
+    simp [chenPanWeightOne, hbne]
+  · intro hnot
+    exfalso
+    exact hnot (by
+      rw [Finset.mem_range]
+      omega)
+
+/-- 筛积与 `N` 互素: `P(N)` 的素因子均满足 `r ∤ N`. -/
+theorem coprime_siftingProduct_N (N : ℕ) :
+    Nat.Coprime (correctedChenSiftingProduct N) N := by
+  apply Nat.coprime_of_dvd'
+  intro r hr hrP hrN
+  rcases (prime_dvd_correctedChenSiftingProduct hr).mp hrP with ⟨_, _, hrN'⟩
+  exact False.elim (hrN' hrN)
+
+/-- squarefree 模数上 `μ(d)² = 1` (μ(d) = ±1). -/
+theorem moebius_sq_eq_one_of_squarefree {d : ℕ} (hd : Squarefree d) :
+    (((ArithmeticFunction.moebius d : ℤ) : ℝ) ^ 2) = 1 := by
+  have hz : (ArithmeticFunction.moebius d : ℤ) ^ 2 = 1 := by
+    rw [ArithmeticFunction.moebius_sq, if_pos hd]
+  exact_mod_cast hz
+
+/-- `panMaxL` 非负 (它是绝对值的最大值或 0). -/
+theorem panMaxL_nonneg (y X q : ℕ) (f : ℕ → ℝ) :
+    0 ≤ AnalyticNumberTheory.Sieve.panMaxL y X q f := by
+  unfold AnalyticNumberTheory.Sieve.panMaxL
+  by_cases hS : ((Finset.Icc 1 (q - 1)).filter (fun l => l.Coprime q)).Nonempty
+  · rw [dif_pos hS]
+    have hmem : (Finset.image (fun l => |AnalyticNumberTheory.Sieve.panDistributionSum y X q l f|)
+          ((Finset.Icc 1 (q - 1)).filter (fun l => l.Coprime q))).max'
+          (Finset.image_nonempty.mpr hS) ∈
+        (Finset.image (fun l => |AnalyticNumberTheory.Sieve.panDistributionSum y X q l f|)
+          ((Finset.Icc 1 (q - 1)).filter (fun l => l.Coprime q))) :=
+      Finset.max'_mem _ _
+    rcases Finset.mem_image.mp hmem with ⟨l, hl, heq⟩
+    rw [← heq]
+    exact abs_nonneg _
+  · rw [dif_neg hS]
+
+/-- `panMaxY` 非负. -/
+theorem panMaxY_nonneg (X q x : ℕ) (f : ℕ → ℝ) :
+    0 ≤ AnalyticNumberTheory.Sieve.panMaxY X q x f := by
+  unfold AnalyticNumberTheory.Sieve.panMaxY
+  have hmem : AnalyticNumberTheory.Sieve.panMaxL 0 X q f ∈
+      (Finset.range (x + 1)).image (fun y => AnalyticNumberTheory.Sieve.panMaxL y X q f) := by
+    exact Finset.mem_image.mpr ⟨0, by simp, rfl⟩
+  exact le_trans (panMaxL_nonneg 0 X q f) (Finset.le_max' _ _ hmem)
+
+/-- 分布误差的 Pan 控制: 对 `d | P(N)` 与 `2 ≤ d`,
+`|Δ(N−2; 1, d, N mod d)| ≤ panMaxY N d N (a=1 权重)`.
+模数 `d` 与 `N` 互素 (d | P 的素因子均 `∤ N`), 故 `(N mod d, d) = 1`
+落在 `panMaxL` 的 `(l, q) = 1` 最大值范围内. -/
+theorem abs_distributionError_le_panMaxY (N d : ℕ)
+    (hd : d ∣ correctedChenSiftingProduct N) (hd2 : 2 ≤ d) (hN : 2 ≤ N) :
+    |AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)| ≤
+      AnalyticNumberTheory.Sieve.panMaxY N d (Nat.floor (N : ℝ)) chenPanWeightOne := by
+  have hde : |AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)| =
+      |AnalyticNumberTheory.Sieve.panDistributionSum (N - 2) N d (N % d) chenPanWeightOne| := by
+    rw [panDistributionSum_one_eq_distributionError (N - 2) N d (N % d) (by omega : 1 ≤ N)]
+  rw [hde]
+  have hPN : Nat.Coprime (correctedChenSiftingProduct N) N := coprime_siftingProduct_N N
+  have hdN : Nat.Coprime d N := Nat.Coprime.coprime_dvd_left hd hPN
+  have hcop : (N % d).Coprime d := by
+    apply Nat.coprime_of_dvd'
+    intro k hk hk1 hk2
+    have hkN : k ∣ N := by
+      have hkdiv : k ∣ d * (N / d) + N % d :=
+        Nat.dvd_add (by simpa [mul_comm] using (dvd_mul_of_dvd_right hk2 (N / d))) hk1
+      have hNdef : d * (N / d) + N % d = N := by
+        simpa [Nat.add_comm] using (Nat.mod_add_div N d)
+      rw [← hNdef]
+      exact hkdiv
+    exact False.elim (Nat.not_coprime_of_dvd_of_dvd (Nat.Prime.one_lt hk) hk2 hkN hdN)
+  have hmodpos : 0 < N % d := by
+    by_contra hnot
+    have hz : N % d = 0 := by omega
+    have hg : (N % d).gcd d = d := by rw [hz]; simp
+    have hg1 : (N % d).gcd d = 1 := (Nat.coprime_iff_gcd_eq_one.mp hcop)
+    omega
+  have hmodlt : N % d < d := Nat.mod_lt _ (by omega : 0 < d)
+  have hleMY : AnalyticNumberTheory.Sieve.panMaxL (N - 2) N d chenPanWeightOne ≤
+      AnalyticNumberTheory.Sieve.panMaxY N d (Nat.floor (N : ℝ)) chenPanWeightOne := by
+    unfold AnalyticNumberTheory.Sieve.panMaxY
+    exact Finset.le_max' (Finset.image (fun y => AnalyticNumberTheory.Sieve.panMaxL y N d chenPanWeightOne)
+      (Finset.range (Nat.floor (N : ℝ) + 1)))
+      (AnalyticNumberTheory.Sieve.panMaxL (N - 2) N d chenPanWeightOne) (by
+      exact Finset.mem_image.mpr ⟨N - 2, by
+        change N - 2 ∈ Finset.range (Nat.floor (N : ℝ) + 1)
+        have hfl : Nat.floor (N : ℝ) = N := Nat.floor_natCast N
+        rw [hfl]
+        exact Finset.mem_range.mpr (by omega), rfl⟩)
+  exact le_trans (by
+    unfold AnalyticNumberTheory.Sieve.panMaxL
+    let S : Finset ℕ := (Finset.Icc 1 (d - 1)).filter (fun l => l.Coprime d)
+    have hS : S.Nonempty := ⟨1, by
+      rw [Finset.mem_filter]
+      constructor
+      · rw [Finset.mem_Icc]
+        constructor <;> omega
+      · rw [Nat.coprime_iff_gcd_eq_one]
+        simp⟩
+    rw [dif_pos hS]
+    exact Finset.le_max' (Finset.image (fun l => |AnalyticNumberTheory.Sieve.panDistributionSum (N - 2) N d l chenPanWeightOne|) S)
+      |AnalyticNumberTheory.Sieve.panDistributionSum (N - 2) N d (N % d) chenPanWeightOne| (by
+      exact Finset.mem_image.mpr ⟨N % d, by
+        change N % d ∈ (Finset.Icc 1 (d - 1)).filter (fun l => l.Coprime d)
+        rw [Finset.mem_filter]
+        constructor
+        · rw [Finset.mem_Icc]
+          constructor <;> omega
+        · exact hcop, rfl⟩)
+    ) hleMY
+
+
+/-- **支撑/截断输入** (ant #25 的 `htrunc` 设计): 加权 Pan 均值定理的模数和
+(`q ≤ x^{1/2}/log^B x`) 未覆盖的陈氏余项部分 — 大模数 (`d > D`) 与
+`d = 1` 的分布误差 `|Δ'(d)|`, 以及 `|rem d − Δ'(d)|` (Möbius 校正项
+`Σ_{1≠e|F} μ(e)·baseCount(lcm(d,e))` 与主项差 `(li(N)−li(N−2))/φ(d)`) —
+被 `C·N/log^A N` 一致控制. 经典来源: Pan 1963 / Halberstam–Richert
+Ch.10 的支撑截断 (Liu 2022 §IV 的 `R₁` 修正); 其证明 (Titchmarsh 型平均
+与大模数素数-AP 计数) 是研究级输入, 与 `PanMeanValueUniform` 一样作为
+显式假设消费. -/
+def CorrectedChenPanTruncationInput : Prop :=
+  ∀ A : ℝ, 0 < A → ∀ B : ℝ, ∃ C : ℝ, 0 < C ∧ ∃ x₀ : ℕ,
+    ∀ N : ℕ, x₀ ≤ N → Even N →
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        (3 : ℝ) ^ d.primeFactors.card *
+          |(correctedChenBoundingSieve N).rem d -
+            AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) +
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d =>
+          ¬ (2 ≤ d ∧ d ≤ Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ B))),
+        (3 : ℝ) ^ d.primeFactors.card *
+          |AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) ≤
+        C * (N : ℝ) / (log (N : ℝ)) ^ A
+
+/-- 陈氏加权余项和的归约: 对 `N ≥ 1000`, 对任意 `B`,
+`Σ_{d | P(N)} 3^{ω(d)}·|rem d| ≤ PanSum(N,B) + Trunc(N,B)`,
+其中 `PanSum` 是 `PanMeanValueUniform` 的 panMaxY 加权模数和 (hpan 控制),
+`Trunc` 是 `CorrectedChenPanTruncationInput` 控制的两部分余项
+(`|rem d − Δ'(d)|` 与未覆盖模数的 `|Δ'(d)|`). -/
+theorem correctedChenPanSum_reduction (N : ℕ) (hN : 1000 ≤ N) (B : ℝ) :
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card *
+        |(correctedChenBoundingSieve N).rem d|) ≤
+      (∑ q ∈ Finset.range (Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ B) + 1),
+        ((μ q : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ q.primeFactors.card *
+          AnalyticNumberTheory.Sieve.panMaxY N q (Nat.floor (N : ℝ)) chenPanWeightOne) +
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        (3 : ℝ) ^ d.primeFactors.card *
+          |(correctedChenBoundingSieve N).rem d -
+            AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) +
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d =>
+          ¬ (2 ≤ d ∧ d ≤ Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ B))),
+        (3 : ℝ) ^ d.primeFactors.card *
+          |AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) := by
+  classical
+  let D : ℕ := Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ B)
+  let Δ' : ℕ → ℝ := fun d => AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)
+  let covered : Finset ℕ := (correctedChenSiftingProduct N).divisors.filter (fun d => 2 ≤ d ∧ d ≤ D)
+  have hN2 : 2 ≤ N := by omega
+  have htri : ∀ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d| ≤
+        (3 : ℝ) ^ d.primeFactors.card * (|Δ' d| + |(correctedChenBoundingSieve N).rem d - Δ' d|) := by
+    intro d hd
+    have hle : |(correctedChenBoundingSieve N).rem d| ≤ |Δ' d| + |(correctedChenBoundingSieve N).rem d - Δ' d| := by
+      have hsub : (correctedChenBoundingSieve N).rem d = Δ' d + ((correctedChenBoundingSieve N).rem d - Δ' d) := by
+        ring
+      nth_rewrite 1 [hsub]
+      rw [abs_le]
+      constructor
+      · have h1 : -|Δ' d| ≤ Δ' d := by
+          have h := neg_le_abs (Δ' d)
+          linarith
+        have h2 : -|(correctedChenBoundingSieve N).rem d - Δ' d| ≤
+            (correctedChenBoundingSieve N).rem d - Δ' d := by
+          have h := neg_le_abs ((correctedChenBoundingSieve N).rem d - Δ' d)
+          linarith
+        linarith
+      · have h1 : Δ' d ≤ |Δ' d| := le_abs_self (Δ' d)
+        have h2 : (correctedChenBoundingSieve N).rem d - Δ' d ≤
+            |(correctedChenBoundingSieve N).rem d - Δ' d| :=
+          le_abs_self ((correctedChenBoundingSieve N).rem d - Δ' d)
+        linarith
+    exact mul_le_mul_of_nonneg_left hle (by positivity : 0 ≤ (3 : ℝ) ^ d.primeFactors.card)
+  have hsum1 : (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d|) ≤
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * (|Δ' d| + |(correctedChenBoundingSieve N).rem d - Δ' d|)) := by
+    exact Finset.sum_le_sum htri
+  have hsum2 : (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * (|Δ' d| + |(correctedChenBoundingSieve N).rem d - Δ' d|)) =
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) +
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d - Δ' d|) := by
+    calc
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+          (3 : ℝ) ^ d.primeFactors.card * (|Δ' d| + |(correctedChenBoundingSieve N).rem d - Δ' d|))
+          = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+              ((3 : ℝ) ^ d.primeFactors.card * |Δ' d| +
+                (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d - Δ' d|)) := by
+            apply Finset.sum_congr rfl
+            intro d hd
+            ring
+      _ = (∑ d ∈ (correctedChenSiftingProduct N).divisors, (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) +
+            (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+              (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d - Δ' d|) := by
+            rw [Finset.sum_add_distrib]
+  have hcov : (∑ d ∈ covered, (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) ≤
+      (∑ q ∈ Finset.range (D + 1),
+        ((μ q : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ q.primeFactors.card *
+          AnalyticNumberTheory.Sieve.panMaxY N q (Nat.floor (N : ℝ)) chenPanWeightOne) := by
+    have hterm : ∀ d ∈ covered,
+        (3 : ℝ) ^ d.primeFactors.card * |Δ' d| ≤
+          ((μ d : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ d.primeFactors.card *
+            AnalyticNumberTheory.Sieve.panMaxY N d (Nat.floor (N : ℝ)) chenPanWeightOne := by
+      intro d hd
+      rcases Finset.mem_filter.mp hd with ⟨hdmem, hcond⟩
+      have hdvd : d ∣ correctedChenSiftingProduct N := (Nat.mem_divisors.mp hdmem).1
+      have hd2 : 2 ≤ d := hcond.1
+      have hle1 := abs_distributionError_le_panMaxY N d hdvd hd2 hN2
+      have hsq : Squarefree d :=
+        BoundingSieve.squarefree_of_dvd_prodPrimes (s := correctedChenBoundingSieve N) hdvd
+      have hmu2 : ((μ d : ℤ) : ℝ) ^ 2 = 1 := moebius_sq_eq_one_of_squarefree hsq
+      calc
+        (3 : ℝ) ^ d.primeFactors.card * |Δ' d|
+            ≤ (3 : ℝ) ^ d.primeFactors.card *
+                AnalyticNumberTheory.Sieve.panMaxY N d (Nat.floor (N : ℝ)) chenPanWeightOne := by
+              exact mul_le_mul_of_nonneg_left hle1 (by positivity : 0 ≤ (3 : ℝ) ^ d.primeFactors.card)
+        _ = ((μ d : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ d.primeFactors.card *
+              AnalyticNumberTheory.Sieve.panMaxY N d (Nat.floor (N : ℝ)) chenPanWeightOne := by
+              rw [hmu2]
+              ring
+    have hsumcov : (∑ d ∈ covered, (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) ≤
+        (∑ d ∈ covered, ((μ d : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ d.primeFactors.card *
+          AnalyticNumberTheory.Sieve.panMaxY N d (Nat.floor (N : ℝ)) chenPanWeightOne) := by
+      exact Finset.sum_le_sum hterm
+    have hsubset : covered ⊆ Finset.range (D + 1) := by
+      intro d hd
+      rw [Finset.mem_range]
+      rcases Finset.mem_filter.mp hd with ⟨hdmem, hcond⟩
+      omega
+    have hnonneg : ∀ q ∈ Finset.range (D + 1), q ∉ covered →
+        0 ≤ ((μ q : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ q.primeFactors.card *
+          AnalyticNumberTheory.Sieve.panMaxY N q (Nat.floor (N : ℝ)) chenPanWeightOne := by
+      intro q hq hnot
+      exact mul_nonneg (mul_nonneg (by positivity : 0 ≤ ((μ q : ℤ) : ℝ) ^ 2)
+        (by positivity : 0 ≤ (3 : ℝ) ^ q.primeFactors.card))
+        (panMaxY_nonneg N q (Nat.floor (N : ℝ)) chenPanWeightOne)
+    exact le_trans hsumcov (Finset.sum_le_sum_of_subset_of_nonneg hsubset hnonneg)
+  have hsplit : (∑ d ∈ (correctedChenSiftingProduct N).divisors, (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) =
+      (∑ d ∈ covered, (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) +
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d => ¬ (2 ≤ d ∧ d ≤ D)),
+        (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) := by
+    rw [← Finset.sum_filter_add_sum_filter_not (correctedChenSiftingProduct N).divisors
+      (fun d => 2 ≤ d ∧ d ≤ D) (fun d => (3 : ℝ) ^ d.primeFactors.card * |Δ' d|)]
+  calc
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d|)
+        ≤ (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            (3 : ℝ) ^ d.primeFactors.card * (|Δ' d| + |(correctedChenBoundingSieve N).rem d - Δ' d|)) := hsum1
+    _ = (∑ d ∈ (correctedChenSiftingProduct N).divisors, (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) +
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d - Δ' d|) := hsum2
+    _ = ((∑ d ∈ covered, (3 : ℝ) ^ d.primeFactors.card * |Δ' d|) +
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d => ¬ (2 ≤ d ∧ d ≤ D)),
+            (3 : ℝ) ^ d.primeFactors.card * |Δ' d|)) +
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d - Δ' d|) := by
+            rw [hsplit]
+    _ ≤ ((∑ q ∈ Finset.range (D + 1), ((μ q : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ q.primeFactors.card *
+              AnalyticNumberTheory.Sieve.panMaxY N q (Nat.floor (N : ℝ)) chenPanWeightOne) +
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d => ¬ (2 ≤ d ∧ d ≤ D)),
+            (3 : ℝ) ^ d.primeFactors.card * |Δ' d|)) +
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d - Δ' d|) := by
+            nlinarith [hcov]
+    _ = (∑ q ∈ Finset.range (D + 1), ((μ q : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ q.primeFactors.card *
+              AnalyticNumberTheory.Sieve.panMaxY N q (Nat.floor (N : ℝ)) chenPanWeightOne) +
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d - Δ' d|) +
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d =>
+              ¬ (2 ≤ d ∧ d ≤ Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ B))),
+            (3 : ℝ) ^ d.primeFactors.card *
+              |AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) := by
+            ring
+
+
+/-- 平凡余项界: 对 `d | P(N)` 与 `N ≥ 1000`,
+`|rem d| ≤ (1 + 1/log 1000)·N` (支撑基数 ≤ N, `ν(d) = 1/φ(d) ≤ 1`,
+`N/logN ≤ N/log 1000`). -/
+theorem abs_rem_le_const_mul_N (N d : ℕ) (hN : 1000 ≤ N) (hd : d ∣ correctedChenSiftingProduct N) :
+    |(correctedChenBoundingSieve N).rem d| ≤ (1 + 1 / Real.log 1000) * (N : ℝ) := by
+  have hlog1000 : 0 < Real.log 1000 := Real.log_pos (by norm_num : (1 : ℝ) < (1000 : ℝ))
+  have hlogN : Real.log 1000 ≤ Real.log (N : ℝ) :=
+    Real.log_le_log (by norm_num : 0 < (1000 : ℝ)) (by exact_mod_cast hN)
+  have hsq : Squarefree d := BoundingSieve.squarefree_of_dvd_prodPrimes (s := correctedChenBoundingSieve N) hd
+  have hnu : correctedChenNu d = (1 : ℝ) / (Nat.totient d : ℝ) := by
+    unfold correctedChenNu
+    exact AnalyticNumberTheory.Sieve.goldbachNu_squarefree_eq_inv_totient hsq
+  have hφ0 : 0 < Nat.totient d := by
+    have hP0 : 0 < correctedChenSiftingProduct N := by
+      unfold correctedChenSiftingProduct
+      exact Finset.prod_pos (by intro r hr; exact (Finset.mem_filter.mp hr).2.1.pos)
+    exact (Nat.totient_pos).mpr (Nat.pos_of_dvd_of_pos hd hP0)
+  have hφr : (0 : ℝ) < (Nat.totient d : ℝ) := by exact_mod_cast hφ0
+  have hX0 : 0 ≤ (correctedChenBoundingSieve N).totalMass := by
+    rw [correctedChenTotalMass_eq N]
+    exact div_nonneg (by positivity : 0 ≤ (N : ℝ)) (Real.log_nonneg (by exact_mod_cast (by omega : 1 ≤ N)))
+  have h1 : (correctedChenBoundingSieve N).multSum d ≤ (N : ℝ) := by
+    unfold BoundingSieve.multSum
+    have hw : (correctedChenBoundingSieve N).weights = fun _ => 1 := rfl
+    have hc2 : (correctedChenUnsiftedComplements N).card ≤ N := by
+      calc
+        (correctedChenUnsiftedComplements N).card
+            ≤ ((Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+                ∀ r : ℕ, r.Prime → r < correctedChenZ N → (r ≤ 2 ∨ r ∣ N) → ¬ r ∣ N - p)).card :=
+              Finset.card_image_le
+        _ ≤ (Finset.range N).card := Finset.card_le_card (Finset.filter_subset _ _)
+        _ = N := Finset.card_range N
+    calc
+      (∑ n ∈ (correctedChenBoundingSieve N).support, if d ∣ n then (correctedChenBoundingSieve N).weights n else 0)
+          = (∑ n ∈ (correctedChenBoundingSieve N).support, if d ∣ n then (1 : ℝ) else 0) := by
+            apply Finset.sum_congr rfl
+            intro n hn
+            rw [hw]
+      _ = ({n ∈ (correctedChenBoundingSieve N).support | d ∣ n}.card : ℝ) := by
+            rw [Finset.sum_boole]
+      _ = ({n ∈ correctedChenUnsiftedComplements N | d ∣ n}.card : ℝ) := rfl
+      _ ≤ ((correctedChenUnsiftedComplements N).card : ℝ) := by
+            exact_mod_cast (Finset.card_le_card (Finset.filter_subset _ _))
+      _ ≤ (N : ℝ) := by
+            exact_mod_cast hc2
+  have h2 : correctedChenNu d * (correctedChenBoundingSieve N).totalMass ≤ (N : ℝ) / Real.log 1000 := by
+    have hnu1 : correctedChenNu d ≤ 1 := by
+      rw [hnu]
+      have hφ1 : (1 : ℝ) ≤ (Nat.totient d : ℝ) := by exact_mod_cast (show 1 ≤ Nat.totient d by omega)
+      exact (div_le_iff₀ hφr).mpr (by nlinarith)
+    have hX : (correctedChenBoundingSieve N).totalMass ≤ (N : ℝ) / Real.log 1000 := by
+      rw [correctedChenTotalMass_eq N]
+      rw [div_le_div_iff₀ (Real.log_pos (by exact_mod_cast (by omega : 1 < N))) hlog1000]
+      have hposN : 0 ≤ (N : ℝ) := by positivity
+      exact mul_le_mul_of_nonneg_left hlogN hposN
+    exact le_trans (by simpa using (mul_le_mul_of_nonneg_right hnu1 hX0)) hX
+  have hle : |(correctedChenBoundingSieve N).rem d| ≤
+      (correctedChenBoundingSieve N).multSum d + correctedChenNu d * (correctedChenBoundingSieve N).totalMass := by
+    unfold BoundingSieve.rem
+    change |(correctedChenBoundingSieve N).multSum d - correctedChenNu d * (correctedChenBoundingSieve N).totalMass| ≤
+      (correctedChenBoundingSieve N).multSum d + correctedChenNu d * (correctedChenBoundingSieve N).totalMass
+    have hnon1 : 0 ≤ (correctedChenBoundingSieve N).multSum d := by
+      unfold BoundingSieve.multSum
+      apply Finset.sum_nonneg
+      intro n hn
+      by_cases h : d ∣ n
+      · simpa [h] using (correctedChenBoundingSieve N).weights_nonneg n
+      · simp [h]
+    have hnon2 : 0 ≤ correctedChenNu d * (correctedChenBoundingSieve N).totalMass := by
+      have hnu0 : 0 ≤ correctedChenNu d := by
+        rw [hnu]
+        exact div_nonneg (by norm_num) (by exact_mod_cast (le_of_lt hφ0))
+      exact mul_nonneg hnu0 hX0
+    rw [abs_le]
+    constructor
+    · nlinarith [hnon1]
+    · nlinarith [hnon2]
+  calc
+    |(correctedChenBoundingSieve N).rem d|
+        ≤ (correctedChenBoundingSieve N).multSum d + correctedChenNu d * (correctedChenBoundingSieve N).totalMass := hle
+    _ ≤ (N : ℝ) + (N : ℝ) / Real.log 1000 := add_le_add h1 h2
+    _ = (1 + 1 / Real.log 1000) * (N : ℝ) := by ring
+
+/-- 除数和: 对 squarefree `P`, `Σ_{d | P} 3^{ω(d)} ≤ 6^{ω(P)}`. -/
+theorem threeOmegaDivisorSum_le_sixOmega (P : ℕ) (hP : Squarefree P) (hP0 : P ≠ 0) :
+    (∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card) ≤ (6 : ℝ) ^ P.primeFactors.card := by
+  have hωle : ∀ d ∈ P.divisors, d.primeFactors.card ≤ P.primeFactors.card := by
+    intro d hd
+    exact Finset.card_le_card (Nat.primeFactors_mono (Nat.dvd_of_mem_divisors hd) hP0)
+  have hτ : P.divisors.card = 2 ^ P.primeFactors.card := by
+    have hc := Nat.card_divisors hP0
+    rw [hc]
+    have hfac : ∀ p ∈ P.primeFactors, P.factorization p + 1 = 2 := by
+      intro p hp
+      have hf : P.factorization p = 1 :=
+        Nat.factorization_eq_one_of_squarefree hP (Nat.prime_of_mem_primeFactors hp) (Nat.dvd_of_mem_primeFactors hp)
+      omega
+    rw [Finset.prod_congr rfl (by intro p hp; rw [hfac p hp])]
+    exact Finset.prod_eq_pow_card (by intro p hp; norm_num)
+  calc
+    (∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card)
+        ≤ (∑ d ∈ P.divisors, (3 : ℝ) ^ P.primeFactors.card) := by
+          apply Finset.sum_le_sum
+          intro d hd
+          exact pow_le_pow_right₀ (by norm_num : 1 ≤ (3 : ℝ)) (hωle d hd)
+    _ = (P.divisors.card : ℝ) * (3 : ℝ) ^ P.primeFactors.card := by
+          rw [Finset.sum_const, nsmul_eq_mul]
+    _ = (2 : ℝ) ^ P.primeFactors.card * (3 : ℝ) ^ P.primeFactors.card := by
+          have hτr : (P.divisors.card : ℝ) = (2 : ℝ) ^ P.primeFactors.card := by exact_mod_cast hτ
+          rw [hτr]
+    _ = (6 : ℝ) ^ P.primeFactors.card := by
+          rw [← mul_pow]
+          norm_num
+
+/-- 筛积除数加权和: `Σ_{d | P(N)} 3^{ω(d)} ≤ 6^{z(N)}`. -/
+theorem threeOmegaDivisorSum_siftingProduct_le_sixPowZ (N : ℕ) :
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors, (3 : ℝ) ^ d.primeFactors.card) ≤
+      (6 : ℝ) ^ correctedChenZ N := by
+  have hle1 := threeOmegaDivisorSum_le_sixOmega (correctedChenSiftingProduct N)
+    (correctedChenSiftingProduct_squarefree N) (correctedChenSiftingProduct_ne_zero N)
+  have hω : (correctedChenSiftingProduct N).primeFactors.card ≤ correctedChenZ N := by
+    rw [correctedChenSiftingProduct_primeFactors N]
+    exact le_trans (Finset.card_le_card (Finset.filter_subset _ _)) (by simp)
+  exact le_trans hle1 (pow_le_pow_right₀ (by norm_num : 1 ≤ (6 : ℝ)) hω)
+
+/-- `z(N) ≤ z(x₀)` 对 `N ≤ x₀` (对数幂单调 + floor 单调). -/
+theorem correctedChenZ_le_of_le (N x₀ : ℕ) (hNx : N ≤ x₀) :
+    correctedChenZ N ≤ correctedChenZ x₀ := by
+  unfold correctedChenZ
+  exact max_le_max le_rfl (Nat.floor_le_floor (Real.rpow_le_rpow (by positivity : 0 ≤ (N : ℝ))
+    (by exact_mod_cast hNx) (by norm_num : 0 ≤ (1 / 10 : ℝ))))
+
+/-- 小 `N` 段 (1000 ≤ N < x₀) 的平凡余项和上界:
+`Σ_{d | P(N)} 3^{ω(d)}·|rem d| ≤ 6^{z(x₀)}·(1 + 1/log 1000)·N`. -/
+theorem correctedChenPanSum_small_bound (N x₀ : ℕ) (hN : 1000 ≤ N) (hNx : N ≤ x₀) :
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d|) ≤
+      (6 : ℝ) ^ correctedChenZ x₀ * ((1 + 1 / Real.log 1000) * (N : ℝ)) := by
+  have hrem : ∀ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d| ≤
+        (3 : ℝ) ^ d.primeFactors.card * ((1 + 1 / Real.log 1000) * (N : ℝ)) := by
+    intro d hd
+    exact mul_le_mul_of_nonneg_left (abs_rem_le_const_mul_N N d hN (Nat.dvd_of_mem_divisors hd))
+      (by positivity : 0 ≤ (3 : ℝ) ^ d.primeFactors.card)
+  have hsum : (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d|) ≤
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * ((1 + 1 / Real.log 1000) * (N : ℝ))) := by
+    exact Finset.sum_le_sum hrem
+  have h6 : (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card * ((1 + 1 / Real.log 1000) * (N : ℝ))) ≤
+      (6 : ℝ) ^ correctedChenZ N * ((1 + 1 / Real.log 1000) * (N : ℝ)) := by
+    rw [← Finset.sum_mul]
+    exact mul_le_mul_of_nonneg_right (threeOmegaDivisorSum_siftingProduct_le_sixPowZ N)
+      (by positivity : 0 ≤ (1 + 1 / Real.log 1000) * (N : ℝ))
+  have hz : correctedChenZ N ≤ correctedChenZ x₀ := correctedChenZ_le_of_le N x₀ hNx
+  have h6z : (6 : ℝ) ^ correctedChenZ N * ((1 + 1 / Real.log 1000) * (N : ℝ)) ≤
+      (6 : ℝ) ^ correctedChenZ x₀ * ((1 + 1 / Real.log 1000) * (N : ℝ)) := by
+    exact mul_le_mul_of_nonneg_right (pow_le_pow_right₀ (by norm_num : 1 ≤ (6 : ℝ)) hz)
+      (by positivity : 0 ≤ (1 + 1 / Real.log 1000) * (N : ℝ))
+  exact le_trans hsum (le_trans h6 h6z)
+
+/-- **Pan 桥收官定理** (ant #25 / chen #6, #9 链的收尾): 经典加权 Pan 均值定理
+(a=1 实例) + 支撑截断输入 ⇒ 陈氏加权 Pan 输入 `ChenWeightedPanInput`.
+归约链 (`correctedChenPanSum_reduction`): 陈氏余项和
+`Σ_d 3^{ω(d)}|rem d| ≤ PanSum + Trunc` — `PanSum` 由 `hpan`
+(`PanMeanValueUniform`) 控制, `Trunc` 由 `htrunc`
+(`CorrectedChenPanTruncationInput`) 控制; `N < x₀` 的有限段由平凡界吸收.
+`PanMeanValueUniform` 的证明是开放研究目标 (ant #15), 此处只消费其陈述. -/
+theorem correctedChenPanInput_of_panMeanValueUniform
+    (hpan : AnalyticNumberTheory.Sieve.PanMeanValueUniform (fun N : ℕ => (N : ℝ)) chenPanWeightOne)
+    (htrunc : CorrectedChenPanTruncationInput) :
+    ChenWeightedPanInput := by
+  intro A hA
+  rcases hpan A hA with ⟨Cpan, hCpan, Bpan, x₀pan, hpanN⟩
+  rcases htrunc A hA Bpan with ⟨Ctr, hCtr, x₀tr, htruncN⟩
+  let x₀ : ℕ := max x₀pan x₀tr
+  let z₀ : ℕ := max 2 (Nat.floor ((x₀ : ℝ) ^ (1 / 10 : ℝ)))
+  let Csmall : ℝ := (6 : ℝ) ^ z₀ * (1 + 1 / Real.log 1000) * (Real.log (x₀ : ℝ)) ^ A
+  let C : ℝ := Cpan + Ctr + Csmall
+  refine ⟨C, ?_, ?_⟩
+  · have hz₀ : 0 ≤ (6 : ℝ) ^ z₀ := by positivity
+    have hc : 0 ≤ 1 + 1 / Real.log 1000 := by
+      have hlog1000 : 0 < Real.log 1000 := Real.log_pos (by norm_num : (1 : ℝ) < (1000 : ℝ))
+      positivity
+    have hlogx₀ : 0 ≤ (Real.log (x₀ : ℝ)) ^ A := by
+      apply Real.rpow_nonneg
+      by_cases h : (x₀ : ℕ) = 0
+      · simp [h, Real.log_zero, Real.zero_rpow (ne_of_gt hA)]
+      · have hx₀ : 1 ≤ (x₀ : ℝ) := by exact_mod_cast (Nat.succ_le_of_lt (Nat.pos_of_ne_zero h))
+        exact Real.log_nonneg hx₀
+    have hcs : 0 ≤ Csmall := by
+      dsimp [Csmall]
+      exact mul_nonneg (mul_nonneg hz₀ hc) hlogx₀
+    dsimp [C]
+    nlinarith
+  · intro N hN1000 hEven
+    by_cases hbig : x₀ ≤ N
+    · have hred := correctedChenPanSum_reduction N hN1000 Bpan
+      have hpanN' : (∑ q ∈ Finset.range (Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ Bpan) + 1),
+            ((μ q : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ q.primeFactors.card *
+              AnalyticNumberTheory.Sieve.panMaxY N q (Nat.floor (N : ℝ)) chenPanWeightOne) ≤
+          Cpan * (N : ℝ) / (log (N : ℝ)) ^ A := by
+        exact hpanN N (le_trans (le_max_left x₀pan x₀tr) hbig)
+      have htruncN' : (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            (3 : ℝ) ^ d.primeFactors.card *
+              |(correctedChenBoundingSieve N).rem d -
+                AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) +
+            (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d =>
+                ¬ (2 ≤ d ∧ d ≤ Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ Bpan))),
+              (3 : ℝ) ^ d.primeFactors.card *
+                |AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) ≤
+          Ctr * (N : ℝ) / (log (N : ℝ)) ^ A := by
+        exact htruncN N (le_trans (le_max_right x₀pan x₀tr) hbig) hEven
+      have hbound : AnalyticNumberTheory.Sieve.weightedPanRemainder (correctedChenBoundingSieve N)
+            (fun d => (3 : ℝ) ^ d.primeFactors.card) ≤ C * (N : ℝ) / (log (N : ℝ)) ^ A := by
+        calc
+          AnalyticNumberTheory.Sieve.weightedPanRemainder (correctedChenBoundingSieve N)
+              (fun d => (3 : ℝ) ^ d.primeFactors.card)
+              = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                  (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d|) := by
+                  rfl
+          _ ≤ (∑ q ∈ Finset.range (Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ Bpan) + 1),
+                  ((μ q : ℤ) : ℝ) ^ 2 * (3 : ℝ) ^ q.primeFactors.card *
+                    AnalyticNumberTheory.Sieve.panMaxY N q (Nat.floor (N : ℝ)) chenPanWeightOne) +
+                (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                  (3 : ℝ) ^ d.primeFactors.card *
+                    |(correctedChenBoundingSieve N).rem d -
+                      AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) +
+                (∑ d ∈ (correctedChenSiftingProduct N).divisors.filter (fun d =>
+                    ¬ (2 ≤ d ∧ d ≤ Nat.floor ((N : ℝ) ^ (1 / 2 : ℝ) / (log (N : ℝ)) ^ Bpan))),
+                  (3 : ℝ) ^ d.primeFactors.card *
+                    |AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)|) := hred
+          _ ≤ Cpan * (N : ℝ) / (log (N : ℝ)) ^ A + Ctr * (N : ℝ) / (log (N : ℝ)) ^ A := by
+                nlinarith [hpanN', htruncN']
+          _ = (Cpan + Ctr) * (N : ℝ) / (log (N : ℝ)) ^ A := by ring
+          _ ≤ C * (N : ℝ) / (log (N : ℝ)) ^ A := by
+                have hcs : 0 ≤ Csmall := by
+                  have hz₀ : 0 ≤ (6 : ℝ) ^ z₀ := by positivity
+                  have hc : 0 ≤ 1 + 1 / Real.log 1000 := by
+                    have hlog1000 : 0 < Real.log 1000 := Real.log_pos (by norm_num : (1 : ℝ) < (1000 : ℝ))
+                    positivity
+                  have hlogx₀ : 0 ≤ (Real.log (x₀ : ℝ)) ^ A := by
+                    apply Real.rpow_nonneg
+                    by_cases h : (x₀ : ℕ) = 0
+                    · simp [h, Real.log_zero, Real.zero_rpow (ne_of_gt hA)]
+                    · exact Real.log_nonneg (by exact_mod_cast (Nat.succ_le_of_lt (Nat.pos_of_ne_zero h)))
+                  dsimp [Csmall]
+                  exact mul_nonneg (mul_nonneg hz₀ hc) hlogx₀
+                have hcle : Cpan + Ctr ≤ C := by
+                  dsimp [C]
+                  nlinarith
+                have hNdiv : 0 ≤ (N : ℝ) / (log (N : ℝ)) ^ A := by
+                  have hlogN0 : 0 ≤ Real.log (N : ℝ) := Real.log_nonneg (by exact_mod_cast (by omega : 1 ≤ N))
+                  exact div_nonneg (by positivity : 0 ≤ (N : ℝ)) (Real.rpow_nonneg hlogN0 A)
+                have hle2 : (Cpan + Ctr) * ((N : ℝ) / (log (N : ℝ)) ^ A) ≤ C * ((N : ℝ) / (log (N : ℝ)) ^ A) :=
+                  mul_le_mul_of_nonneg_right hcle hNdiv
+                simpa [div_eq_mul_inv, mul_assoc] using hle2
+      exact hbound
+    · have hNlt : N < x₀ := by omega
+      have hNle : N ≤ x₀ := by omega
+      have hsmall := correctedChenPanSum_small_bound N x₀ hN1000 hNle
+      have hz₀ : (6 : ℝ) ^ correctedChenZ x₀ = (6 : ℝ) ^ z₀ := rfl
+      have hmain : (6 : ℝ) ^ correctedChenZ x₀ * ((1 + 1 / Real.log 1000) * (N : ℝ)) ≤
+          C * (N : ℝ) / (log (N : ℝ)) ^ A := by
+        have hlog1000 : 0 < Real.log 1000 := Real.log_pos (by norm_num : (1 : ℝ) < (1000 : ℝ))
+        have hcpos : 0 < 1 + 1 / Real.log 1000 := by positivity
+        have hNpos : 0 < (N : ℝ) := by exact_mod_cast (by omega : 0 < N)
+        have hlogN0 : 0 < Real.log (N : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < N))
+        have hlogx0 : 0 < Real.log (x₀ : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < x₀))
+        have hpowle : (Real.log (N : ℝ)) ^ A ≤ (Real.log (x₀ : ℝ)) ^ A :=
+          Real.rpow_le_rpow (le_of_lt hlogN0) (Real.log_le_log hNpos (by exact_mod_cast hNle)) (le_of_lt hA)
+        have hb : 1 ≤ (Real.log (x₀ : ℝ)) ^ A / (Real.log (N : ℝ)) ^ A := by
+          rw [le_div_iff₀ (Real.rpow_pos_of_pos hlogN0 A)]
+          simpa using hpowle
+        calc
+          (6 : ℝ) ^ correctedChenZ x₀ * ((1 + 1 / Real.log 1000) * (N : ℝ))
+              = (6 : ℝ) ^ z₀ * ((1 + 1 / Real.log 1000) * (N : ℝ)) := by rw [hz₀]
+          _ = (6 : ℝ) ^ z₀ * (1 + 1 / Real.log 1000) * (N : ℝ) := by ring
+          _ = (6 : ℝ) ^ z₀ * (1 + 1 / Real.log 1000) * (N : ℝ) * 1 := by ring
+          _ ≤ (6 : ℝ) ^ z₀ * (1 + 1 / Real.log 1000) * (N : ℝ) *
+                ((Real.log (x₀ : ℝ)) ^ A / (Real.log (N : ℝ)) ^ A) := by
+                have hnon : 0 ≤ (6 : ℝ) ^ z₀ * (1 + 1 / Real.log 1000) * (N : ℝ) := by positivity
+                exact mul_le_mul_of_nonneg_left hb hnon
+          _ = Csmall * (N : ℝ) / (log (N : ℝ)) ^ A := by
+                dsimp [Csmall]
+                ring
+          _ ≤ C * (N : ℝ) / (log (N : ℝ)) ^ A := by
+                have hcs : 0 ≤ Csmall := by
+                  have hz₀n : 0 ≤ (6 : ℝ) ^ z₀ := by positivity
+                  have hcn : 0 ≤ 1 + 1 / Real.log 1000 := le_of_lt hcpos
+                  have hlogx₀n : 0 ≤ (Real.log (x₀ : ℝ)) ^ A := le_of_lt (Real.rpow_pos_of_pos hlogx0 A)
+                  dsimp [Csmall]
+                  exact mul_nonneg (mul_nonneg hz₀n hcn) hlogx₀n
+                have hcle : Csmall ≤ C := by
+                  dsimp [C]
+                  nlinarith [hCpan, hCtr, hcs]
+                have hNdiv : 0 ≤ (N : ℝ) / (log (N : ℝ)) ^ A := by
+                  exact div_nonneg (le_of_lt hNpos) (Real.rpow_nonneg (le_of_lt hlogN0) A)
+                have hle2 : Csmall * ((N : ℝ) / (log (N : ℝ)) ^ A) ≤ C * ((N : ℝ) / (log (N : ℝ)) ^ A) :=
+                  mul_le_mul_of_nonneg_right hcle hNdiv
+                simpa [div_eq_mul_inv, mul_assoc] using hle2
+      have hbound : AnalyticNumberTheory.Sieve.weightedPanRemainder (correctedChenBoundingSieve N)
+            (fun d => (3 : ℝ) ^ d.primeFactors.card) ≤ C * (N : ℝ) / (log (N : ℝ)) ^ A := by
+        calc
+          AnalyticNumberTheory.Sieve.weightedPanRemainder (correctedChenBoundingSieve N)
+              (fun d => (3 : ℝ) ^ d.primeFactors.card)
+              = ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                  (3 : ℝ) ^ d.primeFactors.card * |(correctedChenBoundingSieve N).rem d| := by
+                  rfl
+          _ ≤ (6 : ℝ) ^ correctedChenZ x₀ * ((1 + 1 / Real.log 1000) * (N : ℝ)) := hsmall
+          _ ≤ C * (N : ℝ) / (log (N : ℝ)) ^ A := hmain
+      exact hbound
 
 /-- The corrected candidate count is at least the lower-sieve main term minus
 the explicit `errSum`: the finite seam through which a uniform
