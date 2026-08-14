@@ -1,6 +1,7 @@
 import MathlibNt.ChensTheorem
 import MathlibNt.SieveTheory.BombieriVinogradov
 import MathlibNt.SieveTheory.LinearSieve
+import MathlibNt.SieveTheory.TripleMain
 
 /-!
 # Public build root

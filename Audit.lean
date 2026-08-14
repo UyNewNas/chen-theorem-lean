@@ -1,5 +1,6 @@
 import MathlibNt.ChensTheorem
 import MathlibNt.SieveTheory.LinearSieve
+import MathlibNt.SieveTheory.TripleMain
 
 /-!
 # Kernel trust audit
@@ -169,3 +170,22 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenZ_le_of_le
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenPanSum_small_bound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenPanInput_of_panMeanValueUniform
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPrimePairInput
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingCount_eq_zero_of_N_lt_z_mul
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingCount_sum_eq_z_region
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.totient_mul_prime_ge_quarter
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.one_div_totient_mul_prime_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenZ_ge_root_half
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.log_ge_110_log_two
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenZ_log_ge_logN_div_twenty
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenY_le_two_mul_root
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenY_log_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenY_log_ge
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenY_le_N
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenZ_ge_three
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenZ_lt_Y
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.hTripleMain_one_div_log_z_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.hTripleMain_log_y_div_log_z_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.hTripleMain_log_N_div_log_y_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.hTripleMain_pair_bound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.hTripleMain_of_primePairInput
