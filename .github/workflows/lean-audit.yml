@@ -41,8 +41,13 @@ jobs:
           lake build > /tmp/build.log 2>&1
           status=$?
           if [ $status -ne 0 ]; then
-            python3 -c "lines = [l for l in open('/tmp/build.log', encoding='utf-8', errors='replace') if 'error:' in l]; print('::error::BUILD FAILED, ' + str(len(lines)) + ' error lines:'); print('::error::' + ' | '.join(lines[-45:])[:60000])"
-            exit 1
+            python3 - <<'PY'
+            lines = [l.strip() for l in open('/tmp/build.log', encoding='utf-8', errors='replace') if 'error:' in l]
+            print('::error::BUILD FAILED, ' + str(len(lines)) + ' error lines')
+            for l in lines[:15]:
+                print('::error::' + l[:3000])
+          PY
+          exit 1
           fi
           cat /tmp/build.log
 
