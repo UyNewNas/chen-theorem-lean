@@ -647,9 +647,8 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               exact h2Fo.coprime_dvd_right he2
             have hmu : q1Mu (2 * e2) = -q1Mu e2 := q1Mu_two_mul hcop
             have hdvd : (2 * e2 ∣ N - 2) ↔ (e2 ∣ (N - 2) / 2) := by
-              rw [← Nat.mul_dvd_mul_iff_left (by norm_num : 0 < 2)]
-              rw [mul_comm (2 : ℕ)]
-              exact Nat.dvd_div_iff_mul_dvd h2N2 |>.symm
+              rw [mul_comm]
+              exact (Nat.dvd_div_iff_mul_dvd h2N2).symm
             rw [hmu]
             by_cases h : e2 ∣ (N - 2) / 2 <;> simp [h, hdvd]
       _ = - (∑ e2 ∈ (correctedChenForbiddenOddPart N).divisors,

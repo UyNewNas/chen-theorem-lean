@@ -41,11 +41,12 @@ jobs:
           lake build > /tmp/build.log 2>&1
           status=$?
           if [ $status -ne 0 ]; then
-            echo "::error::BUILD FAILED; tail of build log follows:"
-            tail -60 /tmp/build.log | tr '
-' ' ' | cut -c1-60000 | while IFS= read -r line; do
-              echo "::error::$line"
-            done
+            tail -60 /tmp/build.log > /tmp/build_tail.log
+            python3 - <<'PY'
+            data = open('/tmp/build_tail.log', encoding='utf-8', errors='replace').read()
+            msg = data.replace(chr(10), ' ')[:60000]
+            print('::error::BUILD FAILED: ' + msg)
+            PY
             exit 1
           fi
           cat /tmp/build.log
