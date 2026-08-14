@@ -247,8 +247,7 @@ private theorem odd_divisor_forbidden_iff_mem {N e : ℕ} (h2F : 2 ∣ corrected
     have hFodd0 : correctedChenForbiddenProduct N / 2 ≠ 0 := by
       intro hz
       have : correctedChenForbiddenProduct N = 0 := by
-        rw [hF, hz]
-        ring
+        simp [hF, hz]
       exact hF0 this
     exact Nat.mem_divisors.mpr ⟨he_dvd_Fodd, hFodd0⟩
   · intro he
@@ -318,6 +317,32 @@ theorem coprime_sifting_forbiddenOddPart (N : ℕ) (hz3 : 3 ≤ correctedChenZ N
   · exact False.elim (not_le_of_gt hr_P.2.1 hle2)
   · exact False.elim (hr_P.2.2 hN)
 
+/-- q 与禁素因子乘积 F 互素 (F 的素因子均 < z ≤ q). -/
+theorem coprime_q_forbiddenProduct {N q : ℕ} (hq : q.Prime) (hqz : correctedChenZ N ≤ q) :
+    Nat.Coprime q (correctedChenForbiddenProduct N) := by
+  apply Nat.coprime_of_dvd'
+  intro r hr hr_dvd_q hr_dvd_F
+  have hr_z : r < correctedChenZ N := (prime_dvd_correctedChenForbiddenProduct_iff hr).mp hr_dvd_F |>.1
+  have hr_eq_q : r = q := by
+    rcases (Nat.dvd_prime hq).mp hr_dvd_q with h | h
+    · exact False.elim (hr.ne_one h)
+    · exact h
+  subst r
+  exact False.elim (by omega)
+
+/-- 筛积 P 与禁素因子乘积 F 互素 (素因子集合不相交). -/
+theorem coprime_sifting_forbiddenProduct (N : ℕ) :
+    Nat.Coprime (correctedChenSiftingProduct N) (correctedChenForbiddenProduct N) := by
+  apply Nat.coprime_of_dvd'
+  intro r hr hr_dvd_P hr_dvd_F
+  have hr_P : r < correctedChenZ N ∧ 2 < r ∧ ¬ r ∣ N :=
+    (prime_dvd_correctedChenSiftingProduct hr).mp hr_dvd_P
+  have hr_F : r < correctedChenZ N ∧ (r ≤ 2 ∨ r ∣ N) :=
+    (prime_dvd_correctedChenForbiddenProduct_iff hr).mp hr_dvd_F
+  rcases hr_F.2 with hle2 | hN
+  · exact False.elim (not_le_of_gt hr_P.2.1 hle2)
+  · exact False.elim (hr_P.2.2 hN)
+
 /-! # 3. q¹ 主项的奇偶分解 -/
 
 /-- 逐项奇偶分裂: 对奇 q, d, 主项值 = (e 偶: 精确指示) / (e 奇: li/φ(q·d·e)). -/
@@ -331,12 +356,16 @@ private lemma q1_APMainValue_split (N q d e : ℕ) (hqo : Odd q) (hdo : Odd d)
       have h2e : 2 ∣ e := (even_iff_two_dvd).1 he
       exact (even_iff_two_dvd).2 (dvd_trans h2e (dvd_lcm_right _ _))
     unfold q1APMainValue q1APMainEvenValue
-    rw [if_pos hlcm_even, if_pos he]
+    rw [if_pos hlcm_even]
+    rw [if_pos he]
+    rw [if_pos hlcm_even]
     rfl
   · have hodd : Odd (Nat.lcm (Nat.lcm q d) e) :=
       q1_lcm_odd (q1_lcm_odd hqo hdo) ((Nat.not_even_iff_odd).1 he)
     unfold q1APMainValue q1APMainEvenValue
-    rw [if_neg ((Nat.not_even_iff_odd).2 hodd), if_neg he]
+    rw [if_neg ((Nat.not_even_iff_odd).2 hodd)]
+    rw [if_neg he]
+    rw [if_neg ((Nat.not_even_iff_odd).2 hodd)]
     rw [q1_lcm_collapse hqd hqe hde]
 
 /-- **奇偶分解 (精确)**: `q1CandidateAPMain N q =
@@ -361,7 +390,7 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
     apply (Nat.not_even_iff_odd).1
     intro hed
     have h2P : 2 ∣ correctedChenSiftingProduct N :=
-      dvd_trans (even_iff_two_dvd).1 hed hd.1
+      dvd_trans ((even_iff_two_dvd).1 hed) hd.1
     exact two_not_dvd_correctedChenSiftingProduct N h2P
   have h2F : 2 ∣ correctedChenForbiddenProduct N :=
     two_dvd_correctedChenForbiddenProduct_of_three_le_z hz3
@@ -382,9 +411,9 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
       have hd_dvd : d ∣ correctedChenSiftingProduct N := (Nat.mem_divisors.mp hd).1
       have he_dvd : e ∣ correctedChenForbiddenProduct N := (Nat.mem_divisors.mp he).1
       have hqd : q.Coprime d := (coprime_q_siftingProduct hq hqz).coprime_dvd_right hd_dvd
-      have hqe : q.Coprime e := (coprime_q_forbiddenOddPart hq hqz hz3).coprime_dvd_right he_dvd
+      have hqe : q.Coprime e := (coprime_q_forbiddenProduct hq hqz).coprime_dvd_right he_dvd
       have hde : d.Coprime e :=
-        (coprime_sifting_forbiddenOddPart N hz3).coprime_dvd_left hd_dvd |>.coprime_dvd_right he_dvd
+        (coprime_sifting_forbiddenProduct N).coprime_dvd_left hd_dvd |>.coprime_dvd_right he_dvd
       exact q1_APMainValue_split N q d e hqo (hdo d hd) hqd hqe hde
     calc
       (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
@@ -481,29 +510,21 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
         (∑ d ∈ (correctedChenSiftingProduct N).divisors,
           q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
             q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
+          let A_d : ℝ := ∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+            q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))
+          let B_d : ℝ := ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+            q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)
           calc
             (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                q1Mu d * (q1LogarithmicIntegral N *
-                  (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
-                    q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))) +
-                  (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                    q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))))
+                q1Mu d * (q1LogarithmicIntegral N * A_d + B_d))
                 = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    q1LogarithmicIntegral N * (q1Mu d *
-                      (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
-                        q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
-                    q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                      q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)) := by
+                    q1LogarithmicIntegral N * (q1Mu d * A_d) + q1Mu d * B_d) := by
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
             _ = q1LogarithmicIntegral N *
-                  (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    q1Mu d * (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
-                      q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
-                (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                  q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                    q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
+                  (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * A_d) +
+                (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * B_d) := by
                   rw [Finset.sum_add_distrib]
                   rw [← Finset.mul_sum]
 
@@ -530,7 +551,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
     apply (Nat.not_even_iff_odd).1
     intro hed
     have h2P : 2 ∣ correctedChenSiftingProduct N :=
-      dvd_trans (even_iff_two_dvd).1 hed hd.1
+      dvd_trans ((even_iff_two_dvd).1 hed) hd.1
     exact two_not_dvd_correctedChenSiftingProduct N h2P
   have h2F : 2 ∣ correctedChenForbiddenProduct N :=
     two_dvd_correctedChenForbiddenProduct_of_three_le_z hz3
