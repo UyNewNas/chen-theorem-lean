@@ -151,6 +151,13 @@ lemma sum_moebius_if_dvd_eq_if_gcd_one {P m : ℕ} (hP0 : P ≠ 0) :
 
 /-! # 2. 奇偶与互素工具 -/
 
+/-- 偶数 e = 2·(e/2). -/
+private lemma q1_even_div_two_mul {e : ℕ} (he : Even e) : e = 2 * (e / 2) := by
+  have h1 : e / 2 * 2 = e := Nat.div_mul_cancel ((even_iff_two_dvd).1 he)
+  calc
+    e = e / 2 * 2 := h1.symm
+    _ = 2 * (e / 2) := by rw [mul_comm]
+
 /-- 奇数的 lcm 仍为奇数. -/
 private lemma q1_lcm_odd {a b : ℕ} (ha : Odd a) (hb : Odd b) : Odd (Nat.lcm a b) := by
   rw [← Nat.not_even_iff_odd]
@@ -608,10 +615,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
             · intro e he
               rw [Finset.mem_filter] at he
               rcases he with ⟨heF, hev⟩
-              have he2 : e = 2 * (e / 2) := by
-                have h1 : e / 2 * 2 = e := Nat.div_mul_cancel ((even_iff_two_dvd).1 hev)
-                rw [← h1]
-                ring
+              have he2 : e = 2 * (e / 2) := q1_even_div_two_mul hev
               have he2d : e / 2 ∣ correctedChenForbiddenOddPart N := by
                 have hF : correctedChenForbiddenProduct N = 2 * correctedChenForbiddenOddPart N :=
                   forbiddenProduct_eq_two_mul_oddPart N h2F
@@ -637,24 +641,10 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                 have : e = 0 := by rw [he2, hz]
                 exact he0 this
               exact Nat.mem_divisors.mpr ⟨he2d, hFodd0'⟩
-            · intro e he
-              rw [Finset.mem_filter] at he
-              rcases he with ⟨heF, hev⟩
-              have he2 : e = 2 * (e / 2) := by
-                have h1 : e / 2 * 2 = e := Nat.div_mul_cancel ((even_iff_two_dvd).1 hev)
-                rw [← h1]
-                ring
-              rw [he2]
             · intro e1 e2 he1 he2 h
               rw [Finset.mem_filter] at he1 he2
-              have he1' : e1 = 2 * (e1 / 2) := by
-                have h1 : e1 / 2 * 2 = e1 := Nat.div_mul_cancel ((even_iff_two_dvd).1 he1.2)
-                rw [← h1]
-                ring
-              have he2' : e2 = 2 * (e2 / 2) := by
-                have h1 : e2 / 2 * 2 = e2 := Nat.div_mul_cancel ((even_iff_two_dvd).1 he2.2)
-                rw [← h1]
-                ring
+              have he1' : e1 = 2 * (e1 / 2) := q1_even_div_two_mul he1.2
+              have he2' : e2 = 2 * (e2 / 2) := q1_even_div_two_mul he2.2
               rw [he1', he2', h]
             · intro e2 he2
               refine ⟨2 * e2, ?_, ?_⟩
@@ -670,6 +660,11 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                   · exact correctedChenForbiddenProduct_ne_zero N
                 · exact ⟨e2, rfl⟩
               · omega
+            · intro e he
+              rw [Finset.mem_filter] at he
+              rcases he with ⟨heF, hev⟩
+              have he2 : e = 2 * (e / 2) := q1_even_div_two_mul hev
+              rw [he2]
       _ = (∑ e2 ∈ (correctedChenForbiddenOddPart N).divisors,
             -q1Mu e2 * (if e2 ∣ (N - 2) / 2 then (1 : ℝ) else 0)) := by
             apply Finset.sum_congr rfl
@@ -678,7 +673,8 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               have hF : correctedChenForbiddenProduct N = 2 * correctedChenForbiddenOddPart N :=
                 forbiddenProduct_eq_two_mul_oddPart N h2F
               have hsq2 : Squarefree (2 * correctedChenForbiddenOddPart N) := by
-                rwa [← hF]
+                rw [← hF]
+                exact correctedChenForbiddenProduct_squarefree N
               have h2Fo : (2 : ℕ).Coprime correctedChenForbiddenOddPart N :=
                 Nat.coprime_of_squarefree_mul hsq2
               exact h2Fo.coprime_dvd_right he2
