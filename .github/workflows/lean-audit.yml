@@ -41,12 +41,8 @@ jobs:
           lake build > /tmp/build.log 2>&1
           status=$?
           if [ $status -ne 0 ]; then
-            tail -60 /tmp/build.log > /tmp/build_tail.log
-            python3 - <<'PY'
-            data = open('/tmp/build_tail.log', encoding='utf-8', errors='replace').read()
-            msg = data.replace(chr(10), ' ')[:60000]
-            print('::error::BUILD FAILED: ' + msg)
-            PY
+            tail -40 /tmp/build.log > /tmp/bt.log
+            python3 -c "msg = open('/tmp/bt.log', encoding='utf-8', errors='replace').read().replace(chr(10), ' ')[:60000]; print('::error::BUILD FAILED: ' + msg)"
             exit 1
           fi
           cat /tmp/build.log
