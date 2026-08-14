@@ -1183,11 +1183,8 @@ theorem q1_qSum_phi_inv_bound :
 
 
 /-- **log(z-1) 下界**: 对 N >= 2^40, (1/20)*log N <= log(z-1) (z >= N^{1/10}-1 >= N^{1/20}+1). -/
-theorem q1_log_z_sub_one_lower :
-    ∃ c : ℝ, 0 < c ∧ ∀ N : ℕ, 2 ^ 40 ≤ N →
-      c * log (N : ℝ) ≤ log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
-  refine ⟨1 / 20, by norm_num, ?_⟩
-  intro N hN40
+theorem q1_log_z_sub_one_lower (N : ℕ) (hN40 : 2 ^ 40 ≤ N) :
+    (1 / 20 : ℝ) * log (N : ℝ) ≤ log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
   have hz3 : 3 ≤ correctedChenZ N := by
     have : 59049 ≤ N := by
       have : 59049 < 2 ^ 40 := by norm_num
@@ -1227,7 +1224,7 @@ theorem q1_log_z_sub_one_lower :
       linarith
     have hsq : 4 * t ≤ t ^ 2 := by
       have ht0 : 0 ≤ t := by positivity
-      exact mul_le_mul ht4 le_rfl ht0 ht4
+      exact mul_le_mul ht4 le_rfl ht0 ht0
     have htle : t ≤ x - 2 := by
       nlinarith [hxeq, hsq, ht4]
     exact le_trans htle hz1'
@@ -1261,7 +1258,7 @@ theorem q1MainTermAbsorption_holds : q1MainTermAbsorption := by
     have h3 : a₁ ≤ a₂ := by
       have hle' : a₁ * log 2 ≤ a₂ * log 2 :=
         (div_le_div_iff₀ hlog2 hlog2).mp (le_trans h1 h2)
-      exact (mul_le_mul_iff_right hlog2).mp hle'
+      exact le_of_mul_le_mul_right hle' (le_of_lt hlog2)
     linarith
   let C₁ : ℝ := 20 * a₂ * C₀
   refine ⟨C₁, by positivity, 2 ^ 110 + 1, ?_⟩
@@ -1298,11 +1295,10 @@ theorem q1MainTermAbsorption_holds : q1MainTermAbsorption := by
     dsimp [pp]
     exact (hPP (correctedChenZ N - 1) (by omega : 2 ≤ correctedChenZ N - 1)).2
   have hlog : (1 : ℝ) / log ((correctedChenZ N - 1 : ℕ) : ℝ) ≤ 20 / log (N : ℝ) := by
-    obtain ⟨clog, hclog, hlogz⟩ := q1_log_z_sub_one_lower
     have hlogz1pos : 0 < log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
       exact Real.log_pos (by exact_mod_cast (by omega : 1 < correctedChenZ N - 1))
     rw [div_le_div_iff₀ hlogz1pos hlogNpos]
-    have hzl := hlogz N hN40
+    have hzl := q1_log_z_sub_one_lower N hN40
     have : (20 : ℝ) * ((1 / 20 : ℝ) * log (N : ℝ)) ≤ 20 * log ((correctedChenZ N - 1 : ℕ) : ℝ) := by
       exact mul_le_mul_of_nonneg_left hzl (by norm_num)
     nlinarith
@@ -1369,10 +1365,9 @@ theorem q1MainTermAbsorption_holds : q1MainTermAbsorption := by
           exact mul_le_mul_of_nonneg_left hqsum_le h1
     _ = (20 * a₂ * C₀) * 𝔖 * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
           field_simp [hlogNpos.ne']
-          ring
     _ = C₁ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
           (N : ℝ) / (log (N : ℝ)) ^ 2 := by
           dsimp [C₁, 𝔖]
-          ring
 
+end
 end MathlibNt.SieveTheory.SwitchingPrinciple
