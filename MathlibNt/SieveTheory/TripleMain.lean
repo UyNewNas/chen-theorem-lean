@@ -795,3 +795,52 @@ theorem hTripleMain_of_primePairInput (hPP : ChenPrimePairInput) :
           ring_nf at hmul ⊢
           exact hmul
 
+
+
+/-! ## 最终完全实例化 (chen #8, 全部解析输入显式化)
+
+`chensTheorem_fully_instantiated` 把 `corrected_chens_theorem_of_q1Count_and_triple`
+的三个输入全部实例化为研究级解析缝:
+
+  - `hPan` ← `chenPanInput_of_vaughanChain` (ant #15 归约链: hI/hII/hM/hsplit/htrunc,
+    `PanLogEventuallyLarge` 已实例化为 `panLogEventuallyLarge_natCast`);
+  - `hTripleMain` ← `hTripleMain_of_primePairInput` (hPP : `ChenPrimePairInput`);
+  - `hq1` ← `hq1_of_q1AnalyticInputs` (hMain + hErr).
+
+`hnum` 是对"由 hPP/hMain 推导出的 (cₘ, Cq)"的数值条件: 只要存在对应的
+上界形态 (switchingCount 双和 ≤ cₘ·𝔖·N/log²N 与 q¹ ≤ Cq·𝔖·N/log²N),
+就要求 (10/3) > (cₘ + (Cq + 1/2))/2. 这是 Chen 证明最后的数值检查,
+与 hPP/hMain 同级的解析输入. 全部结构步骤零 sorry. -/
+theorem chensTheorem_fully_instantiated
+    {u v : ℕ}
+    (hI : AnalyticNumberTheory.Sieve.PanTypeICharacterMeanValue
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne u)
+    (hII : AnalyticNumberTheory.Sieve.PanTypeIICharacterMeanValue
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne u v)
+    (hM : AnalyticNumberTheory.Sieve.PanMainTermSieveBound
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne)
+    (hsplit : AnalyticNumberTheory.Sieve.PanVaughanPointwiseSplit
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne u v)
+    (htrunc : CorrectedChenPanTruncationInput)
+    (hPP : ChenPrimePairInput)
+    (hMain : q1MainTermAbsorption) (hErr : q1APErrorUniformBound)
+    (hnum : ∀ cₘ Cq : ℝ, 0 < Cq →
+      (∃ N₀ₘ : ℕ, ∀ N : ℕ, N₀ₘ ≤ N → Even N →
+        (∑ p₁ ∈ (Finset.range (correctedChenY N)).filter (fun p₁ => p₁.Prime ∧ correctedChenZ N ≤ p₁),
+          ∑ p₂ ∈ (Finset.range (N + 1)).filter (fun p₂ => p₂.Prime ∧ correctedChenY N ≤ p₂),
+            (switchingCount N (p₁ * p₂) : ℝ)) ≤
+          cₘ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+            (N : ℝ) / (log (N : ℝ)) ^ 2) →
+      (∃ Nq : ℕ, ∀ N : ℕ, Nq ≤ N → Even N →
+        correctedChenQ1Count N ≤ Cq * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+          (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2) →
+      (10 / 3 : ℝ) > (cₘ + (Cq + 1 / 2)) / 2) :
+    ∃ N₀ : ℕ, ∀ N : ℕ, N ≥ N₀ → Even N →
+      ∃ p q : ℕ, p.Prime ∧ q ≥ 2 ∧ Nat.IsAtMostAlmostPrime 2 q ∧ N = p + q := by
+  have hPan : ChenWeightedPanInput :=
+    chenPanInput_of_vaughanChain hI hII hM hsplit htrunc
+  rcases hTripleMain_of_primePairInput hPP with ⟨cₘ, N₀ₘ, hTripleMain⟩
+  rcases hq1_of_q1AnalyticInputs hMain hErr with ⟨Cq, hCq, Nq, hq1⟩
+  have hnum' : (10 / 3 : ℝ) > (cₘ + (Cq + 1 / 2)) / 2 :=
+    hnum cₘ Cq hCq ⟨N₀ₘ, hTripleMain⟩ ⟨Nq, hq1⟩
+  exact corrected_chens_theorem_of_q1Count_and_triple hPan hTripleMain hq1 hCq hnum'
