@@ -528,7 +528,7 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
                       (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
                         q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
                     q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                      q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
+                      q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)) := by
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
@@ -641,8 +641,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                 have : e = 0 := by rw [he2, hz]
                 exact he0 this
               exact Nat.mem_divisors.mpr ⟨he2d, hFodd0'⟩
-            · intro e1 e2 he1 he2 h
-              rw [Finset.mem_filter] at he1 he2
+            · intro e1 he1 e2 he2 h
               have he1' : e1 = 2 * (e1 / 2) := q1_even_div_two_mul he1.2
               have he2' : e2 = 2 * (e2 / 2) := q1_even_div_two_mul he2.2
               rw [he1', he2', h]
@@ -651,20 +650,20 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               · rw [Finset.mem_filter]
                 constructor
                 · rw [Nat.mem_divisors] at he2 ⊢
-                  rcases Nat.mem_divisors.mp he2 with ⟨he2d, he20⟩
+                  rcases he2 with ⟨he2d, he20⟩
                   constructor
                   · have hF : correctedChenForbiddenProduct N = 2 * correctedChenForbiddenOddPart N :=
                       forbiddenProduct_eq_two_mul_oddPart N h2F
                     rw [hF]
                     exact (Nat.mul_dvd_mul_iff_left (by norm_num : 0 < 2)).mpr he2d
                   · exact correctedChenForbiddenProduct_ne_zero N
-                · exact ⟨e2, rfl⟩
+                · exact ⟨e2, two_mul e2⟩
               · omega
             · intro e he
               rw [Finset.mem_filter] at he
               rcases he with ⟨heF, hev⟩
               have he2 : e = 2 * (e / 2) := q1_even_div_two_mul hev
-              rw [he2]
+              conv_lhs => rw [he2]
       _ = (∑ e2 ∈ (correctedChenForbiddenOddPart N).divisors,
             -q1Mu e2 * (if e2 ∣ (N - 2) / 2 then (1 : ℝ) else 0)) := by
             apply Finset.sum_congr rfl
@@ -675,13 +674,12 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               have hsq2 : Squarefree (2 * correctedChenForbiddenOddPart N) := by
                 rw [← hF]
                 exact correctedChenForbiddenProduct_squarefree N
-              have h2Fo : (2 : ℕ).Coprime correctedChenForbiddenOddPart N :=
+              have h2Fo : (2 : ℕ).Coprime (correctedChenForbiddenOddPart N) :=
                 Nat.coprime_of_squarefree_mul hsq2
               exact h2Fo.coprime_dvd_right he2
             have hmu : q1Mu (2 * e2) = -q1Mu e2 := q1Mu_two_mul hcop
-            have hdvd : (2 * e2 ∣ N - 2) ↔ (e2 ∣ (N - 2) / 2) := by
-              rw [mul_comm]
-              exact (Nat.dvd_div_iff_mul_dvd h2N2).symm
+            have hdvd : (2 * e2 ∣ N - 2) ↔ (e2 ∣ (N - 2) / 2) :=
+              (Nat.dvd_div_iff_mul_dvd h2N2).symm
             rw [hmu]
             by_cases h : e2 ∣ (N - 2) / 2 <;> simp [h, hdvd]
       _ = - (∑ e2 ∈ (correctedChenForbiddenOddPart N).divisors,
