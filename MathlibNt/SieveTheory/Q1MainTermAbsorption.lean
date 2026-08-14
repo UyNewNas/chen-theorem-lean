@@ -249,7 +249,6 @@ private theorem odd_divisor_forbidden_iff_mem {N e : ℕ} (h2F : 2 ∣ corrected
       have : correctedChenForbiddenProduct N = 0 := by
         rw [hF]
         rw [hz]
-        norm_num
       exact hF0 this
     exact Nat.mem_divisors.mpr ⟨he_dvd_Fodd, hFodd0⟩
   · intro he
@@ -361,7 +360,6 @@ private lemma q1_APMainValue_split (N q d e : ℕ) (hqo : Odd q) (hdo : Odd d)
     rw [if_pos hlcm_even]
     rw [if_pos he]
     rw [if_pos hlcm_even]
-    rfl
   · have hodd : Odd (Nat.lcm (Nat.lcm q d) e) :=
       q1_lcm_odd (q1_lcm_odd hqo hdo) ((Nat.not_even_iff_odd).1 he)
     unfold q1APMainValue q1APMainEvenValue
@@ -511,21 +509,29 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
         (∑ d ∈ (correctedChenSiftingProduct N).divisors,
           q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
             q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
-          let A_d : (d : ℕ) → ℝ := fun d => ∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
-            q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))
-          let B_d : (d : ℕ) → ℝ := fun d => ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-            q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)
           calc
             (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                q1Mu d * (q1LogarithmicIntegral N * A_d d + B_d d))
+                q1Mu d * (q1LogarithmicIntegral N *
+                  (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+                    q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))) +
+                  (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                    q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))))
                 = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    q1LogarithmicIntegral N * (q1Mu d * A_d d) + q1Mu d * B_d d) := by
+                    q1LogarithmicIntegral N * (q1Mu d *
+                      (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+                        q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
+                    q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                      q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
             _ = q1LogarithmicIntegral N *
-                  (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * A_d d) +
-                (∑ d ∈ (correctedChenSiftingProduct N).divisors, q1Mu d * B_d d) := by
+                  (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                    q1Mu d * (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+                      q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
+                (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                  q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                    q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
                   rw [Finset.sum_add_distrib]
                   rw [← Finset.mul_sum]
 
@@ -609,9 +615,17 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               have he2d : e / 2 ∣ correctedChenForbiddenOddPart N := by
                 have hF : correctedChenForbiddenProduct N = 2 * correctedChenForbiddenOddPart N :=
                   forbiddenProduct_eq_two_mul_oddPart N h2F
-                have heF' : e ∣ 2 * correctedChenForbiddenOddPart N := by rwa [hF]
+                have heF_dvd : e ∣ correctedChenForbiddenProduct N := (Nat.mem_divisors.mp heF).1
+                have heF' : e ∣ 2 * correctedChenForbiddenOddPart N := by
+                  rwa [hF] at heF_dvd
                 rw [he2] at heF'
                 exact (Nat.mul_dvd_mul_iff_left (by norm_num : 0 < 2)).mp heF'
+              have hFodd0' : correctedChenForbiddenOddPart N ≠ 0 := by
+                have hF : correctedChenForbiddenProduct N = 2 * correctedChenForbiddenOddPart N :=
+                  forbiddenProduct_eq_two_mul_oddPart N h2F
+                intro hz
+                have : correctedChenForbiddenProduct N = 0 := by rw [hF, hz]
+                exact correctedChenForbiddenProduct_ne_zero N this
               have he20 : e / 2 ≠ 0 := by
                 intro hz
                 have he0 : e ≠ 0 := by
@@ -620,9 +634,9 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                   subst e
                   rcases heF.1 with ⟨k, hk⟩
                   exact heF.2 (by simpa using hk)
-                have : e = 0 := by rw [he2, hz]; ring
+                have : e = 0 := by rw [he2, hz]
                 exact he0 this
-              exact Nat.mem_divisors.mpr ⟨he2d, he20⟩
+              exact Nat.mem_divisors.mpr ⟨he2d, hFodd0'⟩
             · intro e he
               rw [Finset.mem_filter] at he
               rcases he with ⟨heF, hev⟩
