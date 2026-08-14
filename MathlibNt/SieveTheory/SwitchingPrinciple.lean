@@ -51,6 +51,8 @@ import MathlibNt.SieveTheory.SelbergUpperBound
 open scoped ArithmeticFunction.Moebius
 open scoped ArithmeticFunction.zeta
 
+set_option maxHeartbeats 6000000
+
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
 
 open Real Finset
