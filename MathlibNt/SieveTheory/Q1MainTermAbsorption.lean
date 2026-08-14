@@ -528,7 +528,7 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
                       (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
                         q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
                     q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                      q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)) := by
+                      q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
