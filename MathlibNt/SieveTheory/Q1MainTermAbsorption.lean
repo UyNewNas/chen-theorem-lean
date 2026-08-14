@@ -153,7 +153,7 @@ lemma sum_moebius_if_dvd_eq_if_gcd_one {P m : ℕ} (hP0 : P ≠ 0) :
 
 /-- 奇数的 lcm 仍为奇数. -/
 private lemma q1_lcm_odd {a b : ℕ} (ha : Odd a) (hb : Odd b) : Odd (Nat.lcm a b) := by
-  rw [← not_even_iff_odd]
+  rw [← Nat.not_even_iff_odd]
   intro hev
   have h2 : 2 ∣ Nat.lcm a b := (even_iff_two_dvd).1 hev
   have h2ab : 2 ∣ a * b := dvd_trans h2 (lcm_dvd_mul : Nat.lcm a b ∣ a * b)
@@ -161,17 +161,28 @@ private lemma q1_lcm_odd {a b : ℕ} (ha : Odd a) (hb : Odd b) : Odd (Nat.lcm a 
   · exact ha.not_two_dvd_nat h2a
   · exact hb.not_two_dvd_nat h2b
 
+/-- 互素对乘积的右互素: (a·b) 与 c 互素. -/
+private lemma q1_coprime_mul_right {a b c : ℕ} (hab : a.Coprime c) (hbb : b.Coprime c) :
+    (a * b).Coprime c := by
+  apply Nat.coprime_of_dvd'
+  intro p hp hp_ab hp_c
+  rcases (hp.dvd_mul.mp hp_ab) with hp_a | hp_b
+  · exact (Nat.not_coprime_of_dvd_of_dvd hp.one_lt hp_a hp_c) hab
+  · exact (Nat.not_coprime_of_dvd_of_dvd hp.one_lt hp_b hp_c) hbb
+
 /-- 两两互素的 lcm 坍缩: lcm(lcm q d) e = q·d·e. -/
 private lemma q1_lcm_collapse {q d e : ℕ} (hqd : q.Coprime d) (hqe : q.Coprime e)
     (hde : d.Coprime e) : Nat.lcm (Nat.lcm q d) e = q * d * e := by
-  rw [Nat.Coprime.lcm_eq_mul hqd]
-  rw [Nat.Coprime.lcm_eq_mul (Nat.Coprime.mul_right hqe hde)]
-  ring
+  have hqd_mul : Nat.lcm q d = q * d := Nat.Coprime.lcm_eq_mul hqd
+  have hqde : (q * d).Coprime e := q1_coprime_mul_right hqe hde
+  rw [hqd_mul]
+  rw [Nat.Coprime.lcm_eq_mul hqde]
 
 /-- 两两互素的欧拉函数乘积: φ(q·d·e) = φ(q)·φ(d)·φ(e). -/
 private lemma q1_phi_mul {q d e : ℕ} (hqd : q.Coprime d) (hqe : q.Coprime e)
     (hde : d.Coprime e) : Nat.totient (q * d * e) = Nat.totient q * Nat.totient d * Nat.totient e := by
-  rw [Nat.totient_mul (Nat.Coprime.mul_right hqe hde)]
+  have hqde : (q * d).Coprime e := q1_coprime_mul_right hqe hde
+  rw [Nat.totient_mul hqde]
   rw [Nat.totient_mul hqd]
   ring
 
@@ -332,9 +343,9 @@ private lemma q1_APMainValue_split (N q d e : ℕ) (hqo : Odd q) (hdo : Odd d)
     rw [if_pos hlcm_even, if_pos he]
     rfl
   · have hodd : Odd (Nat.lcm (Nat.lcm q d) e) :=
-      q1_lcm_odd (q1_lcm_odd hqo hdo) ((not_even_iff_odd).1 he)
+      q1_lcm_odd (q1_lcm_odd hqo hdo) ((Nat.not_even_iff_odd).1 he)
     unfold q1APMainValue q1APMainEvenValue
-    rw [if_neg ((not_even_iff_odd).2 hodd), if_neg he]
+    rw [if_neg ((Nat.not_even_iff_odd).2 hodd), if_neg he]
     rw [q1_lcm_collapse hqd hqe hde]
 
 /-- **奇偶分解 (精确)**: `q1CandidateAPMain N q =
@@ -356,7 +367,7 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
   have hdo : ∀ d ∈ (correctedChenSiftingProduct N).divisors, Odd d := by
     intro d hd
     rw [Nat.mem_divisors] at hd
-    apply (not_even_iff_odd).1
+    apply (Nat.not_even_iff_odd).1
     intro hed
     have h2P : 2 ∣ correctedChenSiftingProduct N :=
       dvd_trans (even_iff_two_dvd).1 hed hd.1
@@ -416,9 +427,9 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
                 ¬ Even e → q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e) = 0 := by
                 intro e he hne
                 have hodd : Odd (Nat.lcm (Nat.lcm q d) e) :=
-                  q1_lcm_odd (q1_lcm_odd hqo (hdo d hd)) ((not_even_iff_odd).1 hne)
+                  q1_lcm_odd (q1_lcm_odd hqo (hdo d hd)) ((Nat.not_even_iff_odd).1 hne)
                 unfold q1APMainEvenValue
-                rw [if_neg ((not_even_iff_odd).2 hodd)]
+                rw [if_neg ((Nat.not_even_iff_odd).2 hodd)]
                 ring
               calc
                 (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
@@ -525,7 +536,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
   have hdo : ∀ d ∈ (correctedChenSiftingProduct N).divisors, Odd d := by
     intro d hd
     rw [Nat.mem_divisors] at hd
-    apply (not_even_iff_odd).1
+    apply (Nat.not_even_iff_odd).1
     intro hed
     have h2P : 2 ∣ correctedChenSiftingProduct N :=
       dvd_trans (even_iff_two_dvd).1 hed hd.1
@@ -551,8 +562,8 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
       rw [if_pos hlcm_even]
       rw [if_pos hev]
     · have hodd : Odd (Nat.lcm (Nat.lcm q d) e) :=
-        q1_lcm_odd (q1_lcm_odd hqo (hdo d hd)) ((not_even_iff_odd).1 hev)
-      rw [if_neg ((not_even_iff_odd).2 hodd)]
+        q1_lcm_odd (q1_lcm_odd hqo (hdo d hd)) ((Nat.not_even_iff_odd).1 hev)
+      rw [if_neg ((Nat.not_even_iff_odd).2 hodd)]
       rw [if_neg hev]
   have hesum : (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
         q1Mu e * (if Even e then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0)) =
