@@ -175,7 +175,6 @@ private lemma q1_phi_mul {q d e : ℕ} (hqd : q.Coprime d) (hqe : q.Coprime e)
   have hqde : (q * d).Coprime e := (Nat.coprime_mul_iff_left).mpr ⟨hqe, hde⟩
   rw [Nat.totient_mul hqde]
   rw [Nat.totient_mul hqd]
-  ring
 
 /-- μ(2a) = −μ(a) 当 (2, a) 互素. -/
 private lemma q1Mu_two_mul {a : ℕ} (h2a : (2 : ℕ).Coprime a) : q1Mu (2 * a) = -q1Mu a := by
@@ -233,10 +232,12 @@ private theorem odd_divisor_forbidden_iff_mem {N e : ℕ} (h2F : 2 ∣ corrected
         rcases (Nat.dvd_prime (by norm_num : (2 : ℕ).Prime)).mp hp_2 with h | h
         · exact False.elim (hp.ne_one h)
         · exact h
-      exact False.elim (hne (by rw [← even_iff_two_dvd]; rwa [← hp2]))
+      exact False.elim (hne (by rw [even_iff_two_dvd]; rwa [← hp2]))
     have he_dvd_Fodd : e ∣ correctedChenForbiddenProduct N / 2 := by
-      have he2 : e ∣ 2 * (correctedChenForbiddenProduct N / 2) := by rwa [hF]
-      exact Nat.Coprime.dvd_of_dvd_mul_right hcop he2
+      have he2 : e ∣ 2 * (correctedChenForbiddenProduct N / 2) := by
+        rw [hF] at he_dvd_F
+        exact he_dvd_F
+      exact Nat.Coprime.dvd_of_dvd_mul_right hcop (by simpa [mul_comm] using he2)
     have he0 : e ≠ 0 := by
       intro hz
       subst e
@@ -260,9 +261,10 @@ private theorem odd_divisor_forbidden_iff_mem {N e : ℕ} (h2F : 2 ∣ corrected
         have hF : correctedChenForbiddenProduct N = 2 * (correctedChenForbiddenProduct N / 2) :=
           forbiddenProduct_eq_two_mul_oddPart N h2F
         have hsq2 : Squarefree (2 * (correctedChenForbiddenProduct N / 2)) := by
-          rwa [← hF]
+          rw [← hF]
+          exact correctedChenForbiddenProduct_squarefree N
         have hcop : (2 : ℕ).Coprime (correctedChenForbiddenProduct N / 2) :=
-          coprime_of_squarefree_mul hsq2
+          Nat.coprime_of_squarefree_mul hsq2
         intro h2d
         exact (Nat.not_coprime_of_dvd_of_dvd (by norm_num : 1 < 2) (by rfl : 2 ∣ 2) h2d) hcop
       intro hev
@@ -291,7 +293,7 @@ theorem coprime_q_forbiddenOddPart {N q : ℕ} (hq : q.Prime) (hqz : correctedCh
     two_dvd_correctedChenForbiddenProduct_of_three_le_z hz3
   have hr_dvd_F : r ∣ correctedChenForbiddenProduct N :=
     dvd_trans hr_dvd_Fodd (Nat.div_dvd_of_dvd h2F)
-  have hr_z : r < correctedChenZ N := (prime_dvd_correctedChenForbiddenProduct hr).mp hr_dvd_F |>.1
+  have hr_z : r < correctedChenZ N := (prime_dvd_correctedChenForbiddenProduct_iff hr).mp hr_dvd_F |>.1
   have hr_eq_q : r = q := by
     rcases (Nat.dvd_prime hq).mp hr_dvd_q with h | h
     · exact False.elim (hr.ne_one h)
@@ -311,7 +313,7 @@ theorem coprime_sifting_forbiddenOddPart (N : ℕ) (hz3 : 3 ≤ correctedChenZ N
   have hr_dvd_F : r ∣ correctedChenForbiddenProduct N :=
     dvd_trans hr_dvd_Fodd (Nat.div_dvd_of_dvd h2F)
   have hr_F : r < correctedChenZ N ∧ (r ≤ 2 ∨ r ∣ N) :=
-    (prime_dvd_correctedChenForbiddenProduct hr).mp hr_dvd_F
+    (prime_dvd_correctedChenForbiddenProduct_iff hr).mp hr_dvd_F
   rcases hr_F.2 with hle2 | hN
   · exact False.elim (not_le_of_gt hr_P.2.1 hle2)
   · exact False.elim (hr_P.2.2 hN)
@@ -326,8 +328,7 @@ private lemma q1_APMainValue_split (N q d e : ℕ) (hqo : Odd q) (hdo : Odd d)
        else q1LogarithmicIntegral N / (Nat.totient (q * d * e) : ℝ)) := by
   by_cases he : Even e
   · have hlcm_even : Even (Nat.lcm (Nat.lcm q d) e) := by
-      rcases he with ⟨k, hk⟩
-      have h2e : 2 ∣ e := by rw [hk]; exact dvd_mul_right 2 k
+      have h2e : 2 ∣ e := (even_iff_two_dvd).1 he
       exact (even_iff_two_dvd).2 (dvd_trans h2e (dvd_lcm_right _ _))
     unfold q1APMainValue q1APMainEvenValue
     rw [if_pos hlcm_even, if_pos he]
@@ -546,8 +547,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
     unfold q1APMainEvenValue
     by_cases hev : Even e
     · have hlcm_even : Even (Nat.lcm (Nat.lcm q d) e) := by
-        rcases hev with ⟨k, hk⟩
-        have h2e : 2 ∣ e := by rw [hk]; exact dvd_mul_right 2 k
+        have h2e : 2 ∣ e := (even_iff_two_dvd).1 hev
         exact (even_iff_two_dvd).2 (dvd_trans h2e (dvd_lcm_right _ _))
       rw [if_pos hlcm_even]
       rw [if_pos hev]
@@ -644,7 +644,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               have hsq2 : Squarefree (2 * correctedChenForbiddenOddPart N) := by
                 rwa [← hF]
               have h2Fo : (2 : ℕ).Coprime correctedChenForbiddenOddPart N :=
-                coprime_of_squarefree_mul hsq2
+                Nat.coprime_of_squarefree_mul hsq2
               exact h2Fo.coprime_dvd_right he2
             have hmu : q1Mu (2 * e2) = -q1Mu e2 := q1Mu_two_mul hcop
             have hdvd : (2 * e2 ∣ N - 2) ↔ (e2 ∣ (N - 2) / 2) := by
