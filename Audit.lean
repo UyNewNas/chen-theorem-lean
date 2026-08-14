@@ -1,5 +1,6 @@
 import MathlibNt.ChensTheorem
 import MathlibNt.SieveTheory.LinearSieve
+import MathlibNt.SieveTheory.PanTruncation
 import MathlibNt.SieveTheory.PrimePair
 import MathlibNt.SieveTheory.TripleMain
 
@@ -196,3 +197,9 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.primePairLinearFormCount_le_pi
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.PrimePairLinearFormBound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPrimePairInput.of_linearFormBound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPanTruncationSieveBound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPanTruncationMainTermBound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenRem_sub_distributionError_eq
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.abs_correctedChenRem_sub_distributionError_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.baseCount_le_distributionError_add_li
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.CorrectedChenPanTruncationInput.of_sieveBound
