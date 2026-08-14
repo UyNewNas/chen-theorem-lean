@@ -36,7 +36,19 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
       - name: Build the public Lean root
-        run: lake build
+        run: |
+          set +e
+          lake build > /tmp/build.log 2>&1
+          status=$?
+          if [ $status -ne 0 ]; then
+            echo "::error::BUILD FAILED; tail of build log follows:"
+            tail -60 /tmp/build.log | tr '
+' ' ' | cut -c1-60000 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit 1
+          fi
+          cat /tmp/build.log
 
       - name: Audit the conditional Chen chain
         run: |
