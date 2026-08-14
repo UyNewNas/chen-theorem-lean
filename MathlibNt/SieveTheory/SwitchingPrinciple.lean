@@ -4725,6 +4725,689 @@ theorem properPower_negligible_threshold :
     exact div_le_div_of_nonneg_right hprod (by positivity : 0 ≤ (Real.log (N : ℝ)) ^ 2)
   exact le_trans hmain hfinal
 
+/-! ## chen #18 -> 线 D: q¹ 计数分布界的条件化定理 (PanMeanValueUniform => hq1)
+
+本节实现 chen issue #8 的第三个解析输入: 在加权 Pan 均值定理
+(`AnalyticNumberTheory.Sieve.PanMeanValueUniform`, ant #15) 的假设下,
+推出 `hq1` — q¹ 计数 `correctedChenQ1Count N` 的一致上界
+
+  `q1Count(N) ≤ Cq · 𝔖_trunc(N, z−1) · N/log²N`.
+
+证明链 (条件化骨架):
+
+1. **有限重排**: `correctedChenQ1Count_eq_reindexed` 把 `Σ_p #{q | N−p}`
+   变成 `Σ_q #{p ∈ candidates : q | N−p}` (q ∈ [z,y) 素数).
+2. **结构归约 (本节, 已证)**: candidates 的 AP 计数经双层 Möbius 分解
+   (第一层: candidates = unsifted support ∩ 与 `P_sift` 互素; 第二层:
+   unsifted support 经禁素因子乘积 `P_forb` 的 Möbius 反演) 归约到
+   素数-AP 基计数 `q1APBaseCount N m`, 得到
+   `q1Count ≤ q1MainTermSum N + q1ErrorTermSum N` (精确代数).
+3. **主项吸收 (解析缝)**: `q1MainTermAbsorption` — 主项经奇异级数
+   `singularSeriesTruncated` 与素数倒数和界 (ant `primeReciprocalSum_range_le`)
+   吸收为 `C₁·𝔖_trunc·N/log²N`.
+4. **误差一致界 (解析缝)**: `q1APErrorUniformBound` — Möbius 双和误差由
+   **ant #15 `PanMeanValueUniform`** (加权 Pan 均值定理, f = δ₁ 实例)
+   经 Pan 桥 (ant #25, a-吸收与 lcm 合并) 控制为 `C₂·N/log³N`.
+5. **组装 (本节, 已证)**: `hq1_of_q1AnalyticInputs` — 两个解析缝 + 初等
+   对数/奇异级数下界 (`𝔖_trunc ≥ 1/2`) ⇒ `∃ Cq Nq, hq1`.
+
+奇偶说明: 偶数模数 `m` 的 AP 基计数只有一个点 `p = 2` (要求 `m | N−2`),
+因此 `q1APMainValue` 对偶数模数取**精确值** (0 或 1), 误差项自动为零
+(`q1APError_even_zero`); 奇数模数用 `li(N)/φ(m)` 主项. 这避免了 Möbius
+主项在 `r = 2` 因子处的退化 (经典处理).
+-/
+
+-- 本节包含大型 Möbius 双和展开; 提高重写/化简的 heartbeat 预算.
+set_option maxHeartbeats 1000000
+
+/-- q¹ 的素数-AP 基计数: `#{p < N : p 素数, 2 ≤ N−p, p ≡ N [MOD m]}`. -/
+noncomputable def q1APBaseCount (N m : ℕ) : ℕ :=
+  ((Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD m])).card
+
+/-- 奇偶修正主项: 偶数模数 `m` 的 AP 基计数只有 `p = 2` 一个点
+(`m | N−2`), 主项取精确值; 奇数模数用 `li(N)/φ(m)`. -/
+noncomputable def q1APMainValue (N m : ℕ) : ℝ :=
+  if Even m then
+    if m ∣ N - 2 then 1 else 0
+  else
+    AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ) / Nat.totient m
+
+/-- q¹ 素数-AP 误差: 基计数 − 主项 (偶数模数下为零, 见 `q1APError_even_zero`). -/
+noncomputable def q1APError (N m : ℕ) : ℝ :=
+  (q1APBaseCount N m : ℝ) - q1APMainValue N m
+
+/-- 候选的 AP 计数: `#{p ∈ candidates : q | N−p}`. -/
+noncomputable def q1CandidateAPCount (N q : ℕ) : ℝ :=
+  (((correctedChenCandidates N).filter (fun p => q ∣ N - p)).card : ℝ)
+
+/-- 候选 AP 计数的双层 Möbius 展开 (基计数形式). -/
+noncomputable def q1CandidateAPDoubleSum (N q : ℕ) : ℝ :=
+  ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+    ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+      (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+          (q1APBaseCount N (Nat.lcm (Nat.lcm q d) e) : ℝ))
+
+/-- 候选 AP 计数的主项 (带符号 Möbius 权重). -/
+noncomputable def q1CandidateAPMain (N q : ℕ) : ℝ :=
+  ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+    ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+      (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+          q1APMainValue N (Nat.lcm (Nat.lcm q d) e))
+
+/-- 候选 AP 计数的带符号误差和. -/
+noncomputable def q1CandidateAPErrorSigned (N q : ℕ) : ℝ :=
+  ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+    ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+      (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+          q1APError N (Nat.lcm (Nat.lcm q d) e))
+
+/-- 候选 AP 计数的误差 (绝对值 Möbius 权重). -/
+noncomputable def q1CandidateAPError (N q : ℕ) : ℝ :=
+  ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+    |((ArithmeticFunction.moebius d : ℤ) : ℝ)| *
+      (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+        |((ArithmeticFunction.moebius e : ℤ) : ℝ)| * |q1APError N (Nat.lcm (Nat.lcm q d) e)|)
+
+/-- q¹ 主项总和: `Σ_{q ∈ [z,y) 素数} q1CandidateAPMain N q`. -/
+noncomputable def q1MainTermSum (N : ℕ) : ℝ :=
+  ∑ q ∈ (Finset.range (correctedChenY N)).filter (fun q => q.Prime ∧ correctedChenZ N ≤ q),
+    q1CandidateAPMain N q
+
+/-- q¹ 误差总和: `Σ_{q ∈ [z,y) 素数} q1CandidateAPError N q`. -/
+noncomputable def q1ErrorTermSum (N : ℕ) : ℝ :=
+  ∑ q ∈ (Finset.range (correctedChenY N)).filter (fun q => q.Prime ∧ correctedChenZ N ≤ q),
+    q1CandidateAPError N q
+
+/-- **Möbius 互素指示 (筛积版)**: `Σ_{d | P_sift, d | m} μ(d) =
+1_{∀ r | P_sift 素数: ¬ r | m}`. -/
+theorem moebius_coprime_sum_sifting (N m : ℕ) :
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors, if d ∣ m then (μ d : ℝ) else 0) =
+      if ∀ r : ℕ, r.Prime → r ∣ correctedChenSiftingProduct N → ¬ r ∣ m
+        then (1 : ℝ) else 0 := by
+  let P : ℕ := correctedChenSiftingProduct N
+  have hdiv : P.divisors.filter (fun d => d ∣ m) = (Nat.gcd m P).divisors := by
+    ext d
+    constructor
+    · intro hd
+      rw [Finset.mem_filter] at hd
+      rw [Nat.mem_divisors] at hd ⊢
+      rcases hd with ⟨hdP, hdm⟩
+      rcases hdP with ⟨hdd, hP0⟩
+      constructor
+      · exact Nat.dvd_gcd_iff.mpr ⟨hdm, hdd⟩
+      · have hPpos : 0 < P := Nat.pos_of_ne_zero hP0
+        exact ne_of_gt (Nat.gcd_pos_of_pos_right m hPpos)
+    · intro hd
+      rw [Nat.mem_divisors] at hd
+      rw [Finset.mem_filter] at ⊢
+      rw [Nat.mem_divisors] at ⊢
+      rcases hd with ⟨hg, hg0⟩
+      rcases (Nat.dvd_gcd_iff.mp hg) with ⟨hdm, hdd⟩
+      constructor
+      · exact ⟨hdd, correctedChenSiftingProduct_ne_zero N⟩
+      · exact hdm
+  have hsum : (∑ d ∈ P.divisors, if d ∣ m then (μ d : ℝ) else 0) =
+      (∑ d ∈ (Nat.gcd m P).divisors, (μ d : ℝ)) := by
+    rw [← Finset.sum_filter]
+    rw [hdiv]
+  have hsum' : (∑ d ∈ (Nat.gcd m P).divisors, (μ d : ℝ)) =
+      if Nat.gcd m P = 1 then (1 : ℝ) else 0 := by
+    have h := ArithmeticFunction.coe_zeta_mul_coe_moebius (R := ℝ)
+    have hkey : (ζ * (μ : ArithmeticFunction ℝ)) (Nat.gcd m P) =
+        (1 : ArithmeticFunction ℝ) (Nat.gcd m P) := by rw [h]
+    rw [ArithmeticFunction.coe_zeta_mul_apply, ArithmeticFunction.one_apply] at hkey
+    simpa [ArithmeticFunction.intCoe_apply, mul_comm] using hkey
+  have hgcd : (Nat.gcd m P = 1) ↔ ∀ r : ℕ, r.Prime → r ∣ P → ¬ r ∣ m := by
+    constructor
+    · intro hg r hr hrP hm
+      have hrg : r ∣ Nat.gcd m P := Nat.dvd_gcd_iff.mpr ⟨hm, hrP⟩
+      rw [hg] at hrg
+      have hr1 : r ≤ 1 := Nat.le_of_dvd (by norm_num) hrg
+      have hr2 : 2 ≤ r := hr.two_le
+      omega
+    · intro hcop
+      by_contra hg
+      have hgne : Nat.gcd m P ≠ 1 := by omega
+      obtain ⟨r, hrp, hrd⟩ := Nat.exists_prime_and_dvd hgne
+      have hrm : r ∣ m := (Nat.dvd_gcd_iff.mp hrd).1
+      have hrP : r ∣ P := (Nat.dvd_gcd_iff.mp hrd).2
+      exact hcop r hrp hrP hrm
+  rw [hsum, hsum']
+  by_cases hc : Nat.gcd m P = 1
+  · rw [if_pos hc]
+    rw [if_pos (hgcd.mp hc)]
+  · rw [if_neg hc]
+    rw [if_neg (mt hgcd.mpr hc)]
+
+/-- candidates = unsifted support ∩ (与 `P_sift` 互素): `p ∈ candidates`
+⟺ `p ∈ unsifted` 且 `N−p` 无 `P_sift` 的素因子. -/
+theorem mem_correctedChenCandidates_iff_coprime_sifting (N p : ℕ) :
+    p ∈ correctedChenCandidates N ↔
+      p ∈ correctedChenUnsiftedPrimeSupport N ∧
+        ∀ r : ℕ, r.Prime → r ∣ correctedChenSiftingProduct N → ¬ r ∣ N - p := by
+  unfold correctedChenCandidates correctedChenUnsiftedPrimeSupport
+  rw [Finset.mem_filter, Finset.mem_filter]
+  constructor
+  · intro hp
+    rcases hp with ⟨hpN, hbase⟩
+    rcases hbase with ⟨hpp, h2, hno⟩
+    constructor
+    · exact ⟨hpN, ⟨hpp, ⟨h2, fun r hr hlt hcond => hno r hr hlt⟩⟩⟩
+    · intro r hr hrP
+      have hlt : r < correctedChenZ N := ((prime_dvd_correctedChenSiftingProduct hr).mp hrP).1
+      exact hno r hr hlt
+  · intro hp
+    rcases hp with ⟨huns, hcop⟩
+    rcases huns with ⟨hpN, hbase⟩
+    rcases hbase with ⟨hpp, h2, hno⟩
+    exact ⟨hpN, ⟨hpp, ⟨h2, by
+      intro r hr hlt
+      by_cases hcond : r ≤ 2 ∨ r ∣ N
+      · exact hno r hr hlt hcond
+      · have hnot2 : ¬ r ≤ 2 := by intro h; exact hcond (Or.inl h)
+        have hnotN : ¬ r ∣ N := by intro h; exact hcond (Or.inr h)
+        have hr2 : 2 < r := by omega
+        have hrP : r ∣ correctedChenSiftingProduct N :=
+          (prime_dvd_correctedChenSiftingProduct hr).mpr ⟨hlt, hr2, hnotN⟩
+        exact hcop r hr hrP⟩⟩⟩
+
+/-- lcm 合并: `q | N−p` 与 `d | N−p` ⟺ `lcm q d | N−p` (p < N 时经同余). -/
+private lemma dvd_complement_lcm_iff_modEq {N p q d : ℕ} (hp : p < N) :
+    (q ∣ N - p ∧ d ∣ N - p) ↔ p ≡ N [MOD Nat.lcm q d] :=
+  (Nat.lcm_dvd_iff.symm.trans (AnalyticNumberTheory.Sieve.prime_dvd_complement_iff_modEq hp))
+
+/-- unsifted 成员 + lcm 同余合并: `p ∈ unsifted ∧ q|N−p ∧ d|N−p` ⟺
+`p ∈ unsifted ∧ p ≡ N [MOD lcm(q,d)]`. -/
+private lemma unsifted_lcm_congr {N p q d : ℕ} (hp : p < N) :
+    (p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p) ↔
+      (p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD Nat.lcm q d]) := by
+  constructor
+  · intro h
+    exact ⟨h.1, (dvd_complement_lcm_iff_modEq hp).1 ⟨h.2.1, h.2.2⟩⟩
+  · intro h
+    exact ⟨h.1, (dvd_complement_lcm_iff_modEq hp).2 h.2⟩
+
+/-- 基计数内的 lcm 同余合并: `p ≡ N [MOD m] ∧ e | N−p` ⟺
+`p ≡ N [MOD lcm(m,e)]` (附 `p` 素数与 `2 ≤ N−p` 条件). -/
+private lemma baseCount_lcm_congr {N p m e : ℕ} (hp : p < N) :
+    (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD m] ∧ e ∣ N - p) ↔
+      (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm m e]) := by
+  constructor
+  · intro h
+    exact ⟨h.1, ⟨h.2.1,
+      (dvd_complement_lcm_iff_modEq hp).1
+        ⟨(AnalyticNumberTheory.Sieve.prime_dvd_complement_iff_modEq hp).2 h.2.2.1, h.2.2.2⟩⟩⟩
+  · intro h
+    have hlcm : Nat.lcm m e ∣ N - p :=
+      (AnalyticNumberTheory.Sieve.prime_dvd_complement_iff_modEq hp).2 h.2.2
+    have hm : m ∣ N - p := (Nat.lcm_dvd_iff.mp hlcm).1
+    have he : e ∣ N - p := (Nat.lcm_dvd_iff.mp hlcm).2
+    exact ⟨h.1, ⟨h.2.1, ⟨(AnalyticNumberTheory.Sieve.prime_dvd_complement_iff_modEq hp).1 hm, he⟩⟩⟩
+
+/-- 逐点指示恒等式: `[p ∈ candidates ∧ q | N−p] =
+Σ_{d | P_sift} μ(d)·[p ∈ unsifted ∧ q | N−p ∧ d | N−p]`. -/
+private theorem candidatesAP_indicator_eq_moebiusSum (N p q : ℕ) (hp : p ∈ Finset.range N) :
+    (if p ∈ correctedChenCandidates N ∧ q ∣ N - p then (1 : ℝ) else 0) =
+      ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        if p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p then (μ d : ℝ) else 0 := by
+  have hcop := moebius_coprime_sum_sifting N (N - p)
+  by_cases hsupp : p ∈ correctedChenCandidates N
+  · by_cases hq : q ∣ N - p
+    · rw [if_pos ⟨hsupp, hq⟩]
+      have huns : p ∈ correctedChenUnsiftedPrimeSupport N :=
+        (Iff.mp (mem_correctedChenCandidates_iff_coprime_sifting N p) hsupp).1
+      have hcoprime : ∀ r : ℕ, r.Prime → r ∣ correctedChenSiftingProduct N → ¬ r ∣ N - p := by
+        rw [mem_correctedChenCandidates_iff_coprime_sifting] at hsupp
+        exact hsupp.2
+      have hcop1 : (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+          if d ∣ N - p then (μ d : ℝ) else 0) = 1 := by
+        rw [hcop]
+        rw [if_pos hcoprime]
+      calc
+        (1 : ℝ) = ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            if d ∣ N - p then (μ d : ℝ) else 0 := hcop1.symm
+        _ = ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            if p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p then (μ d : ℝ) else 0 := by
+              apply Finset.sum_congr rfl
+              intro d hd
+              by_cases hdvd : d ∣ N - p <;> simp [huns, hq, hdvd]
+    · rw [if_neg (by intro h; exact hq h.2)]
+      symm
+      apply Finset.sum_eq_zero
+      intro d hd
+      by_cases hdvd : d ∣ N - p
+      · have hne : ¬ (p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p) := by
+          intro h
+          exact hq h.2.1
+        simp [hne]
+      · simp [hdvd]
+  · rw [if_neg (by intro h; exact hsupp h.1)]
+    symm
+    by_cases huns_p : p ∈ correctedChenUnsiftedPrimeSupport N
+    · by_cases hq : q ∣ N - p
+      · have hcop0 : (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            if d ∣ N - p then (μ d : ℝ) else 0) = 0 := by
+          rw [hcop]
+          rw [if_neg]
+          intro hcoprime
+          exact hsupp (Iff.mpr (mem_correctedChenCandidates_iff_coprime_sifting N p) ⟨huns_p, hcoprime⟩)
+        calc
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+              if p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p then (μ d : ℝ) else 0)
+              = ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                  if d ∣ N - p then (μ d : ℝ) else 0 := by
+                apply Finset.sum_congr rfl
+                intro d hd
+                by_cases hdvd : d ∣ N - p <;> simp [huns_p, hq, hdvd]
+          _ = 0 := hcop0
+      · apply Finset.sum_eq_zero
+        intro d hd
+        by_cases hdvd : d ∣ N - p
+        · have hne : ¬ (p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p) := by
+            intro h
+            exact hq h.2.1
+          simp [hne]
+        · simp [hdvd]
+    · apply Finset.sum_eq_zero
+      intro d hd
+      by_cases hdvd : d ∣ N - p
+      · have hne : ¬ (p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p) := by
+          intro h
+          exact huns_p h.1
+        simp [hne]
+      · simp [hdvd]
+
+/-- **候选 AP 计数的第一层 Möbius 分解**: candidates = unsifted ∩ 与
+`P_sift` 互素, 故 `#{p ∈ candidates : q | N−p} =
+Σ_{d | P_sift} μ(d)·#{p ∈ unsifted : p ≡ N [MOD lcm(q,d)]}`. -/
+theorem candidatesAPCount_eq_unsiftedMoebiusSum (N q : ℕ) :
+    (((correctedChenCandidates N).filter (fun p => q ∣ N - p)).card : ℝ) =
+      ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+          (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD Nat.lcm q d])).card : ℝ) := by
+  have h₁ : (((correctedChenCandidates N).filter (fun p => q ∣ N - p)).card : ℝ) =
+      ∑ p ∈ correctedChenCandidates N, if q ∣ N - p then (1 : ℝ) else 0 := by
+    rw [Finset.sum_boole]
+  have h₂ : (∑ p ∈ correctedChenCandidates N, if q ∣ N - p then (1 : ℝ) else 0) =
+      ∑ p ∈ (Finset.range N),
+        if p ∈ correctedChenCandidates N ∧ q ∣ N - p then (1 : ℝ) else 0 := by
+    have hsub : correctedChenCandidates N ⊆ Finset.range N := by
+      intro p hp
+      exact (Finset.mem_filter.mp hp).1
+    have hz : ∀ p ∈ Finset.range N, p ∉ correctedChenCandidates N →
+        (if p ∈ correctedChenCandidates N ∧ q ∣ N - p then (1 : ℝ) else 0) = 0 := by
+      intro p hp hnot
+      simp [hnot]
+    rw [← Finset.sum_subset hsub hz]
+    apply Finset.sum_congr rfl
+    intro p hp
+    simp [hp]
+  calc
+    (((correctedChenCandidates N).filter (fun p => q ∣ N - p)).card : ℝ)
+        = ∑ p ∈ (Finset.range N),
+            if p ∈ correctedChenCandidates N ∧ q ∣ N - p then (1 : ℝ) else 0 := h₁.trans h₂
+    _ = ∑ p ∈ (Finset.range N),
+          (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            if p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p then (μ d : ℝ) else 0) := by
+          apply Finset.sum_congr rfl
+          intro p hp
+          exact candidatesAP_indicator_eq_moebiusSum N p q hp
+    _ = ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+          ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+            (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD Nat.lcm q d])).card : ℝ) := by
+          rw [Finset.sum_comm]
+          apply Finset.sum_congr rfl
+          intro d hd
+          calc
+            (∑ p ∈ (Finset.range N),
+                if p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p then (μ d : ℝ) else 0)
+                = ∑ p ∈ (Finset.range N),
+                    ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                      (if p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p then (1 : ℝ) else 0) := by
+                    apply Finset.sum_congr rfl
+                    intro p hp
+                    by_cases h : p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p <;> simp [h]
+            _ = ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                    (∑ p ∈ (Finset.range N),
+                      if p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p then (1 : ℝ) else 0) := by
+                    rw [← Finset.mul_sum]
+            _ = ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                    (∑ p ∈ (Finset.range N),
+                      if p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD Nat.lcm q d] then (1 : ℝ) else 0) := by
+                    apply congrArg (fun x => ((ArithmeticFunction.moebius d : ℤ) : ℝ) * x)
+                    apply Finset.sum_congr rfl
+                    intro p hp
+                    have hlt : p < N := Finset.mem_range.mp hp
+                    by_cases h : p ∈ correctedChenUnsiftedPrimeSupport N ∧ q ∣ N - p ∧ d ∣ N - p
+                    · have hcong : p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD Nat.lcm q d] :=
+                        (unsifted_lcm_congr (N := N) (p := p) (q := q) (d := d) hlt).1 h
+                      simp [h, hcong]
+                    · have hcong : ¬ (p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD Nat.lcm q d]) := by
+                        intro hc
+                        exact h ((unsifted_lcm_congr (N := N) (p := p) (q := q) (d := d) hlt).2 hc)
+                      simp [h, hcong]
+            _ = ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                    (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD Nat.lcm q d])).card : ℝ) := by
+                    apply congrArg (fun x => ((ArithmeticFunction.moebius d : ℤ) : ℝ) * x)
+                    have hsum : (∑ p ∈ (Finset.range N),
+                        if p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD Nat.lcm q d] then (1 : ℝ) else 0) =
+                        (((Finset.range N).filter (fun p =>
+                          p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD Nat.lcm q d])).card : ℝ) := by
+                      rw [Finset.sum_boole]
+                    rw [hsum]
+                    have hf : (Finset.range N).filter (fun p =>
+                          p ∈ correctedChenUnsiftedPrimeSupport N ∧ p ≡ N [MOD Nat.lcm q d]) =
+                        (correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD Nat.lcm q d]) := by
+                      ext p
+                      rw [Finset.mem_filter, Finset.mem_filter]
+                      constructor
+                      · intro h
+                        exact h.2
+                      · intro h
+                        exact ⟨(Finset.mem_filter.mp h.1).1, h⟩
+                    rw [hf]
+
+set_option maxHeartbeats 800000 in
+/-- 候选 AP 计数的双层 Möbius 展开 (精确等式): `A_q = Σ_{d,e} μ(d)μ(e)·base(lcm(q,d,e))`. -/
+theorem q1CandidateAPCount_eq_doubleSum (N q : ℕ) :
+    q1CandidateAPCount N q = q1CandidateAPDoubleSum N q := by
+  unfold q1CandidateAPCount q1CandidateAPDoubleSum
+  calc
+    (((correctedChenCandidates N).filter (fun p => q ∣ N - p)).card : ℝ)
+        = ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+              (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD Nat.lcm q d])).card : ℝ) :=
+            candidatesAPCount_eq_unsiftedMoebiusSum N q
+    _ = ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+              (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+                  (q1APBaseCount N (Nat.lcm (Nat.lcm q d) e) : ℝ)) := by
+            apply Finset.sum_congr rfl
+            intro d hd
+            apply congrArg (fun x => ((ArithmeticFunction.moebius d : ℤ) : ℝ) * x)
+            have hU := unsiftedPrimeSupport_AP_count_eq_moebiusSum N (Nat.lcm q d)
+            calc
+              (((correctedChenUnsiftedPrimeSupport N).filter (fun p => p ≡ N [MOD Nat.lcm q d])).card : ℝ)
+                  = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                      ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+                        (((Finset.range N).filter (fun p =>
+                          p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm q d] ∧ e ∣ N - p)).card : ℝ) := hU
+              _ = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                      ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+                        (q1APBaseCount N (Nat.lcm (Nat.lcm q d) e) : ℝ) := by
+                      apply Finset.sum_congr rfl
+                      intro e he
+                      apply congrArg (fun x => ((ArithmeticFunction.moebius e : ℤ) : ℝ) * x)
+                      unfold q1APBaseCount
+                      apply congrArg (fun s : Finset ℕ => (s.card : ℝ))
+                      apply Finset.filter_congr
+                      intro p hp
+                      exact baseCount_lcm_congr (N := N) (m := Nat.lcm q d) (e := e) (Finset.mem_range.mp hp)
+
+/-- 逐 q: `A_q ≤ 主项(q) + 误差(q)` — 基计数按 `base = main' + err` 分裂,
+带符号误差和按绝对值控制. -/
+theorem q1CandidateAPCount_le_main_add_error (N q : ℕ) :
+    q1CandidateAPCount N q ≤ q1CandidateAPMain N q + q1CandidateAPError N q := by
+  have hsplit : ∀ m : ℕ, (q1APBaseCount N m : ℝ) = q1APMainValue N m + q1APError N m := by
+    intro m
+    unfold q1APError
+    ring
+  have hsplitSum : q1CandidateAPDoubleSum N q = q1CandidateAPMain N q + q1CandidateAPErrorSigned N q := by
+    unfold q1CandidateAPDoubleSum q1CandidateAPMain q1CandidateAPErrorSigned
+    simp_rw [hsplit]
+    simp [mul_add, Finset.sum_add_distrib]
+  have hAbs : ∀ d e : ℕ,
+      |((ArithmeticFunction.moebius d : ℤ) : ℝ) * ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+        q1APError N (Nat.lcm (Nat.lcm q d) e)| =
+      |((ArithmeticFunction.moebius d : ℤ) : ℝ)| *
+        (|((ArithmeticFunction.moebius e : ℤ) : ℝ)| * |q1APError N (Nat.lcm (Nat.lcm q d) e)|) := by
+    intro d e
+    rw [abs_mul, abs_mul]
+    ring
+  have hErrSigned_le : q1CandidateAPErrorSigned N q ≤ q1CandidateAPError N q := by
+    unfold q1CandidateAPErrorSigned q1CandidateAPError
+    calc
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+          ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+            (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+              ((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e)))
+          ≤ ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+              ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                |((ArithmeticFunction.moebius d : ℤ) : ℝ) * ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+                  q1APError N (Nat.lcm (Nat.lcm q d) e)| := by
+            apply Finset.sum_le_sum
+            intro d hd
+            have hle1 : ((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                  ((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e)) ≤
+                |((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                  (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                    ((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e))| :=
+                le_abs_self _
+            have hle2 : |((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                  ((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e))| ≤
+                ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                  |((ArithmeticFunction.moebius d : ℤ) : ℝ) * ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+                    q1APError N (Nat.lcm (Nat.lcm q d) e)| := by
+                calc
+                  |((ArithmeticFunction.moebius d : ℤ) : ℝ) *
+                      (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                        ((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e))|
+                      = |((ArithmeticFunction.moebius d : ℤ) : ℝ)| *
+                          |∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                            ((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e)| := by
+                          rw [abs_mul]
+                  _ ≤ |((ArithmeticFunction.moebius d : ℤ) : ℝ)| *
+                          (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                            |((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e)|) := by
+                          exact mul_le_mul_of_nonneg_left (Finset.abs_sum_le_sum_abs _ _) (abs_nonneg _)
+                  _ = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                          |((ArithmeticFunction.moebius d : ℤ) : ℝ)| *
+                            |((ArithmeticFunction.moebius e : ℤ) : ℝ) * q1APError N (Nat.lcm (Nat.lcm q d) e)| := by
+                          rw [Finset.mul_sum]
+                  _ = ∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                          |((ArithmeticFunction.moebius d : ℤ) : ℝ) * ((ArithmeticFunction.moebius e : ℤ) : ℝ) *
+                            q1APError N (Nat.lcm (Nat.lcm q d) e)| := by
+                          apply Finset.sum_congr rfl
+                          intro e he
+                          rw [abs_mul]
+                          exact (hAbs d e).symm
+            exact le_trans hle1 hle2
+      _ = q1CandidateAPError N q := by
+            apply Finset.sum_congr rfl
+            intro d hd
+            symm
+            rw [Finset.mul_sum]
+            apply Finset.sum_congr rfl
+            intro e he
+            exact (hAbs d e).symm
+  have hMainAdd : q1CandidateAPMain N q + q1CandidateAPErrorSigned N q ≤
+      q1CandidateAPMain N q + q1CandidateAPError N q := by
+    nlinarith [hErrSigned_le]
+  exact ((q1CandidateAPCount_eq_doubleSum N q).trans hsplitSum).trans_le hMainAdd
+
+/-- **q¹ 有限归约**: `q1Count ≤ q1MainTermSum + q1ErrorTermSum` — 精确代数
+(重排 + 双层 Möbius + 基计数分裂). -/
+theorem q1Count_le_mainTerm_add_error (N : ℕ) :
+    correctedChenQ1Count N ≤ q1MainTermSum N + q1ErrorTermSum N := by
+  rw [correctedChenQ1Count_eq_reindexed]
+  unfold q1MainTermSum q1ErrorTermSum
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_le_sum
+  intro q hq
+  exact q1CandidateAPCount_le_main_add_error N q
+
+/-- 偶数模数的 AP 基计数只有 `p = 2` 一个点: 对偶数 `N ≥ 4` 与偶数
+`m`, `q1APBaseCount N m = 1` 若 `m | N−2`, 否则 0. -/
+theorem q1APBaseCount_even (N m : ℕ) (hN : Even N) (hN4 : 4 ≤ N) (hm : Even m) :
+    q1APBaseCount N m = if m ∣ N - 2 then 1 else 0 := by
+  unfold q1APBaseCount
+  by_cases hdvd : m ∣ N - 2
+  · have hfilter : ((Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD m])) = {2} := by
+      ext p
+      constructor
+      · intro hp
+        rw [Finset.mem_filter, Finset.mem_range] at hp
+        rcases hp with ⟨hpN, hbase⟩
+        rcases hbase with ⟨hpp, h2, hcong⟩
+        have hm2 : 2 ∣ m := by rcases hm with ⟨k, hk⟩; refine ⟨k, ?_⟩; omega
+        have hmdvd : m ∣ N - p := (Nat.modEq_iff_dvd' (by omega : p ≤ N)).1 hcong
+        have h2dvd : 2 ∣ N - p := dvd_trans hm2 hmdvd
+        have hpeven : Even p := by
+          rcases hN with ⟨a, ha⟩
+          rcases h2dvd with ⟨b, hb⟩
+          use a - b
+          omega
+        have hp2' : p = 2 := by
+          rcases hpp.eq_two_or_odd' with h2 | hod
+          · exact h2
+          · exfalso
+            rcases hpeven with ⟨c, hc⟩
+            rcases hod with ⟨d, hd⟩
+            omega
+        subst p
+        rw [Finset.mem_singleton]
+      · intro hp
+        rw [Finset.mem_singleton] at hp
+        subst p
+        rw [Finset.mem_filter, Finset.mem_range]
+        constructor
+        · omega
+        · exact ⟨by norm_num, by omega, (Nat.modEq_iff_dvd' (n := m) (a := 2) (b := N) (by omega : 2 ≤ N)).2 hdvd⟩
+    rw [hfilter]
+    simp [hdvd]
+  · have hfilter : ((Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD m])) = ∅ := by
+      ext p
+      constructor
+      · intro hp
+        rw [Finset.mem_filter, Finset.mem_range] at hp
+        rcases hp with ⟨hpN, hbase⟩
+        rcases hbase with ⟨hpp, h2, hcong⟩
+        have hm2 : 2 ∣ m := by rcases hm with ⟨k, hk⟩; refine ⟨k, ?_⟩; omega
+        have hmdvd : m ∣ N - p := (Nat.modEq_iff_dvd' (by omega : p ≤ N)).1 hcong
+        have h2dvd : 2 ∣ N - p := dvd_trans hm2 hmdvd
+        have hpeven : Even p := by
+          rcases hN with ⟨a, ha⟩
+          rcases h2dvd with ⟨b, hb⟩
+          use a - b
+          omega
+        have hp2' : p = 2 := by
+          rcases hpp.eq_two_or_odd' with h2 | hod
+          · exact h2
+          · exfalso
+            rcases hpeven with ⟨c, hc⟩
+            rcases hod with ⟨d, hd⟩
+            omega
+        subst p
+        exact False.elim (hdvd ((Nat.modEq_iff_dvd' (n := m) (a := 2) (b := N) (by omega : 2 ≤ N)).1 (by simpa using hcong)))
+      · intro h
+        simp at h
+    rw [hfilter]
+    simp [hdvd]
+
+/-- 偶数模数下 q¹ 误差恒为零: 主项 `q1APMainValue` 对偶数模数取精确值. -/
+theorem q1APError_even_zero {N m : ℕ} (hN : Even N) (hN4 : 4 ≤ N) (hm : Even m) :
+    q1APError N m = 0 := by
+  unfold q1APError
+  rw [q1APBaseCount_even N m hN hN4 hm]
+  unfold q1APMainValue
+  by_cases hdvd : m ∣ N - 2 <;> simp [hm, hdvd]
+
+/-- **q¹ 主项吸收 (解析缝, ant #15/#17 输出形态)**: 
+`Σ_{q ∈ [z,y)} q1CandidateAPMain N q ≤ C₁·𝔖_trunc·N/log²N`.
+
+主项的结构 (由 `q1CandidateAPCount_eq_doubleSum` 的精确 Möbius 分解给出):
+`q1CandidateAPMain N q = li(N)/φ(q)·∏_{2<r<z}(1−1/(r−1)) + O(奇偶修正)`,
+其中 `li(N) = N/log N`, 乘积项经 `singularSeriesTruncated` 的局部因子结构
+与 ant `primeReciprocalSum_range_le` (素数倒数和范围界, Mertens) 吸收为
+`C₁·𝔖_trunc·N/log²N` (对数因子吸收). 该吸收是解析步骤, 作为本条件化骨架的
+输入缝; ant #17 的素数倒数和界 + 奇异级数乘积结构落地后证明. -/
+def q1MainTermAbsorption : Prop :=
+  ∃ C₁ : ℝ, 0 < C₁ ∧ ∃ N₁ : ℕ, ∀ N : ℕ, N₁ ≤ N → Even N →
+    q1MainTermSum N ≤
+      C₁ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+        (N : ℝ) / (log (N : ℝ)) ^ 2
+
+/-- **q¹ 误差一致界 (解析缝, Pan 桥输出)**: 
+`Σ_{q ∈ [z,y)} q1CandidateAPError N q ≤ C₂·N/log³N`.
+
+`q1CandidateAPError` 是 Möbius 双和误差 `Σ_q Σ_{d,e} |μ(d)μ(e)|·|err(lcm(q,d,e))|`
+其中 `err(m) = π'(N;m) − 主项` (偶数模数由 `q1APMainValue` 的奇偶修正精确
+吸收为零, 见 `q1APError_even_zero`). 经典源头是 **ant #15 的
+`PanMeanValueUniform`** (加权 Pan 均值定理; f = δ₁ 实例给出
+`Σ_{m ≤ N^{1/2}/log^B N} (μm)²·3^{ω(m)}·max_l |π(N;m,l) − li(N)/φ(m)| ≤ C·N/log^A N`):
+把 (d,e) 对的 lcm 合并与 `2^{ω}`-权重重打包 (Pan 桥, ant #25) 后, 本缝
+恰为该加权平均在切换模数族上的输出形态. 桥落地后由 `PanMeanValueUniform`
+直接实例化. -/
+def q1APErrorUniformBound : Prop :=
+  ∃ C₂ : ℝ, 0 < C₂ ∧ ∃ N₂ : ℕ, ∀ N : ℕ, N₂ ≤ N → Even N →
+    q1ErrorTermSum N ≤ C₂ * (N : ℝ) / (log (N : ℝ)) ^ 3
+
+/-- **hq1 的条件化定理 (chen #8 第三个解析输入, 线 D)**: 假设主项吸收
+`q1MainTermAbsorption` 与误差一致界 `q1APErrorUniformBound` (后者是
+ant #15 `PanMeanValueUniform` 经 Pan 桥的输出), 则 q¹ 计数有一致上界
+`∃ Cq Nq: q1Count(N) ≤ Cq·𝔖_trunc·N/log²N` — 正是
+`corrected_chens_theorem_of_q1Count_and_triple` 的 `hq1` 输入形态.
+
+组装: `q1Count ≤ Main + Error` (`q1Count_le_mainTerm_add_error`),
+主项 ≤ `C₁·𝔖·X`, 误差 ≤ `C₂·N/log³N` ≤ `(1/4)·N/log²N`
+(`errLogCube_negligible`) ≤ `(1/2)·𝔖·X` (`𝔖 ≥ 1/2`,
+`singularSeriesTruncated_ge_half`), 故 `Cq = C₁ + 1/2`. -/
+theorem hq1_of_q1AnalyticInputs
+    (hMain : q1MainTermAbsorption) (hErr : q1APErrorUniformBound) :
+    ∃ Cq : ℝ, 0 < Cq ∧ ∃ Nq : ℕ, ∀ N : ℕ, Nq ≤ N → Even N →
+      correctedChenQ1Count N ≤ Cq * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+        (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+  rcases hMain with ⟨C₁, hC₁, N₁, hMain'⟩
+  rcases hErr with ⟨C₂, hC₂, N₂, hErr'⟩
+  rcases errLogCube_negligible C₂ with ⟨N₀, hN₀⟩
+  refine ⟨C₁ + 1 / 2, by positivity, max (max N₁ (max N₂ N₀)) 59049, ?_⟩
+  intro N hN hEven
+  have hN₁ : N₁ ≤ N := by omega
+  have hN₂ : N₂ ≤ N := by omega
+  have hN₀' : N₀ ≤ N := by omega
+  have hN59049 : 59049 ≤ N := by omega
+  let 𝔖 : ℝ := AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1)
+  let X : ℝ := (N : ℝ) / (log (N : ℝ)) ^ 2
+  have hred := q1Count_le_mainTerm_add_error N
+  have hMainN : q1MainTermSum N ≤ C₁ * 𝔖 * X := by
+    rw [show C₁ * 𝔖 * X =
+        C₁ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
+          (N : ℝ) / (log (N : ℝ)) ^ 2 by ring]
+    exact hMain' N hN₁ hEven
+  have hErrN : q1ErrorTermSum N ≤ C₂ * (N : ℝ) / (log (N : ℝ)) ^ 3 := hErr' N hN₂ hEven
+  have hErrCube : C₂ * (N : ℝ) / (log (N : ℝ)) ^ 3 ≤
+      (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2 := hN₀ N hN₀' hEven
+  have h𝔖 : (1 / 2 : ℝ) ≤ 𝔖 := by
+    dsimp [𝔖]
+    exact singularSeriesTruncated_ge_half (correctedChenZ_sub_one_ge_two_of_large hN59049)
+  have hErrAbsorb : (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2 ≤ (1 / 2 : ℝ) * 𝔖 * X := by
+    have hcoef : (1 / 4 : ℝ) ≤ (1 / 2 : ℝ) * 𝔖 := by nlinarith [h𝔖]
+    dsimp [X]
+    calc
+      (1 / 4 : ℝ) * (N : ℝ) / (log (N : ℝ)) ^ 2
+          = (1 / 4 : ℝ) * ((N : ℝ) / (log (N : ℝ)) ^ 2) := by ring
+      _ ≤ (1 / 2 : ℝ) * 𝔖 * ((N : ℝ) / (log (N : ℝ)) ^ 2) := by
+            exact mul_le_mul_of_nonneg_right hcoef (by positivity)
+  have hq1' : correctedChenQ1Count N ≤ (C₁ + 1 / 2) * 𝔖 * X := by
+    calc
+      correctedChenQ1Count N ≤ q1MainTermSum N + q1ErrorTermSum N := hred
+      _ ≤ C₁ * 𝔖 * X + C₂ * (N : ℝ) / (log (N : ℝ)) ^ 3 := add_le_add hMainN hErrN
+      _ ≤ C₁ * 𝔖 * X + (1 / 2 : ℝ) * 𝔖 * X := by
+            exact add_le_add le_rfl (le_trans hErrCube hErrAbsorb)
+      _ = (C₁ + 1 / 2) * 𝔖 * X := by ring
+  calc
+    correctedChenQ1Count N ≤ (C₁ + 1 / 2) * 𝔖 * X := hq1'
+    _ = (C₁ + 1 / 2) * AnalyticNumberTheory.Sieve.singularSeriesTruncated N
+          (correctedChenZ N - 1) * (N : ℝ) / (log (N : ℝ)) ^ 2 := by
+          dsimp [𝔖, X]
+          ring
+
 /-- 逐候选: 三因子惩罚 ≤ 切换权重 (对 `(p₁,p₂)` 对的计数, 丢掉
 `p₁ < p₂`、`p₂ ≤ p₃` 等约束后仍为上界; `p₃` 由等式唯一决定). -/
 theorem tripleFactorCount_le_switchingWeight {n z y : ℕ} :
