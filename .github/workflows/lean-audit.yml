@@ -49,7 +49,7 @@ jobs:
 
           output = pathlib.Path('audit.log').read_text(encoding='utf-8')
           reports = re.findall(r'depends on axioms:\s*\[(.*?)\]', output, re.S)
-          expected_reports = 193
+          expected_reports = 206
           allowed = {'propext', 'Classical.choice', 'Quot.sound'}
           if len(reports) != expected_reports:
               print(f'Expected {expected_reports} axiom reports, found {len(reports)}.', file=sys.stderr)
