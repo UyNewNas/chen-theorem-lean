@@ -1893,7 +1893,13 @@ theorem correctedChenErrSum_uniform_of_weightedPanInput {A : ℝ} (hA : 0 < A)
   refine ⟨C, hC, ?_⟩
   exact le_trans (correctedChenErrSum_le_weightedPanInput N) (hbound N hN hEven)
 
-/-! ## Pan 桥收官 (ant #25): PanMeanValueUniform ⇒ ChenWeightedPanInput -/
+/-! ## Pan 桥收官 (ant #25): PanMeanValueUniform ⇒ ChenWeightedPanInput
+
+`PanMeanValueUniform` 的证明在 ant 侧 (b07db1a, PR #35-#37) 已归约到
+`PanMeanValueUniform.of_vaughanSplit` ∘ `PanVaughanSplit.of_analyticInputs`
+(5 个辅助 Prop; `PanLogEventuallyLarge` 已实例化). 本节消费其陈述,
+并在末尾提供 `chenPanInput_of_vaughanChain` 把剩余 4 个解析缝打包成
+`ChenWeightedPanInput`. -/
 
 /-- Pan 桥的 a=1 权重: `f(1) = 1`, 其余为 0 — 使 `panDistributionSum` 退化为
 `a = 1` 的分布误差 `Δ(y; 1, q, l)`. -/
@@ -2428,7 +2434,13 @@ theorem correctedChenPanSum_small_bound (N x₀ : ℕ) (hN : 1000 ≤ N) (hNx : 
 `Σ_d 3^{ω(d)}|rem d| ≤ PanSum + Trunc` — `PanSum` 由 `hpan`
 (`PanMeanValueUniform`) 控制, `Trunc` 由 `htrunc`
 (`CorrectedChenPanTruncationInput`) 控制; `N < x₀` 的有限段由平凡界吸收.
-`PanMeanValueUniform` 的证明是开放研究目标 (ant #15), 此处只消费其陈述. -/
+`PanMeanValueUniform` 的证明在 ant 侧已归约到明确的归约链 (ant b07db1a,
+PR #35-#37): `PanMeanValueUniform.of_vaughanSplit` (定义性相等) ∘
+`PanVaughanSplit.of_analyticInputs` — 由 5 个辅助 Prop 推出, 其中
+`PanLogEventuallyLarge` 已实例化 (`panLogEventuallyLarge_natCast`, PR #37),
+其余 4 个 (PanTypeI/IICharacterMeanValue、PanMainTermSieveBound、
+PanVaughanPointwiseSplit) 是研究级解析输入; 见下方
+`chenPanInput_of_vaughanChain` 的打包. 此处直接消费 `PanMeanValueUniform` 陈述. -/
 theorem correctedChenPanInput_of_panMeanValueUniform
     (hpan : AnalyticNumberTheory.Sieve.PanMeanValueUniform (fun N : ℕ => (N : ℝ)) chenPanWeightOne)
     (htrunc : CorrectedChenPanTruncationInput) :
@@ -2573,6 +2585,36 @@ theorem correctedChenPanInput_of_panMeanValueUniform
           _ ≤ (6 : ℝ) ^ correctedChenZ x₀ * ((1 + 1 / Real.log 1000) * (N : ℝ)) := hsmall
           _ ≤ C * (N : ℝ) / (log (N : ℝ)) ^ A := hmain
       exact hbound
+
+/-- **Pan 桥的 ant 归约链打包 (chen #6/#9 接口)**: ant 侧 `PanMeanValueUniform`
+已归约到 5 个辅助 Prop (ant b07db1a, PR #35-#37):
+
+  `PanMeanValueUniform.of_vaughanSplit` (定义性相等) ∘
+  `PanVaughanSplit.of_analyticInputs hI hII hM hfin hsplit`,
+
+其中 `PanLogEventuallyLarge` 已由 `panLogEventuallyLarge_natCast` 实例化
+(PR #37); 本定理把剩余 4 个研究级解析输入 (PanTypeICharacterMeanValue /
+PanTypeIICharacterMeanValue / PanMainTermSieveBound / PanVaughanPointwiseSplit,
+实例化为 x = (N : ℝ), f = chenPanWeightOne) 与支撑截断输入打包成
+`ChenWeightedPanInput` — 即 `corrected_chens_theorem_of_q1Count_and_triple`
+的 `hPan` 输入, 使最终实例化路径闭合到 4 个解析缝 + `hTripleMain` + `hq1`. -/
+theorem chenPanInput_of_vaughanChain
+    {u v : ℕ}
+    (hI : AnalyticNumberTheory.Sieve.PanTypeICharacterMeanValue
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne u)
+    (hII : AnalyticNumberTheory.Sieve.PanTypeIICharacterMeanValue
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne u v)
+    (hM : AnalyticNumberTheory.Sieve.PanMainTermSieveBound
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne)
+    (hsplit : AnalyticNumberTheory.Sieve.PanVaughanPointwiseSplit
+      (fun N : ℕ => (N : ℝ)) chenPanWeightOne u v)
+    (htrunc : CorrectedChenPanTruncationInput) :
+    ChenWeightedPanInput := by
+  exact correctedChenPanInput_of_panMeanValueUniform
+    (AnalyticNumberTheory.Sieve.PanMeanValueUniform.of_vaughanSplit
+      (AnalyticNumberTheory.Sieve.PanVaughanSplit.of_analyticInputs hI hII hM
+        AnalyticNumberTheory.Sieve.panLogEventuallyLarge_natCast hsplit))
+    htrunc
 
 /-- The corrected candidate count is at least the lower-sieve main term minus
 the explicit `errSum`: the finite seam through which a uniform
@@ -5467,7 +5509,9 @@ theorem properPower_negligible_threshold :
 /-! ## chen #18 -> 线 D: q¹ 计数分布界的条件化定理 (PanMeanValueUniform => hq1)
 
 本节实现 chen issue #8 的第三个解析输入: 在加权 Pan 均值定理
-(`AnalyticNumberTheory.Sieve.PanMeanValueUniform`, ant #15) 的假设下,
+(`AnalyticNumberTheory.Sieve.PanMeanValueUniform`, ant #15; 自 ant b07db1a 起
+该定理经 `of_vaughanSplit` ∘ `PanVaughanSplit.of_analyticInputs` 归约到
+5 个辅助 Prop, 见 Pan 桥收官节) 的假设下,
 推出 `hq1` — q¹ 计数 `correctedChenQ1Count N` 的一致上界
 
   `q1Count(N) ≤ Cq · 𝔖_trunc(N, z−1) · N/log²N`.
@@ -6082,7 +6126,9 @@ def q1MainTermAbsorption : Prop :=
 `Σ_{m ≤ N^{1/2}/log^B N} (μm)²·3^{ω(m)}·max_l |π(N;m,l) − li(N)/φ(m)| ≤ C·N/log^A N`):
 把 (d,e) 对的 lcm 合并与 `2^{ω}`-权重重打包 (Pan 桥, ant #25) 后, 本缝
 恰为该加权平均在切换模数族上的输出形态. 桥落地后由 `PanMeanValueUniform`
-直接实例化. -/
+直接实例化 (ant b07db1a 起, `PanMeanValueUniform` 经 `of_vaughanSplit` ∘
+`PanVaughanSplit.of_analyticInputs` 归约到 5 个辅助 Prop, 其中 4 个仍为
+研究级解析缝; 见 Pan 桥收官节的 `chenPanInput_of_vaughanChain`). -/
 def q1APErrorUniformBound : Prop :=
   ∃ C₂ : ℝ, 0 < C₂ ∧ ∃ N₂ : ℕ, ∀ N : ℕ, N₂ ≤ N → Even N →
     q1ErrorTermSum N ≤ C₂ * (N : ℝ) / (log (N : ℝ)) ^ 3
@@ -6908,8 +6954,14 @@ theorem corrected_chens_theorem_of_omega_inputs
 
 `hPrimePower_of_q1Count_bound` (chen #23) 把素幂输入归约到 q¹ 界,
 `properPower_negligible_threshold` (PR #24) 消解真幂可忽略项 — 本定理把
-整条结构链闭合到只剩解析输入. 一旦 `PanMeanValueUniform` (ant #15) 与
-两个解析界落地, 直接实例化即得 `corrected_chens_theorem` 的完整证明. -/
+整条结构链闭合到只剩解析输入. 其中 `hPan` 侧: `ChenWeightedPanInput` 由
+`chenPanInput_of_vaughanChain` (ant 归约链打包, 见 Pan 桥收官节) 给出 —
+它消费 ant b07db1a 的 `PanMeanValueUniform.of_vaughanSplit` ∘
+`PanVaughanSplit.of_analyticInputs` 归约链, 最终只剩 4 个研究级解析缝
+(PanTypeI/IICharacterMeanValue、PanMainTermSieveBound、
+PanVaughanPointwiseSplit; `PanLogEventuallyLarge` 已实例化, PR #37).
+一旦这 4 个解析缝与两个解析界 (`hTripleMain`, q¹ 界) 落地,
+直接实例化即得 `corrected_chens_theorem` 的完整证明. -/
 theorem corrected_chens_theorem_of_q1Count_and_triple
     {cₘ Cq : ℝ} {N₀ₘ Nq : ℕ}
     (hPan : ChenWeightedPanInput)
