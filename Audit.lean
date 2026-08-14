@@ -172,6 +172,7 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenZ_le_of_le
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenPanSum_small_bound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenPanInput_of_panMeanValueUniform
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenPanInput_of_vaughanChain
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPrimePairInput
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingCount_eq_zero_of_N_lt_z_mul
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.switchingCount_sum_eq_z_region
