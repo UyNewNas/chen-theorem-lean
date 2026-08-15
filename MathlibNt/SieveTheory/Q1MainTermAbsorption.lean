@@ -529,12 +529,12 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
                   (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
                     q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))))
                 = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    ((q1LogarithmicIntegral N * (q1Mu d *
+                    (q1LogarithmicIntegral N * (q1Mu d *
                         (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
                           q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))))) +
                       (q1Mu d *
                         (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                          q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)))))) := by
+                          q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))))) := by
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
@@ -752,11 +752,11 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                 by_cases hev : Even e <;> simp [hev]
                 · have hif : (if Nat.lcm (Nat.lcm q d) e ∣ N - 2 then (1 : ℝ) else 0) =
                       (if q ∣ N - 2 then (if d ∣ N - 2 then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0) else 0) := by
-                    rw [show (Nat.lcm (Nat.lcm q d) e ∣ N - 2) ↔ (q ∣ N - 2 ∧ d ∣ N - 2 ∧ e ∣ N - 2) by
-                      rw [lcm_dvd_iff]
-                      rw [lcm_dvd_iff]
-                      rw [and_assoc]]
-                    by_cases hq2 : q ∣ N - 2 <;> by_cases hd2 : d ∣ N - 2 <;> by_cases he2 : e ∣ N - 2 <;> simp [hq2, hd2, he2]
+                    have hiff : (Nat.lcm (Nat.lcm q d) e ∣ N - 2) ↔ (q ∣ N - 2 ∧ d ∣ N - 2 ∧ e ∣ N - 2) := by
+                      rw [_root_.lcm_dvd_iff]
+                      rw [_root_.lcm_dvd_iff]
+                      rw [and_assoc]
+                    by_cases hq2 : q ∣ N - 2 <;> by_cases hd2 : d ∣ N - 2 <;> by_cases he2 : e ∣ N - 2 <;> simp [hq2, hd2, he2, hiff]
                   exact congrArg (fun x => q1Mu e * x) hif)))
     _ = (if q ∣ N - 2 then
           (∑ d ∈ (correctedChenSiftingProduct N).divisors,
@@ -805,6 +805,15 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                         q1Mu e * (if Even e then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0)) := by
                       rw [sum_moebius_if_dvd_eq_if_gcd_one (P := correctedChenSiftingProduct N)
                         (m := N - 2) (correctedChenSiftingProduct_ne_zero N)]
+                      by_cases hg : Nat.gcd (N - 2) (correctedChenSiftingProduct N) = 1
+                      · have hg' : Nat.gcd (correctedChenSiftingProduct N) (N - 2) = 1 := by
+                          rwa [Nat.gcd_comm]
+                        simp [hg, hg']
+                      · have hg' : Nat.gcd (correctedChenSiftingProduct N) (N - 2) ≠ 1 := by
+                          intro h
+                          apply hg
+                          rwa [Nat.gcd_comm]
+                        simp [hg, hg']
                 _ = (if Nat.gcd (correctedChenSiftingProduct N) (N - 2) = 1 then
                       (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
                         q1Mu e * (if Even e then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0))
@@ -818,8 +827,14 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
         else 0) := by
           by_cases hq2 : q ∣ N - 2 <;> simp [hq2]
           · by_cases hg : Nat.gcd (correctedChenSiftingProduct N) (N - 2) = 1 <;> simp [hg]
-            · rw [hesum]
-              ring
+            · have hsum_eq : (∑ x ∈ (correctedChenForbiddenProduct N).divisors,
+                    if Even x then if x ∣ N - 2 then q1Mu x else 0 else 0) =
+                  (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                    q1Mu e * (if Even e then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0)) := by
+                  apply Finset.sum_congr rfl
+                  intro e he
+                  by_cases hev : Even e <;> by_cases hd : e ∣ N - 2 <;> simp [hev, hd]
+              rw [hsum_eq, hesum]
 
 
 /-- 偶数模数贡献非正: 精确值为 `−[...]` 三个非负指示因子之积. -/
@@ -952,11 +967,9 @@ theorem q1OddSum_eq_products (N q : ℕ) (hz3 : 3 ≤ correctedChenZ N)
         = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
             q1Mu d * (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
               q1Mu e * ((1 / (Nat.totient q : ℝ)) * (1 / (Nat.totient d : ℝ)) * (1 / (Nat.totient e : ℝ))))) := by
-          apply Finset.sum_congr rfl
-          intro d hd
-          apply Finset.sum_congr rfl
-          intro e he
-          rw [hterm d hd e he]
+          exact Finset.sum_congr rfl (fun d hd =>
+            congrArg (fun x => q1Mu d * x)
+              (Finset.sum_congr rfl (fun e he => congrArg (fun x => q1Mu e * x) (hterm d hd e he))))
     _ = (1 / (Nat.totient q : ℝ)) * (∑ d ∈ (correctedChenSiftingProduct N).divisors,
             q1Mu d * (1 / (Nat.totient d : ℝ)) *
               (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
