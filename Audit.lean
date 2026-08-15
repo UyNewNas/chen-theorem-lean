@@ -3,6 +3,7 @@ import MathlibNt.SieveTheory.LinearSieve
 import MathlibNt.SieveTheory.PanTruncation
 import MathlibNt.SieveTheory.PrimePair
 import MathlibNt.SieveTheory.PrimePairLinearForm
+import MathlibNt.SieveTheory.Q1MainTermAbsorption
 import MathlibNt.SieveTheory.TripleMain
 
 /-!
@@ -219,3 +220,27 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.LinearFormPairLocalDensityBound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.PrimePairLinearFormLogSquareBound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.PrimePairLinearFormBound.of_logSquareBound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.two_dvd_correctedChenForbiddenProduct_of_three_le_z
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.forbiddenProduct_eq_two_mul_oddPart
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.coprime_q_siftingProduct
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.coprime_q_forbiddenOddPart
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.coprime_sifting_forbiddenOddPart
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.coprime_q_forbiddenProduct
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.coprime_sifting_forbiddenProduct
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.sum_moebius_divisors_eq_if_one
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.sum_moebius_if_dvd_eq_if_gcd_one
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1CandidateAPMain_eq_oddSum_add_evenPart
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1CandidateAPMainEvenPart_eq
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1CandidateAPMainEvenPart_nonpos
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1Sum_nu_sifting
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1Sum_nu_forbiddenOddPart
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1OddSum_eq_products
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1CandidateAPMain_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1SieveProduct_nonneg
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1ForbiddenOddProduct_le_one
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1SieveProduct_eq_goldbachSieveProduct
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1MainTermSum_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_qSum_phi_inv_bound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_log_z_sub_one_lower
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenSingularSeriesTruncated_eq_ant
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1MainTermAbsorption_holds
