@@ -953,7 +953,9 @@ theorem q1OddSum_eq_products (N q : ℕ) (hz3 : 3 ≤ correctedChenZ N)
     have hφe0 : (Nat.totient e : ℝ) ≠ 0 := by
       exact_mod_cast (Nat.totient_pos.mpr (Nat.pos_of_ne_zero he0)).ne'
     rw [hphi]
-    field_simp [hφq0, hφd0, hφe0]
+    have hφqde0 : ((Nat.totient q * Nat.totient d * Nat.totient e : ℕ) : ℝ) ≠ 0 := by
+      exact mul_ne_zero (mul_ne_zero hφq0 hφd0) hφe0
+    field_simp [hφq0, hφd0, hφe0, hφqde0]
     ring
   calc
     (∑ d ∈ (correctedChenSiftingProduct N).divisors,
@@ -1197,8 +1199,9 @@ theorem q1_qSum_phi_inv_bound :
           have hq1 : (1 : ℝ) < (q : ℝ) := by linarith
           have hq2r : (2 : ℝ) ≤ (q : ℝ) := by linarith
           have hqphi : (Nat.totient q : ℝ) = (q : ℝ) - 1 := by
-            rw [Nat.totient_prime hqprime]
-            exact Nat.cast_sub (le_trans (by norm_num : 1 ≤ 3) (le_trans hz3 hzq))
+            calc
+              (Nat.totient q : ℝ) = ((q - 1 : ℕ) : ℝ) := by rw [Nat.totient_prime hqprime]
+              _ = (q : ℝ) - 1 := by exact_mod_cast (by omega : 1 ≤ q)
           have hle : 1 / ((q : ℝ) - 1) ≤ 2 / (q : ℝ) := by
             have hpos1 : 0 < (q : ℝ) - 1 := by linarith
             have hpos2 : 0 < (q : ℝ) := by linarith
@@ -1223,7 +1226,8 @@ theorem q1_qSum_phi_inv_bound :
             rw [Finset.mem_filter] at hq ⊢
             exact ⟨by simpa [Finset.mem_range] using (Nat.lt_succ_of_lt (Finset.mem_range.mp hq.1)), hq.2⟩
           have hle := Finset.sum_le_sum_of_subset_of_nonneg hsub (fun p hp hnot => by
-            exact div_nonneg (by norm_num : (0 : ℝ) ≤ 1) (by exact_mod_cast (Nat.zero_le p)))
+            exact div_nonneg (by norm_num : (0 : ℝ) ≤ 1)
+              (by exact_mod_cast (Nat.zero_le p) : (0 : ℝ) ≤ (p : ℝ)))
           exact mul_le_mul_of_nonneg_left hle (by norm_num)
     _ = 2 * (AnalyticNumberTheory.Mertens.primeReciprocalSum (correctedChenY N) -
           AnalyticNumberTheory.Mertens.primeReciprocalSum (correctedChenZ N - 1)) := by
@@ -1252,7 +1256,9 @@ theorem q1_log_z_sub_one_lower (N : ℕ) (hN40 : 2 ^ 40 ≤ N) :
     let t : ℝ := (N : ℝ) ^ (1 / 20 : ℝ)
     have hxeq : t ^ 2 = x := by
       dsimp [t, x]
-      norm_num [Real.rpow_natCast, Real.rpow_mul, Real.rpow_one]
+      rw [Real.rpow_natCast]
+      rw [Real.rpow_mul (by positivity : 0 ≤ (N : ℝ))]
+      norm_num
     have ht4 : (4 : ℝ) ≤ t := by
       dsimp [t]
       have hN40' : ((2 ^ 40 : ℕ) : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN40
