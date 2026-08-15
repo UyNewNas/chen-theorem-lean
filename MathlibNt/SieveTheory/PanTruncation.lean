@@ -604,6 +604,7 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
   have hsqrt_lhs : Real.sqrt (((16 : ℕ) ^ m.primeFactors.card : ℝ)) =
       (4 : ℝ) ^ m.primeFactors.card := by
     have hEq : ((16 : ℕ) ^ m.primeFactors.card : ℝ) = ((4 : ℝ) ^ m.primeFactors.card) ^ 2 := by
+      norm_num
       rw [show (16 : ℝ) = (4 : ℝ) ^ 2 by norm_num]
       rw [← pow_mul (4 : ℝ) 2 m.primeFactors.card]
       rw [← pow_mul (4 : ℝ) m.primeFactors.card 2]
