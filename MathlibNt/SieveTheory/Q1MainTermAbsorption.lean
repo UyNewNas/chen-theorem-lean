@@ -746,9 +746,13 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                 · have hif : (if Nat.lcm (Nat.lcm q d) e ∣ N - 2 then (1 : ℝ) else 0) =
                       (if q ∣ N - 2 then (if d ∣ N - 2 then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0) else 0) := by
                     have hiff : (Nat.lcm (Nat.lcm q d) e ∣ N - 2) ↔ (q ∣ N - 2 ∧ d ∣ N - 2 ∧ e ∣ N - 2) := by
-                      rw [lcm_dvd_iff (a := Nat.lcm q d) (b := e) (c := N - 2)]
-                      rw [lcm_dvd_iff (a := q) (b := d) (c := N - 2)]
-                      rw [and_assoc]
+                      calc
+                        (Nat.lcm (Nat.lcm q d) e ∣ N - 2) ↔ (Nat.lcm q d ∣ N - 2 ∧ e ∣ N - 2) := by
+                              exact lcm_dvd_iff (a := Nat.lcm q d) (b := e) (c := N - 2)
+                        _ ↔ ((q ∣ N - 2 ∧ d ∣ N - 2) ∧ e ∣ N - 2) := by
+                              exact and_congr (lcm_dvd_iff (a := q) (b := d) (c := N - 2)) Iff.rfl
+                        _ ↔ (q ∣ N - 2 ∧ d ∣ N - 2 ∧ e ∣ N - 2) := by
+                              exact and_assoc
                     by_cases hq2 : q ∣ N - 2 <;> by_cases hd2 : d ∣ N - 2 <;> by_cases he2 : e ∣ N - 2 <;> simp [hq2, hd2, he2, hiff]
                   exact congrArg (fun x => q1Mu e * x) hif)))
     _ = (if q ∣ N - 2 then
@@ -963,16 +967,24 @@ theorem q1OddSum_eq_products (N q : ℕ) (hz3 : 3 ≤ correctedChenZ N)
           exact Finset.sum_congr rfl (fun d hd =>
             congrArg (fun x => q1Mu d * x)
               (Finset.sum_congr rfl (fun e he => congrArg (fun x => q1Mu e * x) (hterm d hd e he))))
+    _ = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+            q1Mu d * ((1 / (Nat.totient q : ℝ)) * (1 / (Nat.totient d : ℝ)) *
+              (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+                q1Mu e * (1 / (Nat.totient e : ℝ))))) := by
+          apply Finset.sum_congr rfl
+          intro d hd
+          congr 1
+          rw [Finset.mul_sum]
+          apply Finset.sum_congr rfl
+          intro e he
+          ring
     _ = (1 / (Nat.totient q : ℝ)) * (∑ d ∈ (correctedChenSiftingProduct N).divisors,
             q1Mu d * (1 / (Nat.totient d : ℝ)) *
               (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
                 q1Mu e * (1 / (Nat.totient e : ℝ)))) := by
-          rw [Finset.mul_sum]
+          conv_rhs => rw [Finset.mul_sum]
           apply Finset.sum_congr rfl
           intro d hd
-          rw [Finset.mul_sum]
-          apply Finset.sum_congr rfl
-          intro e he
           ring
     _ = (1 / (Nat.totient q : ℝ)) * (∑ d ∈ (correctedChenSiftingProduct N).divisors,
             q1Mu d * (1 / (Nat.totient d : ℝ))) *
@@ -1191,13 +1203,15 @@ theorem q1_qSum_phi_inv_bound :
           have hqprime : q.Prime := (Finset.mem_filter.mp hq).2.1
           have hqphi : (Nat.totient q : ℝ) = (q : ℝ) - 1 := by
             rw [Nat.totient_prime hqprime]
-            exact Nat.cast_sub (by omega : 1 ≤ q)
+            exact Nat.cast_sub (by exact_mod_cast (le_of_lt hq1))
           have hq1 : (1 : ℝ) < (q : ℝ) := by
             have hzq : correctedChenZ N ≤ q := (Finset.mem_filter.mp hq).2.2
-            exact_mod_cast (by omega : 1 < q)
+            have hz3q : (3 : ℝ) ≤ (q : ℝ) := by exact_mod_cast (le_trans hz3 hzq)
+            linarith
           have hq2r : (2 : ℝ) ≤ (q : ℝ) := by
             have hzq : correctedChenZ N ≤ q := (Finset.mem_filter.mp hq).2.2
-            exact_mod_cast (by omega : 2 ≤ q)
+            have hz3q : (3 : ℝ) ≤ (q : ℝ) := by exact_mod_cast (le_trans hz3 hzq)
+            linarith
           have hle : 1 / ((q : ℝ) - 1) ≤ 2 / (q : ℝ) := by
             have hpos1 : 0 < (q : ℝ) - 1 := by linarith
             have hpos2 : 0 < (q : ℝ) := by linarith
@@ -1206,17 +1220,21 @@ theorem q1_qSum_phi_inv_bound :
           rwa [hqphi] at hle
     _ = 2 * (∑ q ∈ (Finset.range (correctedChenY N)).filter (fun q => q.Prime ∧ correctedChenZ N ≤ q),
             1 / (q : ℝ)) := by
+          rw [show (∑ q ∈ (Finset.range (correctedChenY N)).filter (fun q => q.Prime ∧ correctedChenZ N ≤ q),
+                2 / (q : ℝ)) =
+              (∑ q ∈ (Finset.range (correctedChenY N)).filter (fun q => q.Prime ∧ correctedChenZ N ≤ q),
+                2 * (1 / (q : ℝ))) by
+            apply Finset.sum_congr rfl
+            intro q hq
+            ring]
           rw [← Finset.mul_sum]
-          apply Finset.sum_congr rfl
-          intro q hq
-          ring
     _ ≤ 2 * (∑ p ∈ (Finset.range (correctedChenY N + 1)).filter (fun p => p.Prime ∧ correctedChenZ N ≤ p),
             1 / (p : ℝ)) := by
           have hsub : (Finset.range (correctedChenY N)).filter (fun q => q.Prime ∧ correctedChenZ N ≤ q) ⊆
               (Finset.range (correctedChenY N + 1)).filter (fun p => p.Prime ∧ correctedChenZ N ≤ p) := by
             intro q hq
             rw [Finset.mem_filter] at hq ⊢
-            exact ⟨by omega, hq.2⟩
+            exact ⟨by simpa [Finset.mem_range] using (Nat.lt_succ_of_lt hq.1), hq.2⟩
           have hle := Finset.sum_le_sum_of_subset_of_nonneg hsub (fun p hp hnot => by positivity)
           exact mul_le_mul_of_nonneg_left hle (by norm_num)
     _ = 2 * (AnalyticNumberTheory.Mertens.primeReciprocalSum (correctedChenY N) -
