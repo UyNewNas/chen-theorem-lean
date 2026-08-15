@@ -1091,9 +1091,6 @@ theorem q1SieveProduct_eq_goldbachSieveProduct (N : ℕ) (hN : Even N) :
       rcases Finset.mem_filter.mp hp with ⟨hr, hc⟩
       exact Finset.mem_filter.mpr ⟨hr, ⟨hc.1, hc.2.2⟩⟩
   rw [hset]
-  apply Finset.prod_congr rfl
-  intro p hp
-  rfl
 
 /-- **主项总和分解**: `q1MainTermSum N ≤ li(N)·goldbachSieveProduct(N, z)·Σ_{q∈[z,y)} 1/φ(q)`. -/
 theorem q1MainTermSum_le (N : ℕ) (hN : Even N) (hN2 : 2 ≤ N) (hz3 : 3 ≤ correctedChenZ N) :
@@ -1201,7 +1198,7 @@ theorem q1_qSum_phi_inv_bound :
           have hq2r : (2 : ℝ) ≤ (q : ℝ) := by linarith
           have hqphi : (Nat.totient q : ℝ) = (q : ℝ) - 1 := by
             rw [Nat.totient_prime hqprime]
-            exact Nat.cast_sub (by linarith : 1 ≤ q)
+            exact Nat.cast_sub (le_trans (by norm_num : 1 ≤ 3) (le_trans hz3 hzq))
           have hle : 1 / ((q : ℝ) - 1) ≤ 2 / (q : ℝ) := by
             have hpos1 : 0 < (q : ℝ) - 1 := by linarith
             have hpos2 : 0 < (q : ℝ) := by linarith
@@ -1225,7 +1222,8 @@ theorem q1_qSum_phi_inv_bound :
             intro q hq
             rw [Finset.mem_filter] at hq ⊢
             exact ⟨by simpa [Finset.mem_range] using (Nat.lt_succ_of_lt (Finset.mem_range.mp hq.1)), hq.2⟩
-          have hle := Finset.sum_le_sum_of_subset_of_nonneg hsub (fun p hp hnot => by positivity)
+          have hle := Finset.sum_le_sum_of_subset_of_nonneg hsub (fun p hp hnot => by
+            exact div_nonneg (by norm_num : (0 : ℝ) ≤ 1) (by exact_mod_cast (Nat.zero_le p)))
           exact mul_le_mul_of_nonneg_left hle (by norm_num)
     _ = 2 * (AnalyticNumberTheory.Mertens.primeReciprocalSum (correctedChenY N) -
           AnalyticNumberTheory.Mertens.primeReciprocalSum (correctedChenZ N - 1)) := by
@@ -1254,17 +1252,14 @@ theorem q1_log_z_sub_one_lower (N : ℕ) (hN40 : 2 ^ 40 ≤ N) :
     let t : ℝ := (N : ℝ) ^ (1 / 20 : ℝ)
     have hxeq : t ^ 2 = x := by
       dsimp [t, x]
-      rw [← Real.rpow_mul (by positivity : 0 ≤ (N : ℝ))]
-      norm_num
+      norm_num [Real.rpow_natCast, Real.rpow_mul, Real.rpow_one]
     have ht4 : (4 : ℝ) ≤ t := by
       dsimp [t]
       have hN40' : ((2 ^ 40 : ℕ) : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN40
       have hpow := Real.rpow_le_rpow (by norm_num : 0 ≤ ((2 ^ 40 : ℕ) : ℝ)) hN40' (by norm_num : 0 ≤ (1 / 20 : ℝ))
       have hval : ((2 ^ 40 : ℕ) : ℝ) ^ (1 / 20 : ℝ) = 4 := by
         rw [Nat.cast_pow]
-        rw [← Real.rpow_natCast]
-        rw [← Real.rpow_mul (by norm_num : 0 ≤ (2 : ℝ))]
-        norm_num [Real.rpow_natCast]
+        norm_num [Real.rpow_natCast, Real.rpow_mul, Real.rpow_one]
       rwa [hval] at hpow
     have hfloor : x - 1 ≤ (Nat.floor x : ℝ) := by
       have hlt := Nat.lt_floor_add_one x
@@ -1275,13 +1270,13 @@ theorem q1_log_z_sub_one_lower (N : ℕ) (hN40 : 2 ^ 40 ≤ N) :
       exact le_max_right (2 : ℝ) ↑(Nat.floor x)
     have hz1' : x - 2 ≤ ((correctedChenZ N - 1 : ℕ) : ℝ) := by
       have : x - 1 ≤ (correctedChenZ N : ℝ) := le_trans hfloor hz
-      have hcast : ((correctedChenZ N - 1 : ℕ) : ℝ) = (correctedChenZ N : ℝ) - 1 :=
-        Nat.cast_sub (by omega : 1 ≤ correctedChenZ N)
+      have hcast : ((correctedChenZ N - 1 : ℕ) : ℝ) = (correctedChenZ N : ℝ) - 1 := by
+        simpa using (Nat.cast_sub (by omega : 1 ≤ correctedChenZ N))
       rw [hcast]
       linarith
     have hsq : 4 * t ≤ t ^ 2 := by
       have ht0 : 0 ≤ t := by positivity
-      exact mul_le_mul ht4 le_rfl ht0 ht0
+      simpa [pow_two] using mul_le_mul ht4 le_rfl ht0 ht0
     have htle : t ≤ x - 2 := by
       nlinarith [hxeq, hsq, ht4]
     exact le_trans htle hz1'
@@ -1315,7 +1310,7 @@ theorem q1MainTermAbsorption_holds : q1MainTermAbsorption := by
     have h3 : a₁ ≤ a₂ := by
       have hle' : a₁ * log 2 ≤ a₂ * log 2 :=
         (div_le_div_iff₀ hlog2 hlog2).mp (le_trans h1 h2)
-      exact le_of_mul_le_mul_right hle' (le_of_lt hlog2)
+      exact le_of_mul_le_mul_right hle' hlog2
     linarith
   let C₁ : ℝ := 20 * a₂ * C₀
   refine ⟨C₁, by positivity, 2 ^ 110 + 1, ?_⟩
