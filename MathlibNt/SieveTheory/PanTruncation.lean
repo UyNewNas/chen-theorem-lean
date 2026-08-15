@@ -710,7 +710,9 @@ lemma divisorWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
       exact Nat.le_of_dvd (by omega : 0 < N - p) (Nat.gcd_dvd_right P (N - p))
     have hNp_le : N - p ≤ N := by omega
     have hsqrt : Real.sqrt ((Nat.gcd P (N - p) : ℝ)) ≤ Real.sqrt (N : ℝ) := by
-      exact Real.sqrt_le_sqrt (le_trans (by exact_mod_cast hgcd_le) (by exact_mod_cast hNp_le))
+      have hle : (Nat.gcd P (N - p) : ℝ) ≤ (N : ℝ) := by
+        exact_mod_cast (le_trans hgcd_le hNp_le)
+      exact Real.sqrt_le_sqrt hle
     calc
       (4 : ℝ) ^ (Nat.gcd P (N - p)).primeFactors.card
           ≤ (16 ^ 8 : ℝ) * Real.sqrt ((Nat.gcd P (N - p) : ℝ)) := h1
@@ -733,7 +735,10 @@ lemma divisorWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
         ≤ S.card * ((16 ^ 8 : ℝ) * Real.sqrt (N : ℝ)) := by
           simpa [S, P, F] using hsum
     _ ≤ (1 + F.primeFactors.card) * ((16 ^ 8 : ℝ) * Real.sqrt (N : ℝ)) := by
-          exact Nat.mul_le_mul_right _ hcardS
+          -- |S| ≤ 1+ω(F) (Nat), 两边乘正量 (ℝ cast)
+          have hc : (S.card : ℝ) ≤ (1 + F.primeFactors.card : ℝ) := by exact_mod_cast hcardS
+          have hpos : 0 ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by positivity
+          exact mul_le_mul_of_nonneg_right hc hpos
     _ = (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
           simp [F, mul_assoc]
 
