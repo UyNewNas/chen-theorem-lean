@@ -467,12 +467,11 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
             rw [hk]
             ring
           have h2dvdp : 2 ∣ p := by
-            -- N = 2a, N−p = 2b, p ≤ N ⟹ p = 2(a−b)
-            rcases h2dvdN with ⟨a, ha⟩
-            rcases h2dvdNp with ⟨b, hb⟩
-            refine ⟨a - b, ?_⟩
-            have hp_le : p ≤ N := by omega
-            omega
+            -- p = N - (N-p), 2 | N 且 2 | N−p ⟹ 2 | p
+            have hsub : N - p ≤ N := by omega
+            have hdvd := Nat.dvd_sub h2dvdN h2dvdNp hsub
+            have hp_eq : N - (N - p) = p := by omega
+            rwa [hp_eq] at hdvd
           left
           rcases (Nat.dvd_prime hpp).mp h2dvdp with h21 | h2p
           · exfalso
@@ -481,12 +480,11 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
       | inr hrN =>
           -- r | N ∧ r | N−p ⟹ r | p; p, r 素数 ⟹ p = r; r | F ⟹ r ∈ primeFactors F
           have hrp : r ∣ p := by
-            -- N = ra, N−p = rb, p ≤ N ⟹ p = r(a−b)
-            rcases hrN with ⟨a, ha⟩
-            rcases hrNp with ⟨b, hb⟩
-            refine ⟨a - b, ?_⟩
-            have hp_le : p ≤ N := by omega
-            omega
+            -- p = N - (N-p), r | N 且 r | N−p ⟹ r | p
+            have hsub : N - p ≤ N := by omega
+            have hdvd := Nat.dvd_sub hrN hrNp hsub
+            have hp_eq : N - (N - p) = p := by omega
+            rwa [hp_eq] at hdvd
           have hrp_eq : r = p := by
             rcases (Nat.dvd_prime hpp).mp hrp with hr1 | hrp'
             · exfalso
@@ -506,8 +504,10 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
           exact Finset.card_le_card (by
             intro p hp
             have hmem : p = 2 ∨ p ∈ F.primeFactors := hsub p hp
-            rw [Finset.mem_filter, Finset.mem_union]
-            exact ⟨Or.inl (by simp [hmem]), trivial⟩)
+            rw [Finset.mem_union]
+            rcases hmem with h2 | hr
+            · exact Or.inl (by simp [h2])
+            · exact Or.inr hr)
       _ ≤ (({2} : Finset ℕ).card + F.primeFactors.card) := by
           exact Finset.card_union_le _ _
       _ = (1 + F.primeFactors.card) := by simp
