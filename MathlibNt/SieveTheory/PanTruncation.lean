@@ -467,20 +467,29 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
             rw [hk]
             ring
           have h2dvdp : 2 ∣ p := by
-            rcases h2dvdN with ⟨a, ha⟩
-            rcases h2dvdNp with ⟨b, hb⟩
-            refine ⟨a - b, ?_⟩
-            omega
+            have hsub : N - p ≤ N := by omega
+            have hdvd := Nat.dvd_sub h2dvdN h2dvdNp hsub
+            have hp_eq : N - (N - p) = p := by omega
+            rwa [hp_eq] at hdvd
           left
-          exact ((Nat.Prime.dvd_prime (by norm_num : (2 : ℕ).Prime) hpp).mp h2dvdp).symm
+          rcases (Nat.dvd_prime hpp).mp h2dvdp with h21 | h2p
+          · exfalso
+            norm_num at h21
+          · exact h2p.symm
       | inr hrN =>
           -- r | N ∧ r | N−p ⟹ r | p; p, r 素数 ⟹ p = r; r | F ⟹ r ∈ primeFactors F
           have hrp : r ∣ p := by
-            rcases hrN with ⟨a, ha⟩
-            rcases hrNp with ⟨b, hb⟩
-            refine ⟨a - b, ?_⟩
-            omega
-          have hrp_eq : r = p := (Nat.Prime.dvd_prime hrprime hpp).mp hrp
+            have hsub : N - p ≤ N := by omega
+            have hdvd := Nat.dvd_sub hrN hrNp hsub
+            -- r | N - (N - p), 且 N - (N - p) = p (p ≤ N)
+            have hp_eq : N - (N - p) = p := by omega
+            rwa [hp_eq] at hdvd
+          have hrp_eq : r = p := by
+            rcases (Nat.dvd_prime hpp).mp hrp with hr1 | hrp'
+            · exfalso
+              have hrge : 2 ≤ r := hrprime.two_le
+              omega
+            · exact hrp'.symm
           right
           rw [← hrp_eq]
           exact (Nat.mem_primeFactors_of_ne_zero hF0).mpr ⟨hrprime, hrF⟩
@@ -489,15 +498,15 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
       ((Finset.range N).filter (fun p =>
           p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
             ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card
-      ≤ ((({2} : Finset ℕ) ∪ F.primeFactors).filter (fun p => True)).card := by
+      ≤ (({2} : Finset ℕ) ∪ F.primeFactors).card := by
           -- 单调性: S ⊆ {2} ∪ primeFactors F
           exact Finset.card_le_card (by
             intro p hp
+            rw [Finset.mem_filter] at hp
+            rcases hp with ⟨hprange, hcond⟩
             have hmem : p = 2 ∨ p ∈ F.primeFactors := hsub p hp
-            rw [Finset.mem_filter]
-            exact ⟨by simp [hmem], trivial⟩)
+            simpa [Finset.mem_union, hmem])
       _ ≤ (({2} : Finset ℕ).card + F.primeFactors.card) := by
-          rw [Finset.filter_true]
           exact Finset.card_union_le _ _
       _ = (1 + F.primeFactors.card) := by simp
   -- 装配: |Σ| = 右端计数 (由带符号恒等式: Σ = −(右端计数))
