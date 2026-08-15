@@ -538,6 +538,107 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
           rfl
   rw [hEq']
   exact_mod_cast hcard
+/-- **除数加权和的点式 ω 界 (chen #39)**: 4^(ω(m)) ≤ 16^8·√m (m ≥ 1)。
+初等证明 (无需素数计数下界): 16^(ω(m)) = ∏_{p|m} 16; 将 m.primeFactors
+按 p < 16 拆分 — 小部分至多 16 个因子, 贡献 ≤ 16^16; 大部分逐点 16 ≤ p,
+贡献 ≤ ∏_{p|m} p ≤ m (radical 整除 m); 故 16^ω ≤ 16^16·m,
+对 ℝ 开方得 4^ω ≤ 16^8·√m。零 sorry, 纯初等。 -/
+lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
+    (4 : ℝ) ^ m.primeFactors.card ≤ (16 ^ 8 : ℝ) * Real.sqrt (m : ℝ) := by
+  classical
+  -- 分解 m.primeFactors = {p<16} ∪ {16≤p}
+  let s1 : Finset ℕ := m.primeFactors.filter (fun p => p < 16)
+  let s2 : Finset ℕ := m.primeFactors.filter (fun p => 16 ≤ p)
+  have hdisj : Disjoint s1 s2 := by
+    rw [Finset.disjoint_left]
+    intro p hp1 hp2
+    have h1 : p < 16 := (Finset.mem_filter.mp hp1).2
+    have h2 : 16 ≤ p := (Finset.mem_filter.mp hp2).2
+    omega
+  have hunion : m.primeFactors = s1 ∪ s2 := by
+    ext p
+    constructor
+    · intro hp
+      by_cases hp16 : p < 16
+      · exact Or.inl (Finset.mem_filter.mpr ⟨hp, hp16⟩)
+      · have hge : 16 ≤ p := by omega
+        exact Or.inr (Finset.mem_filter.mpr ⟨hp, hge⟩)
+    · intro hp
+      rcases hp with hp1 | hp2
+      · exact (Finset.mem_filter.mp hp1).1
+      · exact (Finset.mem_filter.mp hp2).1
+  -- 小部分: s1 ⊆ range 16 ⟹ card ≤ 16 ⟹ ∏ 16 ≤ 16^16
+  have hs1 : s1 ⊆ Finset.range 16 := by
+    intro p hp
+    exact Finset.mem_range.mpr (Finset.mem_filter.mp hp).2
+  have hsmall : (∏ p ∈ s1, (16 : ℕ)) ≤ (16 : ℕ) ^ 16 := by
+    calc
+      (∏ p ∈ s1, (16 : ℕ)) = (16 : ℕ) ^ s1.card := by
+        rw [Finset.prod_const]
+      _ ≤ (16 : ℕ) ^ 16 := by
+        apply pow_le_pow_right₀ (by norm_num : (0 : ℕ) ≤ 16)
+        calc
+          s1.card ≤ (Finset.range 16).card := Finset.card_le_card hs1
+          _ = 16 := by rw [Finset.card_range]
+  -- 大部分: 逐点 16 ≤ p, 且 ∏_{s2} p ≤ ∏_{pf} p ≤ m
+  have hbig : (∏ p ∈ s2, (16 : ℕ)) ≤ ∏ p ∈ s2, p := by
+    exact Finset.prod_le_prod (fun p hp => by norm_num) (fun p hp =>
+      (Finset.mem_filter.mp hp).2)
+  have hs2 : s2 ⊆ m.primeFactors := by
+    intro p hp
+    exact (Finset.mem_filter.mp hp).1
+  have hbig_le : (∏ p ∈ s2, p) ≤ ∏ p ∈ m.primeFactors, p := by
+    exact Finset.prod_le_prod_of_subset hs2 (fun p hp =>
+      le_of_lt (Nat.prime_of_mem_primeFactors hp).one_lt)
+  have hrad_le : ∏ p ∈ m.primeFactors, p ≤ m := by
+    exact Nat.le_of_dvd (by omega : 0 < m) (Nat.prod_primeFactors_dvd m)
+  -- 16^ω = ∏ 16 ≤ 16^16·m (ℕ)
+  have h16n : (16 : ℕ) ^ m.primeFactors.card ≤ (16 : ℕ) ^ 16 * m := by
+    calc
+      (16 : ℕ) ^ m.primeFactors.card = ∏ p ∈ m.primeFactors, (16 : ℕ) := by
+        rw [Finset.prod_const]
+      _ = (∏ p ∈ s1, (16 : ℕ)) * (∏ p ∈ s2, (16 : ℕ)) := by
+        rw [← Finset.prod_union hdisj]
+        rw [hunion]
+      _ ≤ (16 : ℕ) ^ 16 * (∏ p ∈ s2, p) := by
+        exact Nat.mul_le_mul hsmall hbig
+      _ ≤ (16 : ℕ) ^ 16 * (∏ p ∈ m.primeFactors, p) := by
+        exact Nat.mul_le_mul_left ((16 : ℕ) ^ 16) hbig_le
+      _ ≤ (16 : ℕ) ^ 16 * m := by
+        exact Nat.mul_le_mul_left ((16 : ℕ) ^ 16) hrad_le
+  -- 转 ℝ 开方
+  have h16R : ((16 : ℕ) ^ m.primeFactors.card : ℝ) ≤ (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) := by
+    exact_mod_cast h16n
+  have hsqrt : Real.sqrt (((16 : ℕ) ^ m.primeFactors.card : ℝ)) ≤
+      Real.sqrt (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) := by
+    exact Real.sqrt_le_sqrt (by positivity) (by positivity) h16R
+  have hsqrt_lhs : Real.sqrt (((16 : ℕ) ^ m.primeFactors.card : ℝ)) =
+      (4 : ℝ) ^ m.primeFactors.card := by
+    have hEq : ((16 : ℕ) ^ m.primeFactors.card : ℝ) = ((4 : ℝ) ^ m.primeFactors.card) ^ 2 := by
+      norm_num
+      rw [show (16 : ℝ) = (4 : ℝ) ^ 2 by norm_num]
+      rw [pow_mul]
+      rw [pow_mul]
+      congr 1
+      omega
+    rw [hEq, Real.sqrt_sq_eq_abs, abs_of_nonneg (by positivity)]
+  have hsqrt_rhs : Real.sqrt (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) =
+      (16 ^ 8 : ℝ) * Real.sqrt (m : ℝ) := by
+    norm_num
+    rw [Real.sqrt_mul (by positivity : 0 ≤ (16 : ℝ) ^ 16)]
+    rw [show Real.sqrt ((16 : ℝ) ^ 16) = (16 ^ 8 : ℝ) by
+      rw [show (16 : ℝ) ^ 16 = ((16 : ℝ) ^ 8) ^ 2 by
+        rw [pow_mul]
+        congr 1
+        norm_num]
+      rw [Real.sqrt_sq_eq_abs, abs_of_nonneg (by positivity)]
+      norm_num]
+    norm_num
+  calc
+    (4 : ℝ) ^ m.primeFactors.card = Real.sqrt (((16 : ℕ) ^ m.primeFactors.card : ℝ)) := hsqrt_lhs.symm
+    _ ≤ Real.sqrt (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) := hsqrt
+    _ = (16 ^ 8 : ℝ) * Real.sqrt (m : ℝ) := hsqrt_rhs
+
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
 `li` 主项部分) 组装出截断输入: 对每个 `d | P(N)`,
