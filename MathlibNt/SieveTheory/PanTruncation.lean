@@ -581,12 +581,14 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
         rw [Finset.prod_const]
       _ = (∏ p ∈ m.primeFactors.filter (fun p => p < 16), (16 : ℕ)) *
           (∏ p ∈ m.primeFactors.filter (fun p => 16 ≤ p), (16 : ℕ)) := by
+        have hflt : m.primeFactors.filter (fun p => 16 ≤ p) =
+            m.primeFactors.filter (fun p => ¬ p < 16) := by
+          apply Finset.filter_congr
+          intro p hp
+          exact not_lt.symm
+        rw [hflt]
         rw [← Finset.prod_filter_mul_prod_filter_not
           (s := m.primeFactors) (p := fun p => p < 16) (f := fun p => (16 : ℕ))]
-        congr 1
-        apply Finset.filter_congr
-        intro p hp
-        exact not_lt
       _ ≤ (16 : ℕ) ^ 16 * (∏ p ∈ m.primeFactors.filter (fun p => 16 ≤ p), p) := by
         exact Nat.mul_le_mul hsmall hbig
       _ ≤ (16 : ℕ) ^ 16 * (∏ p ∈ m.primeFactors, p) := by
@@ -602,7 +604,6 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
   have hsqrt_lhs : Real.sqrt (((16 : ℕ) ^ m.primeFactors.card : ℝ)) =
       (4 : ℝ) ^ m.primeFactors.card := by
     have hEq : ((16 : ℕ) ^ m.primeFactors.card : ℝ) = ((4 : ℝ) ^ m.primeFactors.card) ^ 2 := by
-      rw [Nat.cast_pow]
       rw [show (16 : ℝ) = (4 : ℝ) ^ 2 by norm_num]
       rw [← pow_mul (4 : ℝ) 2 m.primeFactors.card]
       rw [← pow_mul (4 : ℝ) m.primeFactors.card 2]
@@ -610,8 +611,7 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
     rw [hEq, Real.sqrt_sq_eq_abs, abs_of_nonneg (by positivity)]
   have hsqrt16 : Real.sqrt ((16 : ℝ) ^ 16) = (16 ^ 8 : ℝ) := by
     rw [show (16 : ℝ) ^ 16 = ((16 : ℝ) ^ 8) ^ 2 by
-      rw [← pow_mul (16 : ℝ) 8 2]
-      rw [show 8 * 2 = 16 by norm_num]]
+      rw [← pow_mul (16 : ℝ) 8 2]]
     rw [Real.sqrt_sq_eq_abs, abs_of_nonneg (by positivity)]
   have hsqrt_rhs : Real.sqrt (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) =
       (16 ^ 8 : ℝ) * Real.sqrt (m : ℝ) := by
