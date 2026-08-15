@@ -211,6 +211,204 @@ theorem baseCount_le_distributionError_add_li (N q : ℕ) (hN : 2 ≤ N) (hq : 0
   rw [hEq]
   exact add_le_add (le_abs_self _) (div_le_div_of_nonneg_right (le_abs_self _) (le_of_lt hφ0))
 
+/-- **带符号 Möbius 基计数恒等式 (chen #39 修正核心)**: 对任意 `d`,
+`Σ_{1≠e|F} μ(e)·base(lcm(d,e)) = −#{p < N : p 素数, 2 ≤ N−p, d | N−p, gcd(F, N−p) ≠ 1}`.
+证明: 展开 base 为 p 指示和, 交换求和; 逐 p 用 lcm 合并
+(`modEq_and_dvd_complement_iff_modEq_lcm`, 无需互素) 与 Möbius 互素指示
+(`moebius_coprime_sum_forbidden` 减 e=1 项) 消去 e 和. -/
+theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
+    (∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+      (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)) =
+    -(((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p)).card : ℝ) := by
+  classical
+  let F : ℕ := correctedChenForbiddenProduct N
+  have hF0 : F ≠ 0 := correctedChenForbiddenProduct_ne_zero N
+  -- 展开每个 base(lcm(d,e)) 为 p 指示和: (μ e)·card = Σ_p (if cond then μ e else 0)
+  have hbase : ∀ e, (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ) =
+      (∑ p ∈ Finset.range N,
+        if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0) := by
+    intro e
+    rw [← Finset.sum_boole]
+    rw [← Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro p hp
+    by_cases h : p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]
+    · simp [h]
+    · simp [h]
+  calc
+    (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+      (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ))
+    = ∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+        (∑ p ∈ Finset.range N,
+          if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0) := by
+        apply Finset.sum_congr rfl
+        intro e he
+        exact hbase e
+    _ = ∑ p ∈ Finset.range N,
+        (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+          if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0) := by
+        rw [Finset.sum_comm]
+    _ = -(((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
+        -- 逐 p: 内层 e 和 = if (base ∧ d | N−p ∧ ∃r..) then −1 else 0
+        have hinner : ∀ p ∈ Finset.range N,
+            (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+              if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0) =
+            if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+              then -(1 : ℝ) else 0 := by
+          intro p hp
+          have hpN : p ≤ N := by omega
+          have hde : ∀ e, (p ≡ N [MOD Nat.lcm d e]) ↔ (d ∣ N - p ∧ e ∣ N - p) := by
+            intro e
+            rw [← modEq_and_dvd_complement_iff_modEq_lcm (N := N) (p := p) (d := d) (e := e)
+              (Finset.mem_range.mp hp)]
+            rw [Nat.modEq_iff_dvd' (n := d) (a := p) (b := N) hpN]
+          -- Möbius 互素指示减 e=1 项
+          have hmoeb : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                if e ∣ N - p then (μ e : ℝ) else 0) =
+              if ¬ (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) then -(1 : ℝ) else 0 := by
+            have hfull := moebius_coprime_sum_forbidden N (N - p)
+            -- 全和减 e=1 项 (μ(1)·[1|N−p] = 1)
+            have hsplit : (∑ e ∈ F.divisors,
+                if e ∣ N - p then (μ e : ℝ) else 0) =
+                (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                  if e ∣ N - p then (μ e : ℝ) else 0) +
+                (∑ e ∈ F.divisors.filter (fun e => e = 1),
+                  if e ∣ N - p then (μ e : ℝ) else 0) := by
+              rw [← Finset.sum_filter_add_sum_filter_not F.divisors (fun e => e ≠ 1)
+                (fun e => if e ∣ N - p then (μ e : ℝ) else 0)]
+              congr 1
+              · rfl
+              · refine Finset.sum_congr ?_ ?_
+                · ext e
+                  by_cases h : e = 1 <;> simp [h]
+                · intro e he
+                  rfl
+            have hone : (∑ e ∈ F.divisors.filter (fun e => e = 1),
+                if e ∣ N - p then (μ e : ℝ) else 0) = (1 : ℝ) := by
+              rw [Finset.sum_eq_single (1 : ℕ)]
+              · simp [ArithmeticFunction.moebius_apply_one]
+              · intro b hb hbne
+                exfalso
+                rcases Finset.mem_filter.mp hb with ⟨_, hb1⟩
+                exact hbne hb1
+              · intro hnot
+                exfalso
+                exact hnot (Finset.mem_filter.mpr ⟨(Nat.mem_divisors.mpr ⟨Nat.one_dvd _, hF0⟩), rfl⟩)
+            -- 分 ∀r 情形
+            by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p
+            · have hfull1 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 1 := by
+                rw [hfull, if_pos hcop]
+              -- 全和 = e≠1 和 + e=1 和 = S + 1, 故 S = 0
+              have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                  if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
+                nlinarith [hsplit, hfull1, hone]
+              rw [hS]
+              simp [hcop]
+            · have hfull0 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
+                rw [hfull, if_neg hcop]
+              -- 全和 = S + 1 = 0, 故 S = -1
+              have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                  if e ∣ N - p then (μ e : ℝ) else 0) = -(1 : ℝ) := by
+                nlinarith [hsplit, hfull0, hone]
+              rw [hS]
+              simp [hcop]
+          -- 用 hde 重写 lcm 条件, 提出 p 无关因子
+          by_cases hb : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p
+          · have hcond : ∀ e, (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]) ↔
+                (p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧ e ∣ N - p) := by
+              intro e
+              rw [hde e]
+              tauto
+            calc
+              (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0)
+              = ∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                  if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧ e ∣ N - p then (μ e : ℝ) else 0 := by
+                  apply Finset.sum_congr rfl
+                  intro e he
+                  by_cases h : p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]
+                  · rw [if_pos h]
+                    rw [if_pos ((hcond e).1 h)]
+                  · rw [if_neg h]
+                    rw [if_neg (mt (hcond e).2 h)]
+              _ = (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                  if e ∣ N - p then (μ e : ℝ) else 0) := by
+                  -- hb: p.Prime ∧ 2≤N−p ∧ d|N−p 恒真 ⟹ 条件 = e|N−p
+                  apply Finset.sum_congr rfl
+                  intro e he
+                  rcases hb with ⟨hpp, h2, hd⟩
+                  by_cases hep : e ∣ N - p
+                  · simp [hpp, h2, hd, hep]
+                  · simp [hpp, h2, hd, hep]
+              _ = if (∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p) then -(1 : ℝ) else 0 := by
+                  -- hmoeb + ∃↔¬∀ (push_neg)
+                  have hex : (∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p) ↔
+                      ¬ (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) := by
+                    rw [not_forall]
+                    apply exists_congr
+                    intro r
+                    tauto
+                  rw [hmoeb]
+                  by_cases he : ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+                  · rw [if_pos he, if_pos (hex.1 he)]
+                  · rw [if_neg he, if_neg (mt hex.2 he)]
+              _ = if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                    (∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)
+                  then -(1 : ℝ) else 0 := by
+                  by_cases he : ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+                  · rw [if_pos he]
+                    rw [if_pos (And.intro hb he)]
+                  · rw [if_neg he]
+                    rw [if_neg (by intro h; exact he h.2.2)]
+          · -- ¬hb: RHS = 0, 且条件 (含 p≡N mod lcm) 恒假 ⟹ 和 = 0
+            have hrhs : (if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                  (∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)
+                then -(1 : ℝ) else 0) = 0 := by
+              rw [if_neg (by
+                intro h
+                exact hb ⟨h.1, h.2.1, h.2.2.1⟩)]
+            rw [hrhs]
+            apply Finset.sum_eq_zero
+            intro e he
+            by_cases h : p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]
+            · exfalso
+              rcases h with ⟨hpp, h2, hmod⟩
+              rcases (hde e).1 hmod with ⟨hd, _⟩
+              exact hb ⟨hpp, h2, hd⟩
+            · simp [h]
+        -- 装配: Σ_p inner = −#{...}
+        calc
+          (∑ p ∈ Finset.range N,
+            (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+              if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0))
+          = ∑ p ∈ Finset.range N,
+              if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                  ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+                then -(1 : ℝ) else 0 := by
+              apply Finset.sum_congr rfl
+              intro p hp
+              exact hinner p hp
+          _ = -(((Finset.range N).filter (fun p =>
+              p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
+              rw [← Finset.sum_boole]
+              rw [← Finset.sum_neg_distrib]
+              apply Finset.sum_congr rfl
+              intro p hp
+              rw [hinner p hp]
+              by_cases h : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                  ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+              · simp [h]
+              · simp [h]
+
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
 `li` 主项部分) 组装出截断输入: 对每个 `d | P(N)`,
