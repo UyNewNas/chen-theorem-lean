@@ -449,6 +449,7 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
       rcases Finset.mem_filter.mp hp with ⟨hprange, hcond⟩
       rcases hcond with ⟨hpp, htwo, hdvd, hex⟩
       rcases hex with ⟨r, hrprime, hrF, hrNp⟩
+      have hp_le_N : p ≤ N := by omega
       -- r | F: r < z ∧ (r ≤ 2 ∨ r | N)
       have hrcond := (prime_dvd_correctedChenForbiddenProduct_iff hrprime).mp hrF
       rcases hrcond with ⟨hrz, hrzN⟩
@@ -460,28 +461,28 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
             omega
           subst r
           have h2dvdNp : 2 ∣ N - p := hrNp
-          have h2dvdN : 2 ∣ N := hEven
+          have h2dvdN : 2 ∣ N := by
+            rcases hEven with ⟨k, hk⟩
+            refine ⟨k, ?_⟩
+            rw [hk]
+            ring
           have h2dvdp : 2 ∣ p := by
             rcases h2dvdN with ⟨a, ha⟩
             rcases h2dvdNp with ⟨b, hb⟩
             refine ⟨a - b, ?_⟩
-            rw [← ha, ← hb]
             omega
           left
-          exact (Nat.eq_prime_of_dvd_prime hpp h2dvdp).resolve_left (by omega)
+          exact ((Nat.Prime.dvd_prime (by norm_num : (2 : ℕ).Prime) hpp).mp h2dvdp).symm
       | inr hrN =>
           -- r | N ∧ r | N−p ⟹ r | p; p, r 素数 ⟹ p = r; r | F ⟹ r ∈ primeFactors F
           have hrp : r ∣ p := by
-            have h1 : r ∣ N := hrN
-            have h2 : r ∣ N - p := hrNp
-            rcases h1 with ⟨a, ha⟩
-            rcases h2 with ⟨b, hb⟩
+            rcases hrN with ⟨a, ha⟩
+            rcases hrNp with ⟨b, hb⟩
             refine ⟨a - b, ?_⟩
-            rw [← ha, ← hb]
             omega
-          have hpr : p = r := (Nat.Prime.dvd_prime hpp hrprime).mp hrp
+          have hrp_eq : r = p := (Nat.Prime.dvd_prime hrprime hpp).mp hrp
           right
-          rw [hpr]
+          rw [← hrp_eq]
           exact (Nat.mem_primeFactors_of_ne_zero hF0).mpr ⟨hrprime, hrF⟩
     -- S ⊆ {2} ∪ primeFactors F 的计数 ≤ 1 + ω(F)
     calc
@@ -499,24 +500,44 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
           rw [Finset.filter_true]
           exact Finset.card_union_le _ _
       _ = (1 + F.primeFactors.card) := by simp
-  -- 装配: |Σ| = 右端计数
-  rw [abs_of_nonneg]
-  · -- 用带符号恒等式: 左端 = 右端计数 (非负)
+  -- 装配: |Σ| = 右端计数 (由带符号恒等式: Σ = −(右端计数))
+  have hEq' : |∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+        (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| =
+      (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
     have hle : (0 : ℝ) ≤ (((Finset.range N).filter (fun p =>
         p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
-          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by positivity
-    have hEq' : |∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+          ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p)).card : ℝ) := by positivity
+    calc
+      |∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
           (μ e : ℝ) * (((Finset.range N).filter (fun p =>
-            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| =
-        (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|
+      = (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p)).card : ℝ) := by
+          -- 由带符号恒等式 (F 是 let, 定义性相等): Σ = −(计数)
+          dsimp [F]
+          rw [hEq]
+          rw [abs_neg]
+          exact abs_of_nonneg hle
+      _ = (((Finset.range N).filter (fun p =>
           p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
             ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
-      rw [hEq]
-      rw [abs_of_nonneg hle]
-    rw [hEq']
-    exact_mod_cast hcard
-  · -- 非负
-    positivity
+          -- 仅 F = correctedChenForbiddenProduct N 的展开差异
+          congr 1
+          ext p
+          simp only [Finset.mem_filter]
+          constructor
+          · intro h
+            rcases h with ⟨hp, hcond⟩
+            exact ⟨hp, hcond.1, hcond.2.1, by simpa [F] using hcond.2.2⟩
+          · intro h
+            rcases h with ⟨hp, hcond⟩
+            exact ⟨hp, hcond.1, hcond.2.1, by simpa [F] using hcond.2.2⟩
+  rw [hEq']
+  exact_mod_cast hcard
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
 `li` 主项部分) 组装出截断输入: 对每个 `d | P(N)`,
