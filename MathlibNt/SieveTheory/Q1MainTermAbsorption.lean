@@ -1084,9 +1084,7 @@ theorem q1SieveProduct_eq_goldbachSieveProduct (N : ℕ) (hN : Even N) :
         intro hp2
         have h2dvd : 2 ∣ N := by
           rcases hN with ⟨k, hk⟩
-          refine ⟨k, ?_⟩
-          rw [hk]
-          ring
+          refine ⟨k, hk⟩
         exact hc.2 (by simpa [hp2] using h2dvd)
       refine Finset.mem_filter.mpr ⟨hr, ⟨hc.1, ?_⟩⟩
       rcases hc.1.eq_two_or_odd' with h | h
