@@ -284,13 +284,11 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                   if e ∣ N - p then (μ e : ℝ) else 0) := by
               rw [← Finset.sum_filter_add_sum_filter_not F.divisors (fun e => e ≠ 1)
                 (fun e => if e ∣ N - p then (μ e : ℝ) else 0)]
-              congr 1
-              · rfl
-              · apply Finset.sum_congr
-                · ext e
-                  by_cases h : e = 1 <;> simp [h]
-                · intro e he
-                  rfl
+              have hf : F.divisors.filter (fun e => ¬ e ≠ 1) =
+                  F.divisors.filter (fun e => e = 1) := by
+                ext e
+                by_cases h : e = 1 <;> simp [h]
+              rw [hf]
             have hone : (∑ e ∈ F.divisors.filter (fun e => e = 1),
                 if e ∣ N - p then (μ e : ℝ) else 0) = (1 : ℝ) := by
               rw [Finset.sum_eq_single (1 : ℕ)]
@@ -305,21 +303,37 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
             -- 分 ∀r 情形
             by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p
             · have hfull1 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 1 := by
-                dsimp [F]
-                rw [hfull, if_pos hcop]
-              -- 全和 = e≠1 和 + e=1 和 = S + 1, 故 S = 0
+                change (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                  if e ∣ N - p then (μ e : ℝ) else 0) = 1
+                rw [hfull]
+                exact if_pos hcop
+              -- 全和 = e≠1 和 + e=1 和 = S + one, 且 full = 1, one = 1, 故 S = 0
               have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
                   if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
-                nlinarith [hsplit, hfull1, hone]
+                have hsum : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                      if e ∣ N - p then (μ e : ℝ) else 0) +
+                    (∑ e ∈ F.divisors.filter (fun e => e = 1),
+                      if e ∣ N - p then (μ e : ℝ) else 0) = 1 := by
+                  rw [← hsplit]
+                  exact hfull1
+                nlinarith [hsum, hone]
               rw [hS]
               simp [hcop, F]
             · have hfull0 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
-                dsimp [F]
-                rw [hfull, if_neg hcop]
-              -- 全和 = S + 1 = 0, 故 S = -1
+                change (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                  if e ∣ N - p then (μ e : ℝ) else 0) = 0
+                rw [hfull]
+                exact if_neg hcop
+              -- 全和 = S + one = 0, one = 1, 故 S = -1
               have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
                   if e ∣ N - p then (μ e : ℝ) else 0) = -(1 : ℝ) := by
-                nlinarith [hsplit, hfull0, hone]
+                have hsum : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+                      if e ∣ N - p then (μ e : ℝ) else 0) +
+                    (∑ e ∈ F.divisors.filter (fun e => e = 1),
+                      if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
+                  rw [← hsplit]
+                  exact hfull0
+                nlinarith [hsum, hone]
               rw [hS]
               simp [hcop, F]
           -- 用 hde 重写 lcm 条件, 提出 p 无关因子
