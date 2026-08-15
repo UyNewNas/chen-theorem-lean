@@ -546,68 +546,48 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
 lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
     (4 : ℝ) ^ m.primeFactors.card ≤ (16 ^ 8 : ℝ) * Real.sqrt (m : ℝ) := by
   classical
-  -- 分解 m.primeFactors = {p<16} ∪ {16≤p}
-  let s1 : Finset ℕ := m.primeFactors.filter (fun p => p < 16)
-  let s2 : Finset ℕ := m.primeFactors.filter (fun p => 16 ≤ p)
-  have hdisj : Disjoint s1 s2 := by
-    rw [Finset.disjoint_left]
-    intro p hp1 hp2
-    dsimp [s1, s2] at hp1 hp2
-    have h1 : p < 16 := (Finset.mem_filter.mp hp1).2
-    have h2 : 16 ≤ p := (Finset.mem_filter.mp hp2).2
-    omega
-  have hunion : m.primeFactors = s1 ∪ s2 := by
-    ext p
-    dsimp [s1, s2]
-    constructor
-    · intro hp
-      by_cases hp16 : p < 16
-      · exact Or.inl (Finset.mem_filter.mpr ⟨hp, hp16⟩)
-      · have hge : 16 ≤ p := by omega
-        exact Or.inr (Finset.mem_filter.mpr ⟨hp, hge⟩)
-    · intro hp
-      rw [Finset.mem_union] at hp
-      rcases hp with hp1 | hp2
-      · exact (Finset.mem_filter.mp hp1).1
-      · exact (Finset.mem_filter.mp hp2).1
-  -- 小部分: s1 ⊆ range 16 ⟹ card ≤ 16 ⟹ ∏ 16 ≤ 16^16
-  have hs1 : s1 ⊆ Finset.range 16 := by
-    intro p hp
-    dsimp [s1] at hp
-    exact Finset.mem_range.mpr (Finset.mem_filter.mp hp).2
-  have hsmall : (∏ p ∈ s1, (16 : ℕ)) ≤ (16 : ℕ) ^ 16 := by
+  -- 小部分: {p<16} 的因子至多 16 个, ∏ 16 ≤ 16^16
+  have hsmall : (∏ p ∈ m.primeFactors.filter (fun p => p < 16), (16 : ℕ)) ≤ (16 : ℕ) ^ 16 := by
     calc
-      (∏ p ∈ s1, (16 : ℕ)) = (16 : ℕ) ^ s1.card := by
+      (∏ p ∈ m.primeFactors.filter (fun p => p < 16), (16 : ℕ)) =
+          (16 : ℕ) ^ (m.primeFactors.filter (fun p => p < 16)).card := by
         rw [Finset.prod_const]
       _ ≤ (16 : ℕ) ^ 16 := by
         apply pow_le_pow_right₀ (by norm_num : (1 : ℕ) ≤ 16)
         calc
-          s1.card ≤ (Finset.range 16).card := Finset.card_le_card hs1
+          (m.primeFactors.filter (fun p => p < 16)).card ≤ (Finset.range 16).card := by
+            exact Finset.card_le_card (by
+              intro p hp
+              rw [Finset.mem_filter] at hp
+              exact Finset.mem_range.mpr hp.2)
           _ = 16 := by rw [Finset.card_range]
-  -- 大部分: 逐点 16 ≤ p, 且 ∏_{s2} p ≤ ∏_{pf} p ≤ m
-  have hbig : (∏ p ∈ s2, (16 : ℕ)) ≤ ∏ p ∈ s2, p := by
+  -- 大部分: 逐点 16 ≤ p, 且 ∏_{p≥16} p ≤ ∏_{p|m} p ≤ m
+  have hbig : (∏ p ∈ m.primeFactors.filter (fun p => 16 ≤ p), (16 : ℕ)) ≤
+      ∏ p ∈ m.primeFactors.filter (fun p => 16 ≤ p), p := by
     exact Finset.prod_le_prod (fun p hp => by norm_num) (fun p hp => by
-      dsimp [s2] at hp
-      exact (Finset.mem_filter.mp hp).2)
-  have hs2 : s2 ⊆ m.primeFactors := by
-    intro p hp
-    dsimp [s2] at hp
-    exact (Finset.mem_filter.mp hp).1
-  have hbig_le : (∏ p ∈ s2, p) ≤ ∏ p ∈ m.primeFactors, p := by
-    exact Finset.prod_le_prod_of_subset_of_one_le' hs2 (by
-      intro p hp hnot
-      exact (Nat.prime_of_mem_primeFactors hp).one_le)
+      rw [Finset.mem_filter] at hp
+      exact hp.2)
+  have hbig_le : (∏ p ∈ m.primeFactors.filter (fun p => 16 ≤ p), p) ≤
+      ∏ p ∈ m.primeFactors, p := by
+    exact Finset.prod_le_prod_of_subset_of_one_le'
+      (by intro p hp; rw [Finset.mem_filter] at hp; exact hp.1)
+      (by intro p hp hnot; exact (Nat.prime_of_mem_primeFactors hp).one_le)
   have hrad_le : ∏ p ∈ m.primeFactors, p ≤ m := by
     exact Nat.le_of_dvd (by omega : 0 < m) (Nat.prod_primeFactors_dvd m)
-  -- 16^ω = ∏ 16 ≤ 16^16·m (ℕ)
+  -- 16^ω = ∏ 16 = (∏_{p<16} 16)·(∏_{p≥16} 16) ≤ 16^16·m (ℕ)
   have h16n : (16 : ℕ) ^ m.primeFactors.card ≤ (16 : ℕ) ^ 16 * m := by
     calc
       (16 : ℕ) ^ m.primeFactors.card = ∏ p ∈ m.primeFactors, (16 : ℕ) := by
         rw [Finset.prod_const]
-      _ = (∏ p ∈ s1, (16 : ℕ)) * (∏ p ∈ s2, (16 : ℕ)) := by
-        rw [← Finset.prod_union hdisj]
-        rw [hunion]
-      _ ≤ (16 : ℕ) ^ 16 * (∏ p ∈ s2, p) := by
+      _ = (∏ p ∈ m.primeFactors.filter (fun p => p < 16), (16 : ℕ)) *
+          (∏ p ∈ m.primeFactors.filter (fun p => 16 ≤ p), (16 : ℕ)) := by
+        rw [← Finset.prod_filter_mul_prod_filter_not
+          (s := m.primeFactors) (p := fun p => p < 16) (f := fun p => (16 : ℕ))]
+        congr 1
+        apply Finset.filter_congr
+        intro p hp
+        exact not_lt
+      _ ≤ (16 : ℕ) ^ 16 * (∏ p ∈ m.primeFactors.filter (fun p => 16 ≤ p), p) := by
         exact Nat.mul_le_mul hsmall hbig
       _ ≤ (16 : ℕ) ^ 16 * (∏ p ∈ m.primeFactors, p) := by
         exact Nat.mul_le_mul_left ((16 : ℕ) ^ 16) hbig_le
