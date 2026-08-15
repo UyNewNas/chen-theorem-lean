@@ -420,6 +420,103 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
               · simp [h]
               · simp [h]
 
+/-- **带符号 Möbius 和每 d 界 (chen #39)**: 由 `moebiusBaseCount_signed_eq`,
+`|Σ_{1≠e|F} μ(e)·base(lcm(d,e))| = #{p < N : p 素数, 2 ≤ N−p, d | N−p, ∃ r, r 素数, r|F, r|N−p}`.
+右端每个 p 满足: r | N−p 且 r | F。r ≤ 2 或 r | N:
+- r | N 时 r | N−p ∧ r | N ⟹ r | p ⟹ (p 素数) p = r ∈ primeFactors(F);
+- r = 2 时 (N 偶) 2 | N−p ⟹ p 偶素数 ⟹ p = 2。
+故计数 ≤ 1 + ω(F) (polylog, 与 d 无关)。-/
+theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
+    |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+      (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| ≤
+      (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) := by
+  classical
+  let F : ℕ := correctedChenForbiddenProduct N
+  have hEq := moebiusBaseCount_signed_eq N d hN
+  have hF0 : F ≠ 0 := correctedChenForbiddenProduct_ne_zero N
+  -- 左端 = #{p : p.Prime ∧ 2≤N−p ∧ d|N−p ∧ ∃r, r.Prime ∧ r|F ∧ r|N−p}
+  have hcard : ((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card ≤
+      1 + F.primeFactors.card := by
+    -- 证明: 每个 p ∈ S 属于 {2} ∪ primeFactors(F)
+    have hsub : ∀ p ∈ (Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p),
+        p = 2 ∨ p ∈ F.primeFactors := by
+      intro p hp
+      rcases Finset.mem_filter.mp hp with ⟨hprange, hcond⟩
+      rcases hcond with ⟨hpp, htwo, hdvd, hex⟩
+      rcases hex with ⟨r, hrprime, hrF, hrNp⟩
+      -- r | F: r < z ∧ (r ≤ 2 ∨ r | N)
+      have hrcond := (prime_dvd_correctedChenForbiddenProduct_iff hrprime).mp hrF
+      rcases hrcond with ⟨hrz, hrzN⟩
+      cases hrzN with
+      | inl hrle2 =>
+          -- r ≤ 2, r 素数 ⟹ r = 2; 2 | N−p, N 偶 ⟹ p 偶 ⟹ p = 2
+          have hr2 : r = 2 := by
+            have hrge2 : 2 ≤ r := hrprime.two_le
+            omega
+          subst r
+          have h2dvdNp : 2 ∣ N - p := hrNp
+          have h2dvdN : 2 ∣ N := hEven
+          have h2dvdp : 2 ∣ p := by
+            rcases h2dvdN with ⟨a, ha⟩
+            rcases h2dvdNp with ⟨b, hb⟩
+            refine ⟨a - b, ?_⟩
+            rw [← ha, ← hb]
+            omega
+          left
+          exact (Nat.eq_prime_of_dvd_prime hpp h2dvdp).resolve_left (by omega)
+      | inr hrN =>
+          -- r | N ∧ r | N−p ⟹ r | p; p, r 素数 ⟹ p = r; r | F ⟹ r ∈ primeFactors F
+          have hrp : r ∣ p := by
+            have h1 : r ∣ N := hrN
+            have h2 : r ∣ N - p := hrNp
+            rcases h1 with ⟨a, ha⟩
+            rcases h2 with ⟨b, hb⟩
+            refine ⟨a - b, ?_⟩
+            rw [← ha, ← hb]
+            omega
+          have hpr : p = r := (Nat.Prime.dvd_prime hpp hrprime).mp hrp
+          right
+          rw [hpr]
+          exact (Nat.mem_primeFactors_of_ne_zero hF0).mpr ⟨hrprime, hrF⟩
+    -- S ⊆ {2} ∪ primeFactors F 的计数 ≤ 1 + ω(F)
+    calc
+      ((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card
+      ≤ ((({2} : Finset ℕ) ∪ F.primeFactors).filter (fun p => True)).card := by
+          -- 单调性: S ⊆ {2} ∪ primeFactors F
+          exact Finset.card_le_card (by
+            intro p hp
+            have hmem : p = 2 ∨ p ∈ F.primeFactors := hsub p hp
+            rw [Finset.mem_filter]
+            exact ⟨by simp [hmem], trivial⟩)
+      _ ≤ (({2} : Finset ℕ).card + F.primeFactors.card) := by
+          rw [Finset.filter_true]
+          exact Finset.card_union_le _ _
+      _ = (1 + F.primeFactors.card) := by simp
+  -- 装配: |Σ| = 右端计数
+  rw [abs_of_nonneg]
+  · -- 用带符号恒等式: 左端 = 右端计数 (非负)
+    have hle : (0 : ℝ) ≤ (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by positivity
+    have hEq' : |∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| =
+        (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
+      rw [hEq]
+      rw [abs_of_nonneg hle]
+    rw [hEq']
+    exact_mod_cast hcard
+  · -- 非负
+    positivity
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
 `li` 主项部分) 组装出截断输入: 对每个 `d | P(N)`,
