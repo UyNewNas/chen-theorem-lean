@@ -233,7 +233,7 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
         if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0) := by
     intro e
     rw [← Finset.sum_boole]
-    rw [← Finset.mul_sum]
+    rw [Finset.mul_sum]
     apply Finset.sum_congr rfl
     intro p hp
     by_cases h : p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]
@@ -264,7 +264,7 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                 ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
               then -(1 : ℝ) else 0 := by
           intro p hp
-          have hpN : p ≤ N := by omega
+          have hpN : p ≤ N := le_of_lt (Finset.mem_range.mp hp)
           have hde : ∀ e, (p ≡ N [MOD Nat.lcm d e]) ↔ (d ∣ N - p ∧ e ∣ N - p) := by
             intro e
             rw [← modEq_and_dvd_complement_iff_modEq_lcm (N := N) (p := p) (d := d) (e := e)
@@ -286,7 +286,7 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                 (fun e => if e ∣ N - p then (μ e : ℝ) else 0)]
               congr 1
               · rfl
-              · refine Finset.sum_congr ?_ ?_
+              · apply Finset.sum_congr
                 · ext e
                   by_cases h : e = 1 <;> simp [h]
                 · intro e he
@@ -303,23 +303,25 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                 exfalso
                 exact hnot (Finset.mem_filter.mpr ⟨(Nat.mem_divisors.mpr ⟨Nat.one_dvd _, hF0⟩), rfl⟩)
             -- 分 ∀r 情形
-            by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p
+            by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p
             · have hfull1 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 1 := by
+                dsimp [F]
                 rw [hfull, if_pos hcop]
               -- 全和 = e≠1 和 + e=1 和 = S + 1, 故 S = 0
               have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
                   if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
                 nlinarith [hsplit, hfull1, hone]
               rw [hS]
-              simp [hcop]
+              simp [hcop, F]
             · have hfull0 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
+                dsimp [F]
                 rw [hfull, if_neg hcop]
               -- 全和 = S + 1 = 0, 故 S = -1
               have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
                   if e ∣ N - p then (μ e : ℝ) else 0) = -(1 : ℝ) := by
                 nlinarith [hsplit, hfull0, hone]
               rw [hS]
-              simp [hcop]
+              simp [hcop, F]
           -- 用 hde 重写 lcm 条件, 提出 p 无关因子
           by_cases hb : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p
           · have hcond : ∀ e, (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]) ↔
@@ -365,9 +367,13 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                   then -(1 : ℝ) else 0 := by
                   by_cases he : ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
                   · rw [if_pos he]
-                    rw [if_pos (And.intro hb he)]
+                    rw [if_pos (by
+                      rcases hb with ⟨hpp, h2, hd⟩
+                      exact ⟨hpp, h2, hd, he⟩)]
                   · rw [if_neg he]
-                    rw [if_neg (by intro h; exact he h.2.2)]
+                    rw [if_neg (by
+                      intro h
+                      exact he h.2.2.2)]
           · -- ¬hb: RHS = 0, 且条件 (含 p≡N mod lcm) 恒假 ⟹ 和 = 0
             have hrhs : (if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
                   (∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)
@@ -403,7 +409,6 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
               rw [← Finset.sum_neg_distrib]
               apply Finset.sum_congr rfl
               intro p hp
-              rw [hinner p hp]
               by_cases h : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
                   ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
               · simp [h]
