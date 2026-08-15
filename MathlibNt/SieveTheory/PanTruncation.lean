@@ -552,26 +552,29 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
   have hdisj : Disjoint s1 s2 := by
     rw [Finset.disjoint_left]
     intro p hp1 hp2
-    have h1 : p < 16 := (Finset.mem_filter.mp (by simpa [s1] using hp1)).2
-    have h2 : 16 ≤ p := (Finset.mem_filter.mp (by simpa [s2] using hp2)).2
+    dsimp [s1, s2] at hp1 hp2
+    have h1 : p < 16 := (Finset.mem_filter.mp hp1).2
+    have h2 : 16 ≤ p := (Finset.mem_filter.mp hp2).2
     omega
   have hunion : m.primeFactors = s1 ∪ s2 := by
     ext p
+    dsimp [s1, s2]
     constructor
     · intro hp
       by_cases hp16 : p < 16
-      · exact Or.inl (by simpa [s1] using Finset.mem_filter.mpr ⟨hp, hp16⟩)
+      · exact Or.inl (Finset.mem_filter.mpr ⟨hp, hp16⟩)
       · have hge : 16 ≤ p := by omega
-        exact Or.inr (by simpa [s2] using Finset.mem_filter.mpr ⟨hp, hge⟩)
+        exact Or.inr (Finset.mem_filter.mpr ⟨hp, hge⟩)
     · intro hp
+      rw [Finset.mem_union] at hp
       rcases hp with hp1 | hp2
-      · simpa [s1] using (Finset.mem_filter.mp hp1).1
-      · simpa [s2] using (Finset.mem_filter.mp hp2).1
+      · exact (Finset.mem_filter.mp hp1).1
+      · exact (Finset.mem_filter.mp hp2).1
   -- 小部分: s1 ⊆ range 16 ⟹ card ≤ 16 ⟹ ∏ 16 ≤ 16^16
   have hs1 : s1 ⊆ Finset.range 16 := by
     intro p hp
-    have hp' : p ∈ m.primeFactors ∧ p < 16 := by simpa [s1] using hp
-    exact Finset.mem_range.mpr hp'.2
+    dsimp [s1] at hp
+    exact Finset.mem_range.mpr (Finset.mem_filter.mp hp).2
   have hsmall : (∏ p ∈ s1, (16 : ℕ)) ≤ (16 : ℕ) ^ 16 := by
     calc
       (∏ p ∈ s1, (16 : ℕ)) = (16 : ℕ) ^ s1.card := by
@@ -584,12 +587,12 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
   -- 大部分: 逐点 16 ≤ p, 且 ∏_{s2} p ≤ ∏_{pf} p ≤ m
   have hbig : (∏ p ∈ s2, (16 : ℕ)) ≤ ∏ p ∈ s2, p := by
     exact Finset.prod_le_prod (fun p hp => by norm_num) (fun p hp => by
-      have hp' : p ∈ m.primeFactors ∧ 16 ≤ p := by simpa [s2] using hp
-      exact hp'.2)
+      dsimp [s2] at hp
+      exact (Finset.mem_filter.mp hp).2)
   have hs2 : s2 ⊆ m.primeFactors := by
     intro p hp
-    have hp' : p ∈ m.primeFactors ∧ 16 ≤ p := by simpa [s2] using hp
-    exact hp'.1
+    dsimp [s2] at hp
+    exact (Finset.mem_filter.mp hp).1
   have hbig_le : (∏ p ∈ s2, p) ≤ ∏ p ∈ m.primeFactors, p := by
     exact Finset.prod_le_prod_of_subset_of_one_le' hs2 (by
       intro p hp hnot
@@ -619,22 +622,20 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
   have hsqrt_lhs : Real.sqrt (((16 : ℕ) ^ m.primeFactors.card : ℝ)) =
       (4 : ℝ) ^ m.primeFactors.card := by
     have hEq : ((16 : ℕ) ^ m.primeFactors.card : ℝ) = ((4 : ℝ) ^ m.primeFactors.card) ^ 2 := by
-      norm_num
+      rw [Nat.cast_pow]
       rw [show (16 : ℝ) = (4 : ℝ) ^ 2 by norm_num]
       rw [← pow_mul (4 : ℝ) 2 m.primeFactors.card]
       rw [← pow_mul (4 : ℝ) m.primeFactors.card 2]
       rw [show 2 * m.primeFactors.card = m.primeFactors.card * 2 by omega]
-    rw [hEq, Real.sqrt_sq_eq_abs, abs_of_nonneg]
-    positivity
+    rw [hEq, Real.sqrt_sq_eq_abs, abs_of_nonneg (by positivity)]
   have hsqrt16 : Real.sqrt ((16 : ℝ) ^ 16) = (16 ^ 8 : ℝ) := by
     rw [show (16 : ℝ) ^ 16 = ((16 : ℝ) ^ 8) ^ 2 by
-      rw [show (16 : ℝ) ^ 16 = (16 : ℝ) ^ (8 * 2) by congr 1; norm_num]
-      rw [pow_mul (16 : ℝ) 8 2]]
-    rw [Real.sqrt_sq_eq_abs, abs_of_nonneg]
-    positivity
+      rw [← pow_mul (16 : ℝ) 8 2]
+      rw [show 8 * 2 = 16 by norm_num]]
+    rw [Real.sqrt_sq_eq_abs, abs_of_nonneg (by positivity)]
   have hsqrt_rhs : Real.sqrt (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) =
       (16 ^ 8 : ℝ) * Real.sqrt (m : ℝ) := by
-    norm_num
+    rw [show (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) = (16 : ℝ) ^ 16 * (m : ℝ) by norm_num]
     rw [Real.sqrt_mul (by positivity : 0 ≤ (16 : ℝ) ^ 16) (m : ℝ)]
     rw [hsqrt16]
   calc
