@@ -953,10 +953,8 @@ theorem q1OddSum_eq_products (N q : ℕ) (hz3 : 3 ≤ correctedChenZ N)
     have hφe0 : (Nat.totient e : ℝ) ≠ 0 := by
       exact_mod_cast (Nat.totient_pos.mpr (Nat.pos_of_ne_zero he0)).ne'
     rw [hphi]
-    have hφqde0 : ((Nat.totient q * Nat.totient d * Nat.totient e : ℕ) : ℝ) ≠ 0 := by
-      simpa [Nat.cast_mul] using (mul_ne_zero (mul_ne_zero hφq0 hφd0) hφe0)
-    field_simp [hφq0, hφd0, hφe0, hφqde0, Nat.cast_mul]
-    ring
+    rw [Nat.cast_mul, Nat.cast_mul]
+    field_simp [hφq0, hφd0, hφe0]
   calc
     (∑ d ∈ (correctedChenSiftingProduct N).divisors,
         q1Mu d * (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
