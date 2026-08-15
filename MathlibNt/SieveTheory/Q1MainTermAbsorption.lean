@@ -953,7 +953,9 @@ theorem q1OddSum_eq_products (N q : ℕ) (hz3 : 3 ≤ correctedChenZ N)
     have hφe0 : (Nat.totient e : ℝ) ≠ 0 := by
       exact_mod_cast (Nat.totient_pos.mpr (Nat.pos_of_ne_zero he0)).ne'
     rw [hphi]
-    field_simp [hφq0, hφd0, hφe0, Nat.cast_mul]
+    have hφqde0 : ((Nat.totient q * Nat.totient d * Nat.totient e : ℕ) : ℝ) ≠ 0 := by
+      simpa [Nat.cast_mul] using (mul_ne_zero (mul_ne_zero hφq0 hφd0) hφe0)
+    field_simp [hφq0, hφd0, hφe0, hφqde0, Nat.cast_mul]
     ring
   calc
     (∑ d ∈ (correctedChenSiftingProduct N).divisors,
@@ -1257,7 +1259,7 @@ theorem q1_log_z_sub_one_lower (N : ℕ) (hN40 : 2 ^ 40 ≤ N) :
     have hxeq : t ^ 2 = x := by
       dsimp [t, x]
       rw [pow_two]
-      rw [← Real.rpow_add (by exact_mod_cast (Nat.zero_le N))]
+      rw [← Real.rpow_add (by exact_mod_cast (lt_of_lt_of_le (by norm_num : (0 : ℕ) < 2 ^ 40) hN40))]
       norm_num
     have ht4 : (4 : ℝ) ≤ t := by
       dsimp [t]
