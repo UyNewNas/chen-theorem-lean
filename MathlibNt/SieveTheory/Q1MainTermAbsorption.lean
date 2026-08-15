@@ -953,8 +953,7 @@ theorem q1OddSum_eq_products (N q : ℕ) (hz3 : 3 ≤ correctedChenZ N)
     have hφe0 : (Nat.totient e : ℝ) ≠ 0 := by
       exact_mod_cast (Nat.totient_pos.mpr (Nat.pos_of_ne_zero he0)).ne'
     rw [hphi]
-    rw [Nat.cast_mul, Nat.cast_mul]
-    field_simp [hφq0, hφd0, hφe0]
+    field_simp [hφq0, hφd0, hφe0, Nat.cast_mul]
     ring
   calc
     (∑ d ∈ (correctedChenSiftingProduct N).divisors,
@@ -1202,7 +1201,7 @@ theorem q1_qSum_phi_inv_bound :
               (Nat.totient q : ℝ) = ((q - 1 : ℕ) : ℝ) := by rw [Nat.totient_prime hqprime]
               _ = (q : ℝ) - 1 := by
                     have h1q : 1 ≤ q := le_trans (by norm_num : 1 ≤ 3) (le_trans hz3 hzq)
-                    exact (Nat.cast_sub (R := ℝ) h1q)
+                    simpa using (Nat.cast_sub (R := ℝ) h1q)
           have hle : 1 / ((q : ℝ) - 1) ≤ 2 / (q : ℝ) := by
             have hpos1 : 0 < (q : ℝ) - 1 := by linarith
             have hpos2 : 0 < (q : ℝ) := by linarith
@@ -1258,7 +1257,7 @@ theorem q1_log_z_sub_one_lower (N : ℕ) (hN40 : 2 ^ 40 ≤ N) :
     have hxeq : t ^ 2 = x := by
       dsimp [t, x]
       rw [pow_two]
-      rw [Real.rpow_add (by positivity : 0 ≤ (N : ℝ))]
+      rw [← Real.rpow_add (by exact_mod_cast (Nat.zero_le N))]
       norm_num
     have ht4 : (4 : ℝ) ≤ t := by
       dsimp [t]
