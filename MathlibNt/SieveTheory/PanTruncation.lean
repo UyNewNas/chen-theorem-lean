@@ -315,9 +315,20 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                   dsimp [F]
                   rw [hfull]
               _ = if ¬ (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) then -(1 : ℝ) else 0 := by
+                  have hiff : (∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p) ↔
+                      (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) := by
+                    constructor <;> intro h r hr <;> simpa [F] using h r hr
                   by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p
-                  · simp [hcop, F]
-                  · simp [hcop, F]
+                  · rw [if_pos hcop]
+                    have hF : (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) := hiff.1 hcop
+                    rw [if_neg (by intro hnot; exact hnot hF)]
+                    norm_num
+                  · rw [if_neg hcop]
+                    have hF : ¬ (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) := by
+                      intro hnot
+                      exact hcop (hiff.2 hnot)
+                    rw [if_pos hF]
+                    norm_num
           -- 用 hde 重写 lcm 条件, 提出 p 无关因子
           by_cases hb : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p
           · have hcond : ∀ e, (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]) ↔
