@@ -528,25 +528,18 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
                     q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))) +
                   (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
                     q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))))
-                = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    (q1LogarithmicIntegral N * (q1Mu d *
-                        (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
-                          q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))))) +
-                      (q1Mu d *
-                        (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                          q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))))) := by
+                = q1LogarithmicIntegral N *
+                    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                      q1Mu d * (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+                        q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
+                  (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+                    q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                      q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
+                  rw [Finset.mul_sum]
+                  rw [← Finset.sum_add_distrib]
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
-            _ = q1LogarithmicIntegral N *
-                  (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    q1Mu d * (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
-                      q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ)))) +
-                (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                  q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                    q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
-                  rw [Finset.sum_add_distrib]
-                  rw [← Finset.mul_sum]
 
 /-! # 4. 偶数模数贡献的精确求值 (Möbius 反演) -/
 
@@ -753,8 +746,8 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                 · have hif : (if Nat.lcm (Nat.lcm q d) e ∣ N - 2 then (1 : ℝ) else 0) =
                       (if q ∣ N - 2 then (if d ∣ N - 2 then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0) else 0) := by
                     have hiff : (Nat.lcm (Nat.lcm q d) e ∣ N - 2) ↔ (q ∣ N - 2 ∧ d ∣ N - 2 ∧ e ∣ N - 2) := by
-                      rw [_root_.lcm_dvd_iff]
-                      rw [_root_.lcm_dvd_iff]
+                      rw [lcm_dvd_iff (a := Nat.lcm q d) (b := e) (c := N - 2)]
+                      rw [lcm_dvd_iff (a := q) (b := d) (c := N - 2)]
                       rw [and_assoc]
                     by_cases hq2 : q ∣ N - 2 <;> by_cases hd2 : d ∣ N - 2 <;> by_cases he2 : e ∣ N - 2 <;> simp [hq2, hd2, he2, hiff]
                   exact congrArg (fun x => q1Mu e * x) hif)))
@@ -986,7 +979,7 @@ theorem q1OddSum_eq_products (N q : ℕ) (hz3 : 3 ≤ correctedChenZ N)
           (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
             q1Mu e * (1 / (Nat.totient e : ℝ))) := by
           rw [← Finset.sum_mul]
-          rw [← Finset.sum_mul]
+          ring
     _ = (1 / (Nat.totient q : ℝ)) * q1SieveProduct N * q1ForbiddenOddProduct N := by
           rw [q1Sum_nu_sifting N]
           rw [q1Sum_nu_forbiddenOddPart N hz3]
