@@ -467,10 +467,12 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
             rw [hk]
             ring
           have h2dvdp : 2 ∣ p := by
-            have hsub : N - p ≤ N := by omega
-            have hdvd := Nat.dvd_sub h2dvdN h2dvdNp hsub
-            have hp_eq : N - (N - p) = p := by omega
-            rwa [hp_eq] at hdvd
+            -- N = 2a, N−p = 2b, p ≤ N ⟹ p = 2(a−b)
+            rcases h2dvdN with ⟨a, ha⟩
+            rcases h2dvdNp with ⟨b, hb⟩
+            refine ⟨a - b, ?_⟩
+            have hp_le : p ≤ N := by omega
+            omega
           left
           rcases (Nat.dvd_prime hpp).mp h2dvdp with h21 | h2p
           · exfalso
@@ -479,17 +481,18 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
       | inr hrN =>
           -- r | N ∧ r | N−p ⟹ r | p; p, r 素数 ⟹ p = r; r | F ⟹ r ∈ primeFactors F
           have hrp : r ∣ p := by
-            have hsub : N - p ≤ N := by omega
-            have hdvd := Nat.dvd_sub hrN hrNp hsub
-            -- r | N - (N - p), 且 N - (N - p) = p (p ≤ N)
-            have hp_eq : N - (N - p) = p := by omega
-            rwa [hp_eq] at hdvd
+            -- N = ra, N−p = rb, p ≤ N ⟹ p = r(a−b)
+            rcases hrN with ⟨a, ha⟩
+            rcases hrNp with ⟨b, hb⟩
+            refine ⟨a - b, ?_⟩
+            have hp_le : p ≤ N := by omega
+            omega
           have hrp_eq : r = p := by
             rcases (Nat.dvd_prime hpp).mp hrp with hr1 | hrp'
             · exfalso
               have hrge : 2 ≤ r := hrprime.two_le
               omega
-            · exact hrp'.symm
+            · exact hrp'
           right
           rw [← hrp_eq]
           exact (Nat.mem_primeFactors_of_ne_zero hF0).mpr ⟨hrprime, hrF⟩
@@ -502,10 +505,9 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
           -- 单调性: S ⊆ {2} ∪ primeFactors F
           exact Finset.card_le_card (by
             intro p hp
-            rw [Finset.mem_filter] at hp
-            rcases hp with ⟨hprange, hcond⟩
             have hmem : p = 2 ∨ p ∈ F.primeFactors := hsub p hp
-            simpa [Finset.mem_union, hmem])
+            rw [Finset.mem_filter, Finset.mem_union]
+            exact ⟨Or.inl (by simp [hmem]), trivial⟩)
       _ ≤ (({2} : Finset ℕ).card + F.primeFactors.card) := by
           exact Finset.card_union_le _ _
       _ = (1 + F.primeFactors.card) := by simp
@@ -534,17 +536,8 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
       _ = (((Finset.range N).filter (fun p =>
           p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
             ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
-          -- 仅 F = correctedChenForbiddenProduct N 的展开差异
-          congr 1
-          ext p
-          simp only [Finset.mem_filter]
-          constructor
-          · intro h
-            rcases h with ⟨hp, hcond⟩
-            exact ⟨hp, hcond.1, hcond.2.1, by simpa [F] using hcond.2.2⟩
-          · intro h
-            rcases h with ⟨hp, hcond⟩
-            exact ⟨hp, hcond.1, hcond.2.1, by simpa [F] using hcond.2.2⟩
+          -- 仅 F = correctedChenForbiddenProduct N 的展开差异 (F 是 let)
+          rfl
   rw [hEq']
   exact_mod_cast hcard
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
