@@ -624,6 +624,120 @@ lemma four_pow_omega_le_sqrt (m : ℕ) (hm : 1 ≤ m) :
     _ ≤ Real.sqrt (((16 : ℕ) ^ 16 * m : ℕ) : ℝ) := hsqrt
     _ = (16 ^ 8 : ℝ) * Real.sqrt (m : ℝ) := hsqrt_rhs
 
+/-- **除数加权和 (chen #39)**: 主项 MainB 的除数加权和 (交换后):
+Σ_{p∈S} 4^{ω(gcd(P,N−p))} ≤ (1+ω(N))·16^8·√N。
+其中 S = {p : p.Prime ∧ 2≤N−p ∧ ∃r, r.Prime ∧ r|F ∧ r|N−p} (F = correctedChenForbiddenProduct N)。
+证明: 每项点式 4^{ω(gcd(P,N−p))} ≤ 16^8·√(gcd(P,N−p)) ≤ 16^8·√N
+(four_pow_omega_le_sqrt + gcd ≤ N−p ≤ N), 求和后 |S| ≤ 1 + F.primeFactors.card
+(hcard: S ⊆ {2} ∪ primeFactors F)。零 sorry。 -/
+lemma divisorWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
+    (∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+        ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
+      (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) ≤
+      (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+  classical
+  let F : ℕ := correctedChenForbiddenProduct N
+  let P : ℕ := correctedChenSiftingProduct N
+  let S : Finset ℕ := (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+    ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)
+  -- |S| ≤ 1 + ω(F): S ⊆ {2} ∪ primeFactors F
+  have hcardS : S.card ≤ 1 + F.primeFactors.card := by
+    have hsub : ∀ p ∈ S, p = 2 ∨ p ∈ F.primeFactors := by
+      intro p hp
+      rw [Finset.mem_filter] at hp
+      rcases hp with ⟨hprange, hcond⟩
+      rcases hcond with ⟨hpp, htwo, hex⟩
+      rcases hex with ⟨r, hrprime, hrF, hrNp⟩
+      have hrcond := (prime_dvd_correctedChenForbiddenProduct_iff hrprime).mp hrF
+      rcases hrcond with ⟨hrz, hrzN⟩
+      cases hrzN with
+      | inl hrle2 =>
+          have hr2 : r = 2 := by
+            have hrge2 : 2 ≤ r := hrprime.two_le
+            omega
+          subst r
+          have h2dvdNp : 2 ∣ N - p := hrNp
+          have h2dvdN : 2 ∣ N := by
+            rcases hEven with ⟨k, hk⟩
+            refine ⟨k, ?_⟩
+            rw [hk]
+            ring
+          have h2dvdp : 2 ∣ p := by
+            have hdvd : 2 ∣ N - (N - p) := Nat.dvd_sub h2dvdN h2dvdNp
+            have hp_eq : N - (N - p) = p := by omega
+            rwa [hp_eq] at hdvd
+          left
+          rcases (Nat.dvd_prime hpp).mp h2dvdp with h21 | h2p
+          · exfalso
+            norm_num at h21
+          · exact h2p.symm
+      | inr hrN =>
+          have hrp : r ∣ p := by
+            have hdvd : r ∣ N - (N - p) := Nat.dvd_sub hrN hrNp
+            have hp_eq : N - (N - p) = p := by omega
+            rwa [hp_eq] at hdvd
+          have hrp_eq : r = p := by
+            rcases (Nat.dvd_prime hpp).mp hrp with hr1 | hrp'
+            · exfalso
+              have hrge : 2 ≤ r := hrprime.two_le
+              omega
+            · exact hrp'
+          right
+          rw [← hrp_eq]
+          exact (Nat.mem_primeFactors_of_ne_zero (correctedChenForbiddenProduct_ne_zero N)).mpr ⟨hrprime, hrF⟩
+    calc
+      S.card ≤ (({2} : Finset ℕ) ∪ F.primeFactors).card := by
+          exact Finset.card_le_card (by
+            intro p hp
+            rw [Finset.mem_union]
+            rcases hsub p hp with h2 | hr
+            · exact Or.inl (by simp [h2])
+            · exact Or.inr hr)
+      _ ≤ (({2} : Finset ℕ).card + F.primeFactors.card) := by
+          exact Finset.card_union_le _ _
+      _ = (1 + F.primeFactors.card) := by simp
+  -- 每项: 4^{ω(gcd(P,N−p))} ≤ 16^8·√N
+  have hpoint : ∀ p ∈ S,
+      (4 : ℝ) ^ (Nat.gcd P (N - p)).primeFactors.card ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+    intro p hp
+    rw [Finset.mem_filter] at hp
+    rcases hp with ⟨hprange, hcond⟩
+    have hgcdpos : 1 ≤ Nat.gcd P (N - p) := by
+      have hPpos : 0 < P := Nat.pos_of_ne_zero (correctedChenSiftingProduct_ne_zero N)
+      exact Nat.succ_le_iff.mpr (Nat.gcd_pos_of_pos_left (N - p) hPpos)
+    have h1 := four_pow_omega_le_sqrt (Nat.gcd P (N - p)) hgcdpos
+    have hgcd_le : Nat.gcd P (N - p) ≤ N - p := by
+      exact Nat.le_of_dvd (by omega : 0 < N - p) (Nat.gcd_dvd_right P (N - p))
+    have hNp_le : N - p ≤ N := by omega
+    have hsqrt : Real.sqrt ((Nat.gcd P (N - p) : ℝ)) ≤ Real.sqrt (N : ℝ) := by
+      exact Real.sqrt_le_sqrt (le_trans (by exact_mod_cast hgcd_le) (by exact_mod_cast hNp_le))
+    calc
+      (4 : ℝ) ^ (Nat.gcd P (N - p)).primeFactors.card
+          ≤ (16 ^ 8 : ℝ) * Real.sqrt ((Nat.gcd P (N - p) : ℝ)) := h1
+      _ ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+          exact mul_le_mul_of_nonneg_left hsqrt (by positivity)
+  -- 求和: Σ_{p∈S} ≤ |S|·16^8·√N
+  have hsum : (∑ p ∈ S, (4 : ℝ) ^ (Nat.gcd P (N - p)).primeFactors.card) ≤
+      S.card * ((16 ^ 8 : ℝ) * Real.sqrt (N : ℝ)) := by
+    calc
+      (∑ p ∈ S, (4 : ℝ) ^ (Nat.gcd P (N - p)).primeFactors.card)
+          ≤ ∑ p ∈ S, (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+            exact Finset.sum_le_sum hpoint
+      _ = S.card * ((16 ^ 8 : ℝ) * Real.sqrt (N : ℝ)) := by
+            simp [Finset.sum_const, nsmul_eq_mul]
+  -- 装配
+  calc
+    (∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+        ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
+      (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card)
+        ≤ S.card * ((16 ^ 8 : ℝ) * Real.sqrt (N : ℝ)) := by
+          simpa [S, P, F] using hsum
+    _ ≤ (1 + F.primeFactors.card) * ((16 ^ 8 : ℝ) * Real.sqrt (N : ℝ)) := by
+          exact Nat.mul_le_mul_right _ hcardS
+    _ = (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+          simp [F, mul_assoc]
+
+
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
 `li` 主项部分) 组装出截断输入: 对每个 `d | P(N)`,
