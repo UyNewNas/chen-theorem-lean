@@ -529,12 +529,12 @@ theorem q1CandidateAPMain_eq_oddSum_add_evenPart (N q : ℕ) (hz3 : 3 ≤ correc
                   (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
                     q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))))
                 = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
-                    q1LogarithmicIntegral N * q1Mu d *
-                      (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
-                        q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))) +
-                    q1Mu d *
-                      (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                        q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e))) := by
+                    ((q1LogarithmicIntegral N * (q1Mu d *
+                        (∑ e ∈ (correctedChenForbiddenOddPart N).divisors,
+                          q1Mu e * (1 / (Nat.totient (q * d * e) : ℝ))))) +
+                      (q1Mu d *
+                        (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
+                          q1Mu e * q1APMainEvenValue N (Nat.lcm (Nat.lcm q d) e)))))) := by
                   apply Finset.sum_congr rfl
                   intro d hd
                   ring
@@ -634,7 +634,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                 have hF : correctedChenForbiddenProduct N = 2 * correctedChenForbiddenOddPart N :=
                   forbiddenProduct_eq_two_mul_oddPart N h2F
                 intro hz
-                have : correctedChenForbiddenProduct N = 0 := by rw [hF, hz]; norm_num
+                have : correctedChenForbiddenProduct N = 0 := by rw [hF, hz]
                 exact correctedChenForbiddenProduct_ne_zero N this
               have he20 : e / 2 ≠ 0 := by
                 intro hz
@@ -649,8 +649,8 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               exact Nat.mem_divisors.mpr ⟨he2d, hFodd0'⟩
             · intro e1 he1 e2 he2 h
               rw [Finset.mem_filter] at he1 he2
-              have he1' : e1 = 2 * (e1 / 2) := q1_even_div_two_mul he1.1
-              have he2' : e2 = 2 * (e2 / 2) := q1_even_div_two_mul he2.1
+              have he1' : e1 = 2 * (e1 / 2) := q1_even_div_two_mul he1.2
+              have he2' : e2 = 2 * (e2 / 2) := q1_even_div_two_mul he2.2
               rw [he1', he2', h]
             · intro e2 he2
               refine ⟨2 * e2, ?_, ?_⟩
@@ -708,7 +708,7 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
               intro hz
               have hF : correctedChenForbiddenProduct N = 2 * correctedChenForbiddenOddPart N :=
                 forbiddenProduct_eq_two_mul_oddPart N h2F
-              have : correctedChenForbiddenProduct N = 0 := by rw [hF, hz]; norm_num
+              have : correctedChenForbiddenProduct N = 0 := by rw [hF, hz]
               exact correctedChenForbiddenProduct_ne_zero N this
             calc
               (∑ e2 ∈ (correctedChenForbiddenOddPart N).divisors,
@@ -722,7 +722,15 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
                     rw [sum_moebius_if_dvd_eq_if_gcd_one (P := correctedChenForbiddenOddPart N)
                       (m := (N - 2) / 2) hFodd0]
               _ = (if Nat.gcd (correctedChenForbiddenOddPart N) ((N - 2) / 2) = 1 then (1 : ℝ) else 0) := by
-                    by_cases hgcd : Nat.gcd (correctedChenForbiddenOddPart N) ((N - 2) / 2) = 1 <;> simp [hgcd, Nat.gcd_comm]
+                    by_cases hgcd : Nat.gcd (correctedChenForbiddenOddPart N) ((N - 2) / 2) = 1
+                    · have hg' : Nat.gcd ((N - 2) / 2) (correctedChenForbiddenOddPart N) = 1 := by
+                        rwa [Nat.gcd_comm]
+                      simp [hgcd, hg']
+                    · have hg' : Nat.gcd ((N - 2) / 2) (correctedChenForbiddenOddPart N) ≠ 1 := by
+                        intro h
+                        apply hgcd
+                        rwa [Nat.gcd_comm]
+                      simp [hgcd, hg']
   unfold q1CandidateAPMainEvenPart
   -- 重写内层值, 把 [lcm(lcm q d) e | N−2] 分解为 [q|N−2]·[d|N−2]·[e|N−2]
   calc
@@ -732,24 +740,24 @@ theorem q1CandidateAPMainEvenPart_eq (N q : ℕ) (hN : Even N) (hN2 : 2 ≤ N)
         = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
             q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
               q1Mu e * (if Even e then (if Nat.lcm (Nat.lcm q d) e ∣ N - 2 then (1 : ℝ) else 0) else 0))) := by
-          intro d hd
-          exact congrArg (fun x => q1Mu d * x)
-            (Finset.sum_congr rfl (fun e he => congrArg (fun x => q1Mu e * x) (hval d hd e he)))
+          exact Finset.sum_congr rfl (fun d hd =>
+            congrArg (fun x => q1Mu d * x)
+              (Finset.sum_congr rfl (fun e he => congrArg (fun x => q1Mu e * x) (hval d hd e he))))
     _ = (∑ d ∈ (correctedChenSiftingProduct N).divisors,
           q1Mu d * (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
             q1Mu e * (if Even e then (if q ∣ N - 2 then (if d ∣ N - 2 then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0) else 0) else 0))) := by
-          intro d hd
-          exact congrArg (fun x => q1Mu d * x)
-            (Finset.sum_congr rfl (fun e he => by
-              by_cases hev : Even e <;> simp [hev]
-              · have hif : (if Nat.lcm (Nat.lcm q d) e ∣ N - 2 then (1 : ℝ) else 0) =
-                    (if q ∣ N - 2 then (if d ∣ N - 2 then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0) else 0) := by
-                  rw [show (Nat.lcm (Nat.lcm q d) e ∣ N - 2) ↔ (q ∣ N - 2 ∧ d ∣ N - 2 ∧ e ∣ N - 2) by
-                    rw [lcm_dvd_iff]
-                    rw [lcm_dvd_iff]
-                    rw [and_assoc]]
-                  by_cases hq2 : q ∣ N - 2 <;> by_cases hd2 : d ∣ N - 2 <;> by_cases he2 : e ∣ N - 2 <;> simp [hq2, hd2, he2]
-                exact congrArg (fun x => q1Mu e * x) hif))
+          exact Finset.sum_congr rfl (fun d hd =>
+            congrArg (fun x => q1Mu d * x)
+              (Finset.sum_congr rfl (fun e he => by
+                by_cases hev : Even e <;> simp [hev]
+                · have hif : (if Nat.lcm (Nat.lcm q d) e ∣ N - 2 then (1 : ℝ) else 0) =
+                      (if q ∣ N - 2 then (if d ∣ N - 2 then (if e ∣ N - 2 then (1 : ℝ) else 0) else 0) else 0) := by
+                    rw [show (Nat.lcm (Nat.lcm q d) e ∣ N - 2) ↔ (q ∣ N - 2 ∧ d ∣ N - 2 ∧ e ∣ N - 2) by
+                      rw [lcm_dvd_iff]
+                      rw [lcm_dvd_iff]
+                      rw [and_assoc]]
+                    by_cases hq2 : q ∣ N - 2 <;> by_cases hd2 : d ∣ N - 2 <;> by_cases he2 : e ∣ N - 2 <;> simp [hq2, hd2, he2]
+                  exact congrArg (fun x => q1Mu e * x) hif)))
     _ = (if q ∣ N - 2 then
           (∑ d ∈ (correctedChenSiftingProduct N).divisors,
             q1Mu d * (if d ∣ N - 2 then
