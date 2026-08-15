@@ -313,9 +313,11 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                     then (1 : ℝ) else 0) - 1 := by
                   rw [hfull, hone]
               _ = if ¬ (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) then -(1 : ℝ) else 0 := by
-                  by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p
-                  · simp [hcop, F]
-                  · simp [hcop, F]
+                  by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p
+                  · rw [if_pos hcop]
+                    simp [hcop]
+                  · rw [if_neg hcop]
+                    simp [hcop]
           -- 用 hde 重写 lcm 条件, 提出 p 无关因子
           by_cases hb : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p
           · have hcond : ∀ e, (p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e]) ↔
