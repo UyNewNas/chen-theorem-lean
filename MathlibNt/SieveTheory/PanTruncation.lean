@@ -311,8 +311,9 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                   ring
               _ = (if ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p
                     then (1 : ℝ) else 0) - 1 := by
+                  rw [hone]
                   dsimp [F]
-                  rw [hfull, hone]
+                  rw [hfull]
               _ = if ¬ (∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p) then -(1 : ℝ) else 0 := by
                   by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ F → ¬ r ∣ N - p
                   · simp [hcop, F]
