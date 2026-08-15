@@ -303,10 +303,7 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
             -- 分 ∀r 情形
             by_cases hcop : ∀ r : ℕ, r.Prime → r ∣ correctedChenForbiddenProduct N → ¬ r ∣ N - p
             · have hfull1 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 1 := by
-                change (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                  if e ∣ N - p then (μ e : ℝ) else 0) = 1
-                rw [hfull]
-                exact if_pos hcop
+                simpa [F] using (hfull.trans (by rw [if_pos hcop]))
               -- 全和 = e≠1 和 + e=1 和 = S + one, 且 full = 1, one = 1, 故 S = 0
               have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
                   if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
@@ -320,10 +317,7 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
               rw [hS]
               simp [hcop, F]
             · have hfull0 : (∑ e ∈ F.divisors, if e ∣ N - p then (μ e : ℝ) else 0) = 0 := by
-                change (∑ e ∈ (correctedChenForbiddenProduct N).divisors,
-                  if e ∣ N - p then (μ e : ℝ) else 0) = 0
-                rw [hfull]
-                exact if_neg hcop
+                simpa [F] using (hfull.trans (by rw [if_neg hcop]))
               -- 全和 = S + one = 0, one = 1, 故 S = -1
               have hS : (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
                   if e ∣ N - p then (μ e : ℝ) else 0) = -(1 : ℝ) := by
@@ -342,7 +336,6 @@ theorem moebiusBaseCount_signed_eq (N d : ℕ) (hN : 2 ≤ N) :
                 (p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧ e ∣ N - p) := by
               intro e
               rw [hde e]
-              tauto
             calc
               (∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
                 if p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e] then (μ e : ℝ) else 0)
