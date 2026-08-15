@@ -468,8 +468,7 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
             ring
           have h2dvdp : 2 ∣ p := by
             -- p = N - (N-p), 2 | N 且 2 | N−p ⟹ 2 | p
-            have hsub : N - p ≤ N := by omega
-            have hdvd := Nat.dvd_sub h2dvdN h2dvdNp hsub
+            have hdvd : 2 ∣ N - (N - p) := Nat.dvd_sub h2dvdN h2dvdNp
             have hp_eq : N - (N - p) = p := by omega
             rwa [hp_eq] at hdvd
           left
@@ -481,8 +480,7 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
           -- r | N ∧ r | N−p ⟹ r | p; p, r 素数 ⟹ p = r; r | F ⟹ r ∈ primeFactors F
           have hrp : r ∣ p := by
             -- p = N - (N-p), r | N 且 r | N−p ⟹ r | p
-            have hsub : N - p ≤ N := by omega
-            have hdvd := Nat.dvd_sub hrN hrNp hsub
+            have hdvd : r ∣ N - (N - p) := Nat.dvd_sub hrN hrNp
             have hp_eq : N - (N - p) = p := by omega
             rwa [hp_eq] at hdvd
           have hrp_eq : r = p := by
