@@ -1167,7 +1167,9 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
   · dsimp [C]
     positivity
   · intro N hN
-    have hNx0₁ : x₀₁ ≤ N := by dsimp [x₀]; omega
+    have hNx0₁ : x₀₁ ≤ N := by
+      have h1 : x₀₁ ≤ x₀ := by dsimp [x₀]; exact Nat.le_max_left _ _
+      exact le_trans h1 (by exact_mod_cast hN)
     have hNge : (max M₁ 2 : ℝ) ≤ (N : ℝ) := by
       have h1 : (Nat.ceil (max M₁ 2) : ℝ) ≤ (N : ℝ) := by
         have hx : (x₀ : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
@@ -1225,12 +1227,11 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
         -- √N·(log·log^A) = √N·log^(A+1) (pow_succ 结合)
         have hpow : Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
             (Real.log (N : ℝ)) ^ (A + 1) := by
+          rw [mul_comm]
           rw [← pow_succ]
-          rfl
         have hre : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
             Real.sqrt (N : ℝ) * (Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A) := by ring
         rw [hre, hpow]
-        rfl
       have hle2 : Real.sqrt (N : ℝ) * (Real.log (N : ℝ)) ^ (A + 1) ≤
           Real.sqrt (N : ℝ) * Real.sqrt (N : ℝ) := by
         exact mul_le_mul_of_nonneg_left hsqrtN hnn
@@ -1250,16 +1251,28 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
         rw [le_div_iff₀ hlogApos]
         have hre : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤ (N : ℝ) := hcore
         simpa [mul_assoc, mul_comm, mul_left_comm] using hre
-      have hmul := mul_le_mul_of_nonneg_left hdiv hnn
+      have hmul : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) * Real.log (N : ℝ) ≤
+          (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * ((N : ℝ) / (Real.log (N : ℝ)) ^ A) := by
+        have hcoef : 0 ≤ (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) := by positivity
+        have hm := mul_le_mul_of_nonneg_left hdiv hcoef
+        -- hm: ((1+1/log2)·16^8)·(√N·log N) ≤ ((1+1/log2)·16^8)·(N/log^A N)
+        simpa [mul_assoc, mul_comm, mul_left_comm] using hm
       have hleft : ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
-          (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * (Real.sqrt (N : ℝ) * Real.log (N : ℝ)) := by
+          (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) * Real.log (N : ℝ) := by
         have h16nn : 0 ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by positivity
         have hm1 := mul_le_mul_of_nonneg_right h1wo h16nn
+        -- hm1: (1+ω(F))·(16^8·√N) ≤ (1+1/log2)·log N·(16^8·√N)
         simpa [mul_assoc, mul_comm, mul_left_comm] using hm1
-      have hmul' : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * (Real.sqrt (N : ℝ) * Real.log (N : ℝ)) ≤
+      have hmul' : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * ((N : ℝ) / (Real.log (N : ℝ)) ^ A) ≤
           C * (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
-        simpa [mul_assoc, mul_comm, mul_left_comm, C] using hmul
-      exact le_trans hleft hmul'
+        dsimp [C]
+        -- 系数相等: (1+1/log2)·16^8 = C
+        have hcoef : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) = C := by
+          dsimp [C]
+          ring
+        rw [← hcoef]
+        rfl
+      exact le_trans (le_trans hleft hmul) hmul'
 
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
