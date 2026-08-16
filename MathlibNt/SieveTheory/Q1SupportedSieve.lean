@@ -44,4 +44,29 @@ theorem q1CandidateAPCount_le_supportedCore (N q : ℕ) :
     intro r hrPrime hrlt hrgtTwo hrNotN hrDvd
     exact hsmall r hrPrime hrlt hrDvd)
 
+/-- In the non-coprime q-fibre, `q | N` and `q | N-p` force a prime `p` to
+equal the prime `q`.  Thus this exceptional fibre contributes at most one
+point to the supported-sieve core. -/
+theorem q1SupportedCoreCount_le_one_of_prime_dvd_N {N q : ℕ}
+    (hqPrime : q.Prime) (hqN : q ∣ N) :
+    q1SupportedCoreCount N q ≤ 1 := by
+  unfold q1SupportedCoreCount
+  calc
+    ((Finset.range N).filter (fun p =>
+      p.Prime ∧ 2 ≤ N - p ∧ q ∣ N - p ∧
+        Nat.Coprime (correctedChenSiftingProduct N) (N - p))).card ≤
+        ({q} : Finset ℕ).card := by
+          apply Finset.card_le_card
+          intro p hp
+          rcases Finset.mem_filter.mp hp with ⟨hpRange, hpPrime, hpTwo, hqNp, hpCoprime⟩
+          have hpLe : p ≤ N := Nat.le_of_lt (Finset.mem_range.mp hpRange)
+          have hqP : q ∣ p := by
+            have hsub : q ∣ N - (N - p) := Nat.dvd_sub' hqN hqNp
+            simpa [Nat.sub_sub_cancel hpLe] using hsub
+          have hqp : q = p :=
+            (prime_dvd_prime_iff_eq (Nat.prime_iff.mp hqPrime)
+              (Nat.prime_iff.mp hpPrime)).mp hqP
+          simpa [hqp]
+    _ = 1 := Finset.card_singleton q
+
 end MathlibNt.SieveTheory.SwitchingPrinciple
