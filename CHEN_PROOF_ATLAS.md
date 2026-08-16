@@ -35,6 +35,8 @@ The consequent interim tail-only interface, and the preferred
 compact-support lower-sieve repair that avoids manufacturing that tail, are
 recorded in
 [`CHEN_PAN_TRUNCATION_REPAIR.md`](CHEN_PAN_TRUNCATION_REPAIR.md).
+The Chen-side transport map for that preferred repair is
+[`CHEN_COMPACT_SUPPORT_TRANSPORT.md`](CHEN_COMPACT_SUPPORT_TRANSPORT.md).
 
 ## Architecture source
 
