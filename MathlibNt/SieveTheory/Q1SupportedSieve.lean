@@ -100,4 +100,15 @@ theorem q1_supported_modulus_injective {N q q' r r' : ℕ}
   · exact False.elim (Nat.not_coprime_of_dvd_of_dvd hq.one_lt (by rfl) hq_r'
       (q1_coprime_sifting_divisor hq hqz hr'))
 
+/-- Outside the separately treated fibre `q | N`, the residue `N` is
+primitive modulo every supported modulus `q*r`.  This supplies the exact
+coprimality side condition for a later prime-counting-in-progressions input. -/
+theorem q1_supported_modulus_coprime_N {N q r : ℕ} (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (hr : r ∣ correctedChenSiftingProduct N) :
+    Nat.Coprime (q * r) N := by
+  apply (Nat.coprime_mul_iff_left).mpr
+  constructor
+  · exact hq.coprime_iff_not_dvd.mpr hqN
+  · exact (coprime_siftingProduct_N N).coprime_dvd_left hr
+
 end MathlibNt.SieveTheory.SwitchingPrinciple

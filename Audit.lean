@@ -249,3 +249,4 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1MainTermAbsorption_holds
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_coprime_sifting_divisor
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_supported_modulus_injective
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_supported_modulus_coprime_N
