@@ -29,6 +29,27 @@ The current q1 definitions introduce three independent obligations.
    first be stated for the exact surviving signed/repackaged object, with a
    proved modulus cutoff.
 
+## Why there is no MainB-style automatic cancellation
+
+For fixed `q`, the signed expression is the inclusion--exclusion expansion of
+two genuine coprimality filters.  Writing `R(m)` for `q1APError(N,m)`, it is
+
+```text
+sum_{d|P} mu(d) sum_{e|F} mu(e) R(lcm(q,d,e)).                 (1)
+```
+
+Unlike the MainB base-count term, `R(m)` is not a constant function of `m`
+and has no divisor-sum identity that turns (1) into a cardinality.  Reversing
+the sums simply reconstructs the original doubly sifted AP count; it does not
+make the distribution error disappear.  Hence a MainB-style finite Möbius
+cancellation is unavailable here without an additional analytic identity.
+
+The source-faithful object is consequently a **dimension-two (or switching)
+sieve remainder** for the pair of coprimality conditions, with its own level
+and averaged distribution theorem.  It may be bounded after a source theorem
+repackages the lcm multiplicities, but not by asserting a pointwise bound on
+every term of (1).
+
 ## Consequence
 
 The valid lower-sieve `a=1` route controls a compact sum of ordinary AP errors
