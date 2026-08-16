@@ -936,12 +936,12 @@ lemma swap_weightedSum_eq (N : ℕ) (hN : 2 ≤ N) :
           ext d
           constructor
           · intro hd
-            rw [Finset.mem_filter] at hd
-            rw [Finset.mem_divisors] at hd
+            have hdmem1 : d ∈ P.divisors := (Finset.mem_filter.mp hd).1
+            have hdNP : d ∣ N - p := (Finset.mem_filter.mp hd).2
+            rw [Finset.mem_divisors] at hdmem1
             rw [Finset.mem_filter]
             rw [Nat.mem_divisors]
-            rcases hd with ⟨hdvdP, hPne⟩
-            have hdNP : d ∣ N - p := (Finset.mem_filter.mp hd).2
+            rcases hdmem1 with ⟨hdvdP, hPne⟩
             refine ⟨Nat.dvd_gcd hdvdP hdNP, hPne⟩
           · intro hd
             rw [Finset.mem_filter] at hd
