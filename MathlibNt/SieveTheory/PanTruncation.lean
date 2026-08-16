@@ -1158,13 +1158,19 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
       ∀ N : ℕ, x₀ ≤ N → (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
         C * (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
   let n : ℕ := Nat.ceil A
-  have hA_le_n : A ≤ (n : ℝ) := by dsimp [n]; exact Nat.le_ceil A
+  have hA_le_n : A ≤ (n : ℝ) := by
+    dsimp [n]
+    exact Nat.le_ceil A
   have hA_le_n1 : A + 1 ≤ (n : ℝ) + 1 := by linarith
   have hn1 : 1 ≤ n := by
+    -- A > 0 ⟹ ceil A ≥ 1
+    have hApos : 0 < A := hA
     by_contra h0
     have hn0 : n = 0 := by omega
-    dsimp [n] at hn0
-    have : A ≤ (0 : ℝ) := by simpa [hn0] using Nat.le_ceil A
+    have hc0 : (Nat.ceil A : ℝ) = 0 := by
+      dsimp [n] at hn0
+      exact_mod_cast hn0
+    have hle : A ≤ (Nat.ceil A : ℝ) := Nat.le_ceil A
     linarith
   rcases eventual_log_pow_le_sqrt n with ⟨x₀₁, hsqrt₁⟩
   have hlog1ev : ∀ᶠ x : ℝ in atTop, (2 : ℝ) ≤ Real.log x := by
@@ -1209,67 +1215,81 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
       have hlog2inv_ge1 : 1 ≤ 1 / Real.log 2 := by
         rw [one_le_div hlog2pos]
         exact hlog2le1
-      -- 1 + ω(F) ≤ 1 + (1+ω(N)) ≤ 2 + ω(N) ≤ 2 + log N/log 2 ≤ (1+1/log 2)·log N
-      have h2lelogN : (2 : ℝ) ≤ Real.log (N : ℝ) := hlog2N
-      nlinarith
+      -- ω(F) ≤ 1 + ω(N) ≤ 1 + log N/log 2; 1 + ω(F) ≤ 2 + log N/log 2 ≤ (1+1/log 2)·log N
+      -- (最后一步: 2 ≤ log N 且 1/log 2 ≥ 1)
+      have hNo' : (N.primeFactors.card : ℝ) ≤ Real.log (N : ℝ) / Real.log 2 := hNo
+      have hleft : 1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ ≤
+          2 + Real.log (N : ℝ) / Real.log 2 := by
+        have hc2 : (correctedChenForbiddenProduct N).primeFactors.card : ℝ ≤ 1 + (N.primeFactors.card : ℝ) := by
+          have hcast : ((correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
+              ((1 + N.primeFactors.card : ℕ) : ℝ) := hc
+          norm_num at hcast ⊢
+          linarith
+        linarith
+      have hright : 2 + Real.log (N : ℝ) / Real.log 2 ≤
+          (1 + 1 / Real.log 2) * Real.log (N : ℝ) := by
+        -- 2 ≤ log N 且 log N/log 2 ≤ (1/log 2)·log N ⟹ 2 + log N/log 2 ≤ (1 + 1/log 2)·log N
+        have h2le : (2 : ℝ) ≤ Real.log (N : ℝ) := hlog2N
+        have hdiv : Real.log (N : ℝ) / Real.log 2 ≤ (1 / Real.log 2) * Real.log (N : ℝ) := by
+          rw [div_eq_mul_inv]
+          rw [mul_comm (Real.log (N : ℝ))]
+          rfl
+        nlinarith
+      exact le_trans hleft hright
     -- 核心: √N·log N·log^A N ≤ N
     have hsqrtN : (Real.log (N : ℝ)) ^ (n + 1) ≤ Real.sqrt (N : ℝ) := hsqrt₁ N hNx0₁
     have hlogpow : (Real.log (N : ℝ)) ^ A ≤ (Real.log (N : ℝ)) ^ (n + 1) := by
       apply Real.rpow_le_rpow_of_exponent_le hlog1
       exact hA_le_n1
     have hcore : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤ (N : ℝ) := by
-      -- √N·log N·log^A N ≤ √N·log^{A+1} N ≤ √N·log^{n+1} N ≤ √N·√N = N
+      -- √N·log N·log^A N = √N·log^{A+1} N ≤ √N·log^{n+1} N ≤ √N·√N = N
+      have hnn : 0 ≤ Real.sqrt (N : ℝ) := Real.sqrt_nonneg _
+      have hpow : Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
+          (Real.log (N : ℝ)) ^ (A + 1) := by
+        rw [← Real.rpow_add hlogpos]
+        rw [Real.rpow_one]
+        rw [mul_comm]
       have hle1 : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤
           Real.sqrt (N : ℝ) * (Real.log (N : ℝ)) ^ (A + 1) := by
-        -- log N·log^A N = log^{A+1} N
-        have hpow : Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
-            (Real.log (N : ℝ)) ^ (A + 1) := by
-          rw [Real.rpow_add hlogpos]
-          rw [Real.rpow_one]
-          rw [mul_comm]
-        -- √N ≥ 0 且 log N·log^A N ≤ log^{A+1} N (等号)
-        have hnn : 0 ≤ Real.sqrt (N : ℝ) := Real.sqrt_nonneg _
-        have hprod_le : Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤
-            (Real.log (N : ℝ)) ^ (A + 1) := by
-          rw [hpow]
-          rfl
-        exact mul_le_mul_of_nonneg_left hprod_le hnn
+        have hre : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
+            Real.sqrt (N : ℝ) * (Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A) := by ring
+        rw [hre, hpow]
+        rfl
       have hle2 : Real.sqrt (N : ℝ) * (Real.log (N : ℝ)) ^ (A + 1) ≤
           Real.sqrt (N : ℝ) * Real.sqrt (N : ℝ) := by
-        -- log^{A+1} N ≤ log^{n+1} N ≤ √N
-        have hA1n1 : A + 1 ≤ (n : ℝ) + 1 := hA_le_n1
         have hlogA1 : (Real.log (N : ℝ)) ^ (A + 1) ≤ (Real.log (N : ℝ)) ^ (n + 1) := by
           apply Real.rpow_le_rpow_of_exponent_le hlog1
-          exact hA1n1
-        have hnn : 0 ≤ Real.sqrt (N : ℝ) := Real.sqrt_nonneg _
+          exact hA_le_n1
         exact mul_le_mul_of_nonneg_left (le_trans hlogA1 hsqrtN) hnn
       have hle3 : Real.sqrt (N : ℝ) * Real.sqrt (N : ℝ) ≤ (N : ℝ) := by
-        rw [← Real.sqrt_mul_self (by positivity : 0 ≤ (N : ℝ))]
+        rw [← Real.sqrt_sq_eq_abs]
+        rw [abs_of_nonneg (by positivity : 0 ≤ (N : ℝ))]
         rfl
       exact le_trans (le_trans hle1 hle2) hle3
     -- 装配
     have hcN : (1 + 1 / Real.log 2) * Real.log (N : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
         C * (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
       dsimp [C]
-      -- (1+1/log 2)·16^8·(√N·log N) ≤ (1+1/log 2)·16^8·N/log^A N
       have hnn : 0 ≤ (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) := by positivity
       have hdiv : Real.sqrt (N : ℝ) * Real.log (N : ℝ) ≤ (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
-        -- 由 hcore: √N·log N·log^A N ≤ N ⟹ √N·log N ≤ N/log^A N
         have hlogApos : 0 < (Real.log (N : ℝ)) ^ A := Real.rpow_pos_of_pos hlogpos A
         rw [le_div_iff₀ hlogApos]
-        -- 目标 √N·log N·log^A N ≤ N
+        -- 目标: √N·log N·log^A N ≤ N (由 hcore)
         have hre : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤ (N : ℝ) := hcore
         simpa [mul_assoc, mul_comm, mul_left_comm] using hre
       have hmul := mul_le_mul_of_nonneg_left hdiv hnn
-      -- hmul: (1+1/log 2)·16^8·(√N·log N) ≤ (1+1/log 2)·16^8·(N/log^A N)
-      -- 左边 = (1+1/log 2)·16^8·√N·log N; 配 h1wo (1+ω(F) ≤ (1+1/log 2)·log N)
+      -- hmul: (1+1/log2)·16^8·(√N·log N) ≤ (1+1/log2)·16^8·(N/log^A N)
       have hleft : (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
-          (1 + 1 / Real.log 2) * Real.log (N : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+          (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * (Real.sqrt (N : ℝ) * Real.log (N : ℝ)) := by
         have h16nn : 0 ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by positivity
         have hm1 := mul_le_mul_of_nonneg_right h1wo h16nn
-        -- hm1: (1+ω(F))·(16^8·√N) ≤ (1+1/log 2)·log N·(16^8·√N)
-        nlinarith
-      exact le_trans hleft hcN
+        -- hm1: (1+ω(F))·(16^8·√N) ≤ (1+1/log2)·log N·(16^8·√N)
+        -- 目标 RHS = (1+1/log2)·(16^8·√N)·log N (乘结合交换)
+        simpa [mul_assoc, mul_comm, mul_left_comm] using hm1
+      have hmul' : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * (Real.sqrt (N : ℝ) * Real.log (N : ℝ)) ≤
+          C * (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
+        simpa [mul_assoc, mul_comm, mul_left_comm, C] using hmul
+      exact le_trans hleft hmul'
 
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
