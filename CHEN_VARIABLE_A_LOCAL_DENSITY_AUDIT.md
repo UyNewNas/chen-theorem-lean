@@ -113,6 +113,58 @@ Stop condition: a statement with only `a/phi(a)` may be used solely as an
 explicit provisional hypothesis, never labelled as the standard Chen/Selberg
 prime-pair supply.
 
+## 5. Lean-facing replacement specification
+
+The existing finite count `PrimePairLinearFormCount N a` in
+`PrimePair.lean` already has the right primality predicate:
+
+```text
+#{p <= N/a : p.Prime and (N-a*p).Prime}.
+```
+
+The repair is therefore not to replace that count, but to replace the bare
+external proposition `PrimePairLinearFormBound`.  The following is the
+minimal interface shape.  Names are schematic; the point is that no local
+factor or quantifier is implicit.
+
+```text
+primePairNu (N a ell) : Nat
+  = card {r in ZMod ell : ell | r * (N-a*r)}
+
+primePairPrimitive (N a R) : Prop
+  = every ell <= R with ell | a is handled by the declared fixed-divisor split
+
+primePairSingularTruncated (N a R) : Real
+  = product_{ell <= R, ell.Prime}
+      (1 - primePairNu(N,a,ell)/ell) / (1 - 1/ell)^2
+
+PrimePairLinearFormBoundSupported : Prop
+  = exists C > 0, exists N0,
+      forall N >= N0, forall a in chenFSupport(N),
+        primitiveRange(N,a) ->
+        (PrimePairLinearFormCount N a : Real)
+          <= C * primePairSingularTruncated N a R(N,a)
+             * (N/a) / (log (N/a) * log N).
+```
+
+`chenFSupport(N)` must be the actual finite support used by the triple
+switching sum, not an unrestricted `a`.  The primitive-range predicate may
+be eliminated only after a separately proved finite theorem partitions the
+support into the primitive and fixed-divisor fibres and accounts for both.
+
+The exact normalisation can use an equivalent Euler product, but it must
+prove the two finite residue computations:
+
+```text
+ell ∤ a and ell | N   -> primePairNu(N,a,ell) = 1,
+ell ∤ a and ell ∤ N   -> primePairNu(N,a,ell) = 2.
+```
+
+The first line is what yields the factor
+`product_{ell | N, ell>2} (ell-1)/(ell-2)`.  A CI audit for the future API
+should print its axioms and check that this factor is transported into the
+weighted `a`-sum rather than replaced by a universal constant.
+
 ## References
 
 * J.-R. Chen, *On the representation of a larger even integer as the sum of
