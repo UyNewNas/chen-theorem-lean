@@ -41,6 +41,15 @@ Chen-local dimension-two switching remainder.  The two legacy conditional
 interfaces remain only to preserve the kernel-checked *conditional*
 assembly; they are not analytic supply for the active route.
 
+`CHEN_SOURCE_OMEGA_ALIGNMENT_AUDIT.md` adds the necessary source-object
+distinction: Liu's classical Selberg estimate bounds the historical
+`chenOmega` supported by `chenF`, whereas the proved corrected counting bridge
+consumes `correctedChenOmega`.  The latter also contains a repeated-prime
+penalty.  Neither the source triple range nor the source constant `3.9404`
+has yet been transported to that corrected object.  The source-Selberg and
+q1 worklines are therefore complementary open consumers, not interchangeable
+names for one completed Omega estimate.
+
 For the Chen-specific Pan truncation seam, the separate written audit
 [`CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md`](CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md)
 proves the MainA/MainB main-term estimate on paper, and refutes the current
