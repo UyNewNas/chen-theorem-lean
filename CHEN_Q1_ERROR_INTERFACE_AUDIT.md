@@ -160,17 +160,25 @@ For fixed `q in Q_N`, count primes `p` with
 p = N (mod q),                    (N-p, P(z)) = 1.
 ```
 
-Instead of expanding both coprimality predicates over all divisors, apply an
-upper sieve **directly to this AP sequence**.  Its coefficients may depend on
-`N,q`, but must have explicit support
+Instead of expanding both coprimality predicates over all divisors, apply a
+Selberg upper sieve **directly to this AP sequence**.  Its first-level
+coefficients may depend on `N,q` and must satisfy
 
 ```text
-lambda_{N,q}(d) != 0  =>  d | P(z),  d <= D(N)/q.              (U)
+lambda_{N,q}(d) != 0  =>  d | P(z),  d <= sqrt(D(N)/q).        (U0)
 ```
 
-Since `q >= z` while every prime factor of `d` is `< z`, the surviving
-modulus is the single product `m=q*d` (equivalently its lcm), and (U) gives
-`m <= D(N)`.  With
+After the Selberg square is expanded, the coefficient at
+`r = lcm(d1,d2)` is
+
+```text
+eta_{N,q}(r) = sum_{lcm(d1,d2)=r} lambda_{N,q}(d1)lambda_{N,q}(d2).
+```
+
+It has `r | P(z)` and `r <= D(N)/q`; this, rather than the support of a
+single `lambda`, is the coefficient which multiplies an AP error.  Since
+`q >= z` while every prime factor of `r` is `< z`, the surviving modulus is
+the single product `m=q*r`, and (U0) gives `m <= D(N)`.  With
 
 ```text
 D(N) = floor(sqrt(N)/log^B N),
@@ -185,37 +193,43 @@ above, but the following conditional replacement target:
 ```text
 q1Count(N)
  <= supported-main(N)
-    + sum_{q in Q_N} sum_{d: lambda_{N,q}(d) != 0}
-        |lambda_{N,q}(d)| |E_N(q*d)|
+    + sum_{q in Q_N} sum_{r | P(z)}
+        |eta_{N,q}(r)| |E_N(q*r)|
     + exceptional(N),                                             (Q1-1D)
 
 E_N(m) = pi(N-2; m, N) - Li(N-2)/phi(m).
 ```
 
 To consume weighted BV, a finite repackaging lemma must prove that the
-coefficient of each `m=q*d` in the middle sum is bounded by a fixed multiple
+coefficient of each `m=q*r` in the middle sum is bounded by a fixed multiple
 of `mu(m)^2 3^omega(m)`, and that `m<=D(N)`.  In the intended strict ranges
-this is especially clean: `d|P(z)` has all prime factors `<z`, while
-`q>=z` is prime, so `gcd(q,d)=1`; moreover `q` is the unique prime factor of
-`m` which is at least `z`.  Thus `(q,d) -> q*d` is injective on the surviving
-pairs.  If the chosen upper weights satisfy `|lambda_{N,q}(d)|<=1`, their
-repackaged coefficient is at most one, hence certainly at most
-`mu(m)^2 3^omega(m)` for squarefree `m`.  These elementary facts still need
-Lean proofs against the exact endpoint conventions.  The resulting sum may
-then be bounded by the `a=1` weighted BV theorem; this is a genuine
-one-modulus distribution statement, not an invocation of pointwise BV.
+this is especially clean: `r|P(z)` has all prime factors `<z`, while
+`q>=z` is prime, so `gcd(q,r)=1`; moreover `q` is the unique prime factor of
+`m` which is at least `z`.  Thus `(q,r) -> q*r` is injective on the surviving
+pairs.  The standard Selberg combinatorics with `|lambda|<=1` gives
+`|eta(r)| <= 3^omega(r)` (the three choices for each prime in an lcm pair),
+which is at most `mu(m)^2 3^omega(m)` because `m=q*r` is squarefree.  These
+elementary facts still need Lean proofs against the exact endpoint
+conventions.  The resulting sum may then be bounded by the `a=1` weighted BV
+theorem; this is a genuine one-modulus distribution statement, not an
+invocation of pointwise BV.
 
 There are two compulsory qualifications.
 
-1. `N mod m` must be coprime to `m` before the AP theorem is used.  If a
-   prime factor of `m` divides `N`, the congruence forces the prime `p` into
-   an exceptional fixed-prime fibre (for example `q|N` and `q|N-p` force
-   `p=q`).  These fibres need an explicit elementary bound, not an AP main
-   term.
+1. Start from the larger core condition
+   `(N-p, correctedChenSiftingProduct(N))=1`; it contains
+   `correctedChenCandidates(N)`, so is valid for an upper bound and avoids
+   expanding `F_N` altogether.  Every prime factor of `r|P(z)` then does not
+   divide `N` by definition of the corrected sifting product.  Hence
+   `N mod (q*r)` is coprime to `q*r` unless `q|N`.  In that sole remaining
+   non-coprime fibre, `q|N` and `q|N-p` force the prime `p=q`, so each such
+   `q` contributes at most one.  These fixed-prime fibres need an explicit
+   elementary bound, not an AP main term.
 2. The upper-sieve majorant and its main term must be stated with the same
    endpoint and support as (Q1-1D).  It is not enough to assert that some
-   coefficients exist: their sign/majorant property, absolute-size bound,
-   and support (U) are all consumers of the proof.
+   coefficients exist: their sign/majorant property, the `Lambda²` expansion,
+   its `3^omega` absolute-size bound, and support (U0) are all consumers of
+   the proof.
 
 This is a **candidate** source-matched route, not a completed deduction from
 Liu.  It is preferable to Q1-2D if the required supported AP upper sieve and
@@ -224,6 +238,42 @@ ANT `a=1` supply without pretending that the raw `e`-sum has distributional
 support.  Its falsifier is equally concrete: abandon this reduction if the
 actual upper-sieve coefficients cannot satisfy (U), or if their repackaged
 weight is not dominated by the available `mu²·3^omega` weight.
+
+### Lean-facing interface sketch
+
+The following names are schematic, but the quantifiers and the two sieve
+levels are part of the required API.
+
+```text
+q1CoreCount(N,q)
+ = #{p<N : p prime, 2<=N-p, q | N-p,
+          gcd(N-p, correctedChenSiftingProduct(N))=1}
+
+Q1SupportedSelbergData(N,q,D) contains lambda(d) with
+  lambda(1)=1,
+  lambda(d)=0 unless d | correctedChenSiftingProduct(N)
+                         and d <= floor(sqrt(D/q)),
+  |lambda(d)| <= 1,
+  and the proved upper-majorant for q1CoreCount(N,q).
+
+q1SelbergCoeff(N,q,r)
+ = sum_{lcm(d1,d2)=r} lambda(d1)lambda(d2).
+```
+
+The first finite milestones are:
+
+```text
+correctedChenCandidates AP-count <= q1CoreCount(N,q),
+q1SelbergCoeff(N,q,r) != 0 -> r | P(N) and q*r <= D,
+abs(q1SelbergCoeff(N,q,r)) <= 3^omega(r),
+(q,r) -> q*r injective on q in Q_N and r | P(N),
+q | N -> q1CoreCount(N,q) <= 1.
+```
+
+Only after these have been kernel-checked may an analytic proposition
+`Q1SupportedWeightedBV` quantify over sufficiently large even `N` and bound
+the resulting supported `E_N(q*r)` sum by `N/log^A N`.  Its proof consumes
+ANT's `WeightedBVAtOne` at `y=N-2`, not the legacy `q1APErrorUniformBound`.
 
 ## Source disposition: q1 is not the classical Omega remainder
 
