@@ -151,6 +151,73 @@ lemma comparing it with `correctedChenQ1Count`; only that new object may
 consume the analytic remainder theorem.  This preserves the audited finite
 algebra while making the analytic seam mathematically real.
 
+## Candidate source-faithful redesign: one supported modulus, not two raw products
+
+There is a narrower route worth separating from the rejected raw expression.
+For fixed `q in Q_N`, count primes `p` with
+
+```text
+p = N (mod q),                    (N-p, P(z)) = 1.
+```
+
+Instead of expanding both coprimality predicates over all divisors, apply an
+upper sieve **directly to this AP sequence**.  Its coefficients may depend on
+`N,q`, but must have explicit support
+
+```text
+lambda_{N,q}(d) != 0  =>  d | P(z),  d <= D(N)/q.              (U)
+```
+
+Since `q >= z` while every prime factor of `d` is `< z`, the surviving
+modulus is the single product `m=q*d` (equivalently its lcm), and (U) gives
+`m <= D(N)`.  With
+
+```text
+D(N) = floor(sqrt(N)/log^B N),
+```
+
+this is exactly the level in the `a=1` weighted Bombieri--Vinogradov
+specialization recorded in ANT's `A1_WEIGHTED_BV_SOURCE_MATCH.md`.
+
+The required finite/analytic statement is consequently not Q1-2D as written
+above, but the following conditional replacement target:
+
+```text
+q1Count(N)
+ <= supported-main(N)
+    + sum_{q in Q_N} sum_{d: lambda_{N,q}(d) != 0}
+        |lambda_{N,q}(d)| |E_N(q*d)|
+    + exceptional(N),                                             (Q1-1D)
+
+E_N(m) = pi(N-2; m, N) - Li(N-2)/phi(m).
+```
+
+To consume weighted BV, a finite repackaging lemma must prove that the
+coefficient of each `m=q*d` in the middle sum is bounded by a fixed multiple
+of `mu(m)^2 3^omega(m)`, and that `m<=D(N)`.  It may then be bounded by the
+`a=1` weighted BV theorem; this is a genuine one-modulus distribution
+statement, not an invocation of pointwise BV.
+
+There are two compulsory qualifications.
+
+1. `N mod m` must be coprime to `m` before the AP theorem is used.  If a
+   prime factor of `m` divides `N`, the congruence forces the prime `p` into
+   an exceptional fixed-prime fibre (for example `q|N` and `q|N-p` force
+   `p=q`).  These fibres need an explicit elementary bound, not an AP main
+   term.
+2. The upper-sieve majorant and its main term must be stated with the same
+   endpoint and support as (Q1-1D).  It is not enough to assert that some
+   coefficients exist: their sign/majorant property, absolute-size bound,
+   and support (U) are all consumers of the proof.
+
+This is a **candidate** source-matched route, not a completed deduction from
+Liu.  It is preferable to Q1-2D if the required supported AP upper sieve and
+coefficient repackaging can be written down, because it consumes the existing
+ANT `a=1` supply without pretending that the raw `e`-sum has distributional
+support.  Its falsifier is equally concrete: abandon this reduction if the
+actual upper-sieve coefficients cannot satisfy (U), or if their repackaged
+weight is not dominated by the available `mu²·3^omega` weight.
+
 ## Source disposition: q1 is not the classical Omega remainder
 
 The source route recorded in `PROOF_REFERENCE.md` is more specific than the
