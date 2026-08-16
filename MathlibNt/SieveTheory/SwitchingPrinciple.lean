@@ -5506,7 +5506,7 @@ theorem properPower_negligible_threshold :
     exact div_le_div_of_nonneg_right hprod (by positivity : 0 ≤ (Real.log (N : ℝ)) ^ 2)
   exact le_trans hmain hfinal
 
-/-! ## chen #18 -> 线 D: q¹ 计数分布界的条件化定理 (PanMeanValueUniform => hq1)
+/-! ## chen #18 -> 线 D: q¹ 计数分布界的 legacy 条件化骨架
 
 本节实现 chen issue #8 的第三个解析输入: 在加权 Pan 均值定理
 (`AnalyticNumberTheory.Sieve.PanMeanValueUniform`, ant #15; 自 ant b07db1a 起
@@ -5528,16 +5528,17 @@ theorem properPower_negligible_threshold :
 3. **主项吸收 (解析缝)**: `q1MainTermAbsorption` — 主项经奇异级数
    `singularSeriesTruncated` 与素数倒数和界 (ant `primeReciprocalSum_range_le`)
    吸收为 `C₁·𝔖_trunc·N/log²N`.
-4. **误差一致界 (解析缝)**: `q1APErrorUniformBound` — Möbius 双和误差由
-   **ant #15 `PanMeanValueUniform`** (加权 Pan 均值定理, f = δ₁ 实例)
-   经 Pan 桥 (ant #25, a-吸收与 lcm 合并) 控制为 `C₂·N/log³N`.
+4. **误差一致界（尚未 source-match）**: `q1APErrorUniformBound` 对当前
+   Möbius 双和误差只是显式假设。其绝对 lcm 和不是 `a=1` 一维
+   `PanMeanValueUniform` 的直接消费者；需要独立的二维/切换余项定理。
 5. **组装 (本节, 已证)**: `hq1_of_q1AnalyticInputs` — 两个解析缝 + 初等
    对数/奇异级数下界 (`𝔖_trunc ≥ 1/2`) ⇒ `∃ Cq Nq, hq1`.
 
 奇偶说明: 偶数模数 `m` 的 AP 基计数只有一个点 `p = 2` (要求 `m | N−2`),
 因此 `q1APMainValue` 对偶数模数取**精确值** (0 或 1), 误差项自动为零
-(`q1APError_even_zero`); 奇数模数用 `li(N)/φ(m)` 主项. 这避免了 Möbius
-主项在 `r = 2` 因子处的退化 (经典处理).
+(`q1APError_even_zero`)。当前奇数模数工作主项仍用 `li(N)/φ(m)`；正确
+端点应与计数范围匹配为 `Li(N-2)/φ(m)`，故该对象也不得被称为最终的
+经典处理。完整审计见 `CHEN_Q1_ERROR_INTERFACE_AUDIT.md`。
 -/
 
 -- 本节包含大型 Möbius 双和展开; 提高重写/化简的 heartbeat 预算.
@@ -6101,41 +6102,37 @@ theorem q1APError_even_zero {N m : ℕ} (hN : Even N) (hN4 : 4 ≤ N) (hm : Even
   unfold q1APMainValue
   by_cases hdvd : m ∣ N - 2 <;> simp [hm, hdvd]
 
-/-- **q¹ 主项吸收 (解析缝, ant #15/#17 输出形态)**: 
+/-- **q¹ 主项吸收（legacy 条件接口，尚未 source-match）**:
 `Σ_{q ∈ [z,y)} q1CandidateAPMain N q ≤ C₁·𝔖_trunc·N/log²N`.
 
 主项的结构 (由 `q1CandidateAPCount_eq_doubleSum` 的精确 Möbius 分解给出):
-`q1CandidateAPMain N q = li(N)/φ(q)·∏_{2<r<z}(1−1/(r−1)) + O(奇偶修正)`,
-其中 `li(N) = N/log N`, 乘积项经 `singularSeriesTruncated` 的局部因子结构
-与 ant `primeReciprocalSum_range_le` (素数倒数和范围界, Mertens) 吸收为
-`C₁·𝔖_trunc·N/log²N` (对数因子吸收). 该吸收是解析步骤, 作为本条件化骨架的
-输入缝; ant #17 的素数倒数和界 + 奇异级数乘积结构落地后证明. -/
+当前工作对象的奇数模数主项写作 `li(N)/φ(q)`，但它不是精确端点：实际
+基计数截至 `N-2`，故源匹配版本必须用 genuine `Li(N-2)/φ(q)`，并重验
+偶数模数修正。因此本 Prop 只作为 legacy 条件接口；不能把
+`li(N)` 等同于 `N/log N`，也不能把尚未完成的吸收归因于 ant #15/#17。 -/
 def q1MainTermAbsorption : Prop :=
   ∃ C₁ : ℝ, 0 < C₁ ∧ ∃ N₁ : ℕ, ∀ N : ℕ, N₁ ≤ N → Even N →
     q1MainTermSum N ≤
       C₁ * AnalyticNumberTheory.Sieve.singularSeriesTruncated N (correctedChenZ N - 1) *
         (N : ℝ) / (log (N : ℝ)) ^ 2
 
-/-- **q¹ 误差一致界 (解析缝, Pan 桥输出)**: 
+/-- **q¹ 误差一致界（legacy 条件接口，非 Pan 桥直接输出）**:
 `Σ_{q ∈ [z,y)} q1CandidateAPError N q ≤ C₂·N/log³N`.
 
 `q1CandidateAPError` 是 Möbius 双和误差 `Σ_q Σ_{d,e} |μ(d)μ(e)|·|err(lcm(q,d,e))|`
-其中 `err(m) = π'(N;m) − 主项` (偶数模数由 `q1APMainValue` 的奇偶修正精确
-吸收为零, 见 `q1APError_even_zero`). 经典源头是 **ant #15 的
-`PanMeanValueUniform`** (加权 Pan 均值定理; f = δ₁ 实例给出
-`Σ_{m ≤ N^{1/2}/log^B N} (μm)²·3^{ω(m)}·max_l |π(N;m,l) − li(N)/φ(m)| ≤ C·N/log^A N`):
-把 (d,e) 对的 lcm 合并与 `2^{ω}`-权重重打包 (Pan 桥, ant #25) 后, 本缝
-恰为该加权平均在切换模数族上的输出形态. 桥落地后由 `PanMeanValueUniform`
-直接实例化 (ant b07db1a 起, `PanMeanValueUniform` 经 `of_vaughanSplit` ∘
-`PanVaughanSplit.of_analyticInputs` 归约到 5 个辅助 Prop, 其中 4 个仍为
-研究级解析缝; 见 Pan 桥收官节的 `chenPanInput_of_vaughanChain`). -/
+其中 `err(m)` 当前仍相对 legacy 主项定义。绝对值在双层 Möbius/lcm 展开后
+会抹去一维 Pan/BV 可用的符号结构，且模数可超出其 supplied level。因此
+`PanMeanValueUniform` 不能直接实例化本 Prop。源匹配替代必须先给出真实
+`Li(N-2)` 主项、保留或重打包带符号的双筛对象、证明 lcm level cutoff，
+再陈述实际 Chen 范围上的 `DimensionTwoSwitchingRemainder` 界；详见
+`CHEN_Q1_ERROR_INTERFACE_AUDIT.md`。 -/
 def q1APErrorUniformBound : Prop :=
   ∃ C₂ : ℝ, 0 < C₂ ∧ ∃ N₂ : ℕ, ∀ N : ℕ, N₂ ≤ N → Even N →
     q1ErrorTermSum N ≤ C₂ * (N : ℝ) / (log (N : ℝ)) ^ 3
 
 /-- **hq1 的条件化定理 (chen #8 第三个解析输入, 线 D)**: 假设主项吸收
-`q1MainTermAbsorption` 与误差一致界 `q1APErrorUniformBound` (后者是
-ant #15 `PanMeanValueUniform` 经 Pan 桥的输出), 则 q¹ 计数有一致上界
+`q1MainTermAbsorption` 与误差一致界 `q1APErrorUniformBound`（二者目前均
+为 legacy 显式假设，而非 ant #15 的直接输出）, 则 q¹ 计数有一致上界
 `∃ Cq Nq: q1Count(N) ≤ Cq·𝔖_trunc·N/log²N` — 正是
 `corrected_chens_theorem_of_q1Count_and_triple` 的 `hq1` 输入形态.
 
