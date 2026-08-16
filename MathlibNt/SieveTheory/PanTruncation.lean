@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Calculus.MeanValue
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 import MathlibNt.SieveTheory.SwitchingPrinciple
 
 /-!
@@ -56,6 +58,157 @@ def ChenPanTruncationMainTermBound : Prop :=
             (μ e : ℝ) * (((Finset.range N).filter (fun p =>
               p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|) ≤
         C * (N : ℝ) / (log (N : ℝ)) ^ A
+
+/-- **`x / log x` on an interval of length two** (Chen #39, MainA).
+
+For `x - 2 ≥ exp 2`, the derivative of `u / log u` is
+`(log u - 1) / (log u)^2`, which lies in `[0, 1]`.  The mean value
+inequality therefore gives a uniform length-two bound.  This is deliberately
+stated for the current working definition of `logarithmicIntegral`; a future
+general-purpose version belongs in analytic-number-theory-lean. -/
+lemma logarithmicIntegral_length_two_diff_le (x : ℝ)
+    (hx : Real.exp 2 + 2 ≤ x) :
+    |AnalyticNumberTheory.Sieve.logarithmicIntegral (x - 2) -
+        AnalyticNumberTheory.Sieve.logarithmicIntegral x| ≤ 2 := by
+  let f : ℝ → ℝ := fun u => AnalyticNumberTheory.Sieve.logarithmicIntegral u
+  let f' : ℝ → ℝ := fun u => (Real.log u - 1) / (Real.log u) ^ 2
+  have hderiv : ∀ u ∈ Set.Icc (x - 2) x,
+      HasDerivWithinAt f (f' u) (Set.Icc (x - 2) x) u := by
+    intro u hu
+    have huexp : Real.exp 2 ≤ u := by linarith [hx, hu.1]
+    have hu1 : (1 : ℝ) < u := by
+      have h1exp : (1 : ℝ) < Real.exp 2 := by
+        rw [← Real.exp_zero]
+        exact Real.exp_lt_exp.mpr (by norm_num)
+      exact h1exp.trans_le huexp
+    have hu0 : u ≠ 0 := ne_of_gt (lt_trans zero_lt_one hu1)
+    have hlog0 : Real.log u ≠ 0 := ne_of_gt (Real.log_pos hu1)
+    have hfull : HasDerivAt f (f' u) u := by
+      dsimp [f, f']
+      simpa [AnalyticNumberTheory.Sieve.logarithmicIntegral, hu0] using
+        (hasDerivAt_id u).fun_div (Real.hasDerivAt_log hu0) hlog0
+    exact hfull.hasDerivWithinAt
+  have hbound : ∀ u ∈ Set.Ico (x - 2) x, ‖f' u‖ ≤ (1 : ℝ) := by
+    intro u hu
+    have huexp : Real.exp 2 ≤ u := by linarith [hx, hu.1]
+    have hlog2 : (2 : ℝ) ≤ Real.log u := by
+      calc
+        (2 : ℝ) = Real.log (Real.exp 2) := by rw [Real.log_exp]
+        _ ≤ Real.log u := Real.log_le_log (Real.exp_pos 2) huexp
+    have hlogpos : 0 < Real.log u := by linarith
+    have hquot_nonneg : 0 ≤ (Real.log u - 1) / (Real.log u) ^ 2 :=
+      div_nonneg (by linarith) (sq_nonneg _)
+    dsimp [f']
+    rw [Real.norm_eq_abs, abs_of_nonneg hquot_nonneg]
+    rw [div_le_iff₀ (sq_pos_of_pos hlogpos)]
+    nlinarith [sq_nonneg (Real.log u - 1)]
+  have hmv := norm_image_sub_le_of_norm_deriv_le_segment' hderiv hbound x
+    (⟨by linarith, le_rfl⟩ : x ∈ Set.Icc (x - 2) x)
+  calc
+    |AnalyticNumberTheory.Sieve.logarithmicIntegral (x - 2) -
+        AnalyticNumberTheory.Sieve.logarithmicIntegral x| = ‖f x - f (x - 2)‖ := by
+          rw [Real.norm_eq_abs]
+          dsimp [f]
+          exact abs_sub_comm _ _
+    _ ≤ (1 : ℝ) * (x - (x - 2)) := hmv
+    _ = 2 := by ring
+
+/-- **MainA is polylogarithmic** (Chen #39).
+
+Combining `logarithmicIntegral_length_two_diff_le` with the squarefree
+Mertens divisor-sum estimate gives
+`MainA(N) = O((log N)^3)`.  No parity assumption is needed. -/
+lemma mainA_polylog_bound :
+    ∃ C : ℝ, 0 < C ∧ ∃ x₀ : ℕ, ∀ N : ℕ, x₀ ≤ N →
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        (3 : ℝ) ^ d.primeFactors.card *
+          (|AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
+              AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| /
+            (Nat.totient d : ℝ))) ≤ C * (Real.log (N : ℝ)) ^ (3 : ℝ) := by
+  rcases MathlibNt.SieveTheory.SelbergUpperBound.divisor_sum_bound_squarefree
+      (3 : ℝ) (by norm_num) with ⟨C₀, hC₀⟩
+  let C : ℝ := 2 * (|C₀| + 1)
+  let x₀ : ℕ := max 3 (Nat.ceil (Real.exp 2 + 2))
+  refine ⟨C, ?_, x₀, ?_⟩
+  · dsimp [C]
+    positivity
+  · intro N hN
+    have hN3 : 3 ≤ N := le_trans (Nat.le_max_left _ _) hN
+    have hceil : Nat.ceil (Real.exp 2 + 2) ≤ N :=
+      le_trans (Nat.le_max_right _ _) hN
+    have hNx : Real.exp 2 + 2 ≤ (N : ℝ) := by
+      calc
+        Real.exp 2 + 2 ≤ (Nat.ceil (Real.exp 2 + 2) : ℝ) := Nat.le_ceil _
+        _ ≤ (N : ℝ) := by exact_mod_cast hceil
+    have hdiff :
+        |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
+            AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| ≤ 2 :=
+      logarithmicIntegral_length_two_diff_le (N : ℝ) hNx
+    have hPpos : 0 < correctedChenSiftingProduct N :=
+      Nat.pos_of_ne_zero (correctedChenSiftingProduct_ne_zero N)
+    have hzle : correctedChenZ N ≤ N + 1 := by
+      unfold correctedChenZ
+      apply max_le_iff.mpr
+      constructor
+      · omega
+      · have hxle : (N : ℝ) ^ (1 / 10 : ℝ) ≤ (N : ℝ) := by
+          have hN1 : (1 : ℝ) ≤ N := by exact_mod_cast (by omega : 1 ≤ N)
+          have hp := Real.rpow_le_rpow_of_exponent_le hN1
+            (by norm_num : (1 / 10 : ℝ) ≤ 1)
+          simpa using hp
+        have hf : (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ)) : ℝ) ≤ (N : ℝ) + 1 := by
+          exact le_trans (Nat.floor_le (by positivity : 0 ≤ (N : ℝ) ^ (1 / 10 : ℝ)))
+            (by linarith)
+        exact_mod_cast hf
+    have hprime_le : ∀ p : ℕ, p.Prime → p ∣ correctedChenSiftingProduct N → p ≤ N := by
+      intro p hp hpd
+      have hpz := (prime_dvd_correctedChenSiftingProduct hp).mp hpd |>.1
+      omega
+    have hsum := hC₀ (correctedChenSiftingProduct N) N (by omega)
+      (correctedChenSiftingProduct_squarefree N) hprime_le hN3
+    have hlog_nonneg : 0 ≤ Real.log (N : ℝ) :=
+      Real.log_nonneg (by exact_mod_cast (by omega : 1 ≤ N))
+    have hlogpow_nonneg : 0 ≤ (Real.log (N : ℝ)) ^ (3 : ℝ) :=
+      Real.rpow_nonneg hlog_nonneg _
+    have hC₀le : C₀ ≤ |C₀| + 1 := by
+      exact (le_abs_self C₀).trans (by linarith)
+    have hsum' :
+        ((correctedChenSiftingProduct N).divisors).sum (fun d =>
+          (3 : ℝ) ^ d.primeFactors.card / Nat.totient d) ≤
+            (|C₀| + 1) * (Real.log (N : ℝ)) ^ (3 : ℝ) :=
+      hsum.trans (mul_le_mul_of_nonneg_right hC₀le hlogpow_nonneg)
+    have hweight_nonneg : ∀ d : ℕ,
+        0 ≤ (3 : ℝ) ^ d.primeFactors.card / (Nat.totient d : ℝ) := by
+      intro d
+      exact div_nonneg (pow_nonneg (by norm_num) _) (Nat.cast_nonneg _)
+    calc
+      (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+        (3 : ℝ) ^ d.primeFactors.card *
+          (|AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
+              AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| /
+            (Nat.totient d : ℝ)))
+          ≤ ∑ d ∈ (correctedChenSiftingProduct N).divisors,
+              2 * ((3 : ℝ) ^ d.primeFactors.card / (Nat.totient d : ℝ)) := by
+            apply Finset.sum_le_sum
+            intro d hd
+            calc
+              (3 : ℝ) ^ d.primeFactors.card *
+                    (|AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
+                        AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| /
+                      (Nat.totient d : ℝ)) =
+                  |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
+                      AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| *
+                    ((3 : ℝ) ^ d.primeFactors.card / (Nat.totient d : ℝ)) := by ring
+              _ ≤ 2 * ((3 : ℝ) ^ d.primeFactors.card / (Nat.totient d : ℝ)) :=
+                mul_le_mul_of_nonneg_right hdiff (hweight_nonneg d)
+      _ = 2 * ((correctedChenSiftingProduct N).divisors).sum (fun d =>
+            (3 : ℝ) ^ d.primeFactors.card / Nat.totient d) := by
+            rw [Finset.mul_sum]
+      _ ≤ 2 * ((|C₀| + 1) * (Real.log (N : ℝ)) ^ (3 : ℝ)) :=
+            mul_le_mul_of_nonneg_left hsum' (by norm_num)
+      _ = C * (Real.log (N : ℝ)) ^ (3 : ℝ) := by
+            dsimp [C]
+            ring
 
 /-- **`rem d − Δ'(d)` 的精确展开 (Möbius 校正)**: 由 `rem` 的 Möbius 分解
 (`correctedChenRem_eq_moebiusBaseCount`) 与基计数分布误差恒等式
@@ -1375,4 +1528,3 @@ theorem CorrectedChenPanTruncationInput.of_sieveBound
     _ ≤ C2 * (N : ℝ) / (log (N : ℝ)) ^ A + C1 * (N : ℝ) / (log (N : ℝ)) ^ A :=
         add_le_add hMainSplit (le_rfl : C1 * (N : ℝ) / (log (N : ℝ)) ^ A ≤ C1 * (N : ℝ) / (log (N : ℝ)) ^ A)
     _ = (C1 + C2) * (N : ℝ) / (log (N : ℝ)) ^ A := by ring
-
