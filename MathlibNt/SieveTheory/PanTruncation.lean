@@ -211,6 +211,67 @@ theorem baseCount_le_distributionError_add_li (N q : ℕ) (hN : 2 ≤ N) (hq : 0
   rw [hEq]
   exact add_le_add (le_abs_self _) (div_le_div_of_nonneg_right (le_abs_self _) (le_of_lt hφ0))
 
+/-- **squarefree 除数和恒等式 (chen #39)**: 对 squarefree `m`, 除数加权和
+`Σ_{d | m} 3^{ω(d)} = 4^{ω(m)}`.
+证明: 双射 `d ↦ d.primeFactors` 把 `m.divisors` 映到 `m.primeFactors.powerset`
+(逆 `S ↦ S.prod id`, 由 `prod_primeFactors_of_squarefree`/`primeFactors_prod`),
+于是 `Σ_{d|m} 3^{ω(d)} = Σ_{S ⊆ m.primeFactors} 3^{|S|}`, 再由二项式定理
+`Σ_{k=0}^{|s|} C(|s|,k)·3^k = (1+3)^{|s|} = 4^{|s|}` (`sum_powerset` +
+`sum_powersetCard` + `add_pow`). 零 sorry, 纯初等. -/
+lemma squarefree_divisorSum_three_pow_omega (m : ℕ) (hm : Squarefree m) :
+    (∑ d ∈ m.divisors, (3 : ℝ) ^ d.primeFactors.card) = (4 : ℝ) ^ m.primeFactors.card := by
+  classical
+  -- 双射: i : m.divisors → powerset, d ↦ d.primeFactors; j : powerset → m.divisors, S ↦ S.prod id
+  have hbij : (∑ d ∈ m.divisors, (3 : ℝ) ^ d.primeFactors.card) =
+      ∑ S ∈ m.primeFactors.powerset, (3 : ℝ) ^ S.card := by
+    refine Finset.sum_bij' (fun d hd => d.primeFactors) (fun S hS => S.prod id) ?_ ?_ ?_ ?_ ?_
+    · intro d hd
+      have hdvd : d ∣ m := (Nat.mem_divisors.mp hd).1
+      rw [Finset.mem_powerset]
+      exact Nat.primeFactors_mono hdvd hm.ne_zero
+    · intro S hS
+      rw [Finset.mem_powerset] at hS
+      rw [Nat.mem_divisors]
+      constructor
+      · rw [← Nat.prod_primeFactors_of_squarefree hm]
+        exact Finset.prod_dvd_prod_of_subset _ _ _ hS
+      · exact hm.ne_zero
+    · intro d hd
+      have hdvd : d ∣ m := (Nat.mem_divisors.mp hd).1
+      have hdsq : Squarefree d := hm.squarefree_of_dvd hdvd
+      exact Nat.prod_primeFactors_of_squarefree hdsq
+    · intro S hS
+      rw [Finset.mem_powerset] at hS
+      exact Nat.primeFactors_prod (fun p hp => Nat.prime_of_mem_primeFactors (hS hp))
+    · intro d hd
+      rfl
+  -- 幂集和 = 4^{#s}: Σ_{S ⊆ s} 3^{|S|} = Σ_k C(|s|,k)·3^k = (1+3)^{|s|}
+  have hpow : (∑ S ∈ m.primeFactors.powerset, (3 : ℝ) ^ S.card) =
+      (4 : ℝ) ^ m.primeFactors.card := by
+    calc
+      (∑ S ∈ m.primeFactors.powerset, (3 : ℝ) ^ S.card)
+          = ∑ j ∈ range (m.primeFactors.card + 1),
+              ∑ S ∈ powersetCard j m.primeFactors, (3 : ℝ) ^ S.card := by
+              rw [← Finset.sum_powerset]
+      _ = ∑ j ∈ range (m.primeFactors.card + 1),
+              (3 : ℝ) ^ j * (m.primeFactors.card).choose j := by
+              apply Finset.sum_congr rfl
+              intro j hj
+              have hc := sum_powersetCard j m.primeFactors (fun n => (3 : ℝ) ^ n)
+              rw [hc]
+              rw [nsmul_eq_mul]
+              ring
+      _ = (3 + 1 : ℝ) ^ m.primeFactors.card := by
+              rw [add_pow (3 : ℝ) (1 : ℝ) m.primeFactors.card]
+              apply Finset.sum_congr rfl
+              intro j hj
+              have hone : (1 : ℝ) ^ (m.primeFactors.card - j) = 1 := by simp
+              rw [hone]
+              ring
+      _ = (4 : ℝ) ^ m.primeFactors.card := by norm_num
+  exact hbij.trans hpow
+
+
 /-- **带符号 Möbius 基计数恒等式 (chen #39 修正核心)**: 对任意 `d`,
 `Σ_{1≠e|F} μ(e)·base(lcm(d,e)) = −#{p < N : p 素数, 2 ≤ N−p, d | N−p, gcd(F, N−p) ≠ 1}`.
 证明: 展开 base 为 p 指示和, 交换求和; 逐 p 用 lcm 合并
@@ -742,6 +803,233 @@ lemma divisorWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
     _ = (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
           simp [F, mul_assoc]
 
+
+/-- **交换恒等式 (chen #39)**: MainB' 的除数加权和等于按 `p` 的除数加权和:
+`Σ_{d|P} 3^{ω(d)}·|Σ_{1≠e|F} μ(e)·base(lcm(d,e))| = Σ_{p∈S} 4^{ω(gcd(P,N−p))}`, 其中
+`S = {p : p.Prime ∧ 2 ≤ N−p ∧ ∃r, r.Prime ∧ r|F ∧ r|N−p}` (`P`/`F` 为修正筛积与禁积).
+证明: 由 `moebiusBaseCount_signed_eq`, 内层带符号和 = −count(d), 其中
+`count(d) = #{p : p.Prime ∧ 2≤N−p ∧ d|N−p ∧ ∃r, r.Prime ∧ r|F ∧ r|N−p}`, 故绝对值 = count(d);
+展开 count 为 p 指示和 (`sum_boole`), Fubini 交换求和 (`sum_comm` + `mul_sum`),
+逐 p 提取条件并用 `divisors_filter_dvd_of_dvd` + `dvd_gcd_iff` 将 `{d|P, d|N−p}`
+合并为 `gcd(P,N−p)` 的因子, 再应用 squarefree 除数和恒等式
+(`gcd(P,N−p)` 为 squarefree, 因 `P` squarefree). 零 sorry. -/
+lemma swap_weightedSum_eq (N : ℕ) (hN : 2 ≤ N) :
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card *
+        |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|) =
+    (∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+        ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
+      (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) := by
+  classical
+  let P : ℕ := correctedChenSiftingProduct N
+  let F : ℕ := correctedChenForbiddenProduct N
+  have hP0 : P ≠ 0 := correctedChenSiftingProduct_ne_zero N
+  have hF0 : F ≠ 0 := correctedChenForbiddenProduct_ne_zero N
+  have hPsq : Squarefree P := correctedChenSiftingProduct_squarefree N
+  -- 步骤 1: 内层带符号和 = −count(d), 故绝对值 = count(d) (count ≥ 0)
+  have hcount : ∀ d ∈ P.divisors,
+      |∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+        (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| =
+      (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
+    intro d hd
+    have hEq := moebiusBaseCount_signed_eq N d hN
+    dsimp [F] at hEq
+    rw [hEq]
+    rw [abs_neg]
+    exact abs_of_nonneg (by positivity)
+  -- 步骤 2: LHS = Σ_{d|P} 3^{ω(d)}·count(d)
+  have h1 : (∑ d ∈ P.divisors,
+      (3 : ℝ) ^ d.primeFactors.card *
+        |∑ e ∈ F.divisors.filter (fun e => e ≠ 1),
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|) =
+      ∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card *
+        (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
+    apply Finset.sum_congr rfl
+    intro d hd
+    rw [hcount d hd]
+  -- 步骤 3: count(d) = Σ_{p ∈ range N} [p.Prime ∧ 2≤N−p ∧ d|N−p ∧ ∃r, ...]
+  have h2 : (∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card *
+        (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ)) =
+      ∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card *
+        (∑ p ∈ Finset.range N,
+          if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+              ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p then (1 : ℝ) else 0) := by
+    apply Finset.sum_congr rfl
+    intro d hd
+    rw [← Finset.sum_boole]
+  -- 步骤 4: Fubini — Σ_d 3^{ω(d)}·Σ_p [cond] = Σ_p Σ_d 3^{ω(d)}·[cond]
+  have h3 : (∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card *
+        (∑ p ∈ Finset.range N,
+          if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+              ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p then (1 : ℝ) else 0)) =
+      ∑ p ∈ Finset.range N, ∑ d ∈ P.divisors,
+        if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+          then (3 : ℝ) ^ d.primeFactors.card else 0 := by
+    rw [Finset.sum_comm]
+    simp_rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro d hd
+    apply Finset.sum_congr rfl
+    intro p hp
+    by_cases h : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+        ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+    · simp [h]
+    · simp [h]
+  -- 步骤 5: 逐 p 提取条件; {d ∈ P.divisors | d | N−p} = gcd(P,N−p) 的因子
+  have h4 : (∑ p ∈ Finset.range N, ∑ d ∈ P.divisors,
+        if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+          then (3 : ℝ) ^ d.primeFactors.card else 0) =
+      ∑ p ∈ Finset.range N,
+        (if p.Prime ∧ 2 ≤ N - p ∧ ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+          then (∑ d ∈ (Nat.gcd P (N - p)).divisors,
+            (3 : ℝ) ^ d.primeFactors.card) else 0) := by
+    apply Finset.sum_congr rfl
+    intro p hp
+    by_cases hpcond : p.Prime ∧ 2 ≤ N - p ∧ ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+    · -- hpcond 真: 条件简化为 d | N−p; 集合 = gcd(P,N−p).divisors
+      have hinner : (∑ d ∈ P.divisors,
+          if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+              ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+            then (3 : ℝ) ^ d.primeFactors.card else 0) =
+          ∑ d ∈ (Nat.gcd P (N - p)).divisors, (3 : ℝ) ^ d.primeFactors.card := by
+        have hred : (∑ d ∈ P.divisors,
+            if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+              then (3 : ℝ) ^ d.primeFactors.card else 0) =
+            ∑ d ∈ P.divisors, if d ∣ N - p then (3 : ℝ) ^ d.primeFactors.card else 0 := by
+          rcases hpcond with ⟨hpp, h2, hr⟩
+          rcases hr with ⟨r, hrprime, hrF, hrNp⟩
+          apply Finset.sum_congr rfl
+          intro d hd
+          by_cases hdnp : d ∣ N - p
+          · have hc : (p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p) = True := by
+              apply propext
+              constructor
+              · intro _; trivial
+              · intro _
+                exact ⟨hpp, h2, hdnp, ⟨r, hrprime, hrF, hrNp⟩⟩
+            simp [hc, hdnp]
+          · have hc : (p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p) = False := by
+              apply propext
+              constructor
+              · intro h
+                exact hdnp h.2.2.1
+              · intro h; cases h
+            simp [hc]
+        have hf : P.divisors.filter (fun d => d ∣ N - p) =
+            (Nat.gcd P (N - p)).divisors := by
+          rw [← Nat.divisors_filter_dvd_of_dvd hP0 (Nat.gcd_dvd_left P (N - p))]
+          ext d
+          constructor
+          · intro hd
+            rw [Finset.mem_filter] at hd
+            rw [Finset.mem_divisors] at hd
+            rw [Finset.mem_filter]
+            rw [Nat.mem_divisors]
+            rcases hd with ⟨hdvdP, hPne⟩
+            have hdNP : d ∣ N - p := (Finset.mem_filter.mp hd).2
+            refine ⟨Nat.dvd_gcd hdvdP hdNP, hPne⟩
+          · intro hd
+            rw [Finset.mem_filter] at hd
+            rw [Nat.mem_divisors] at hd
+            rw [Finset.mem_filter]
+            rw [Nat.mem_divisors]
+            rcases hd with ⟨hdgcd, hPne⟩
+            have hdvdP : d ∣ P := dvd_trans hdgcd (Nat.gcd_dvd_left P (N - p))
+            have hdvdNP : d ∣ N - p := dvd_trans hdgcd (Nat.gcd_dvd_right P (N - p))
+            refine ⟨⟨hdvdP, hPne⟩, hdvdNP⟩
+        calc
+          (∑ d ∈ P.divisors,
+              if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+                  ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+                then (3 : ℝ) ^ d.primeFactors.card else 0)
+              = ∑ d ∈ P.divisors, if d ∣ N - p then (3 : ℝ) ^ d.primeFactors.card else 0 := hred
+          _ = ∑ d ∈ P.divisors.filter (fun d => d ∣ N - p), (3 : ℝ) ^ d.primeFactors.card := by
+              rw [Finset.sum_filter]
+          _ = ∑ d ∈ (Nat.gcd P (N - p)).divisors, (3 : ℝ) ^ d.primeFactors.card := by
+              rw [hf]
+      rw [if_pos hpcond]
+      exact hinner
+    · rw [if_neg hpcond]
+      -- hpcond 假: 所有项条件含 p.Prime ∧ 2≤N−p ∧ ∃r... 为假 ⟹ 和 = 0
+      apply Finset.sum_eq_zero
+      intro d hd
+      by_cases h : p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+      · exfalso
+        rcases h with ⟨hpp, h2, hdnp, hr⟩
+        exact hpcond ⟨hpp, h2, hr⟩
+      · simp [h]
+  -- 步骤 6: 应用 squarefree 除数和恒等式 (gcd(P,N−p) squarefree)
+  have h5 : (∑ p ∈ Finset.range N,
+        (if p.Prime ∧ 2 ≤ N - p ∧ ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+          then (∑ d ∈ (Nat.gcd P (N - p)).divisors,
+            (3 : ℝ) ^ d.primeFactors.card) else 0)) =
+      ∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p),
+        (4 : ℝ) ^ (Nat.gcd P (N - p)).primeFactors.card := by
+    rw [← Finset.sum_filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+        ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)]
+    apply Finset.sum_congr rfl
+    intro p hp
+    rw [Finset.mem_filter] at hp
+    rcases hp with ⟨hprange, hpcond⟩
+    have hgcdpos : 1 ≤ Nat.gcd P (N - p) := by
+      have hPpos : 0 < P := Nat.pos_of_ne_zero hP0
+      exact Nat.succ_le_iff.mpr (Nat.gcd_pos_of_pos_left (N - p) hPpos)
+    have hsq : Squarefree (Nat.gcd P (N - p)) := hPsq.squarefree_of_dvd (Nat.gcd_dvd_left P (N - p))
+    have hA := squarefree_divisorSum_three_pow_omega (Nat.gcd P (N - p)) hsq
+    simpa [P, F] using hA
+
+  -- 装配
+  calc
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card *
+        |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|)
+    = ∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card *
+        (((Finset.range N).filter (fun p =>
+          p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p)).card : ℝ) := by
+        simpa [P, F] using h1
+    _ = ∑ d ∈ P.divisors, (3 : ℝ) ^ d.primeFactors.card *
+        (∑ p ∈ Finset.range N,
+          if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+              ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p then (1 : ℝ) else 0) := by
+        simpa [P, F] using h2
+    _ = ∑ p ∈ Finset.range N, ∑ d ∈ P.divisors,
+        if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+          then (3 : ℝ) ^ d.primeFactors.card else 0 := by
+        simpa [P, F] using h3
+    _ = ∑ p ∈ Finset.range N,
+        (if p.Prime ∧ 2 ≤ N - p ∧ ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p
+          then (∑ d ∈ (Nat.gcd P (N - p)).divisors,
+            (3 : ℝ) ^ d.primeFactors.card) else 0) := by
+        simpa [P, F] using h4
+    _ = ∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p),
+        (4 : ℝ) ^ (Nat.gcd P (N - p)).primeFactors.card := by
+        simpa [P, F] using h5
+    _ = (∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+          ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
+        (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) := by
+        simp [P, F]
 
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
