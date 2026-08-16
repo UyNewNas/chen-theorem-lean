@@ -150,3 +150,51 @@ therefore a new, explicitly supported switched/sieved count, followed by a
 lemma comparing it with `correctedChenQ1Count`; only that new object may
 consume the analytic remainder theorem.  This preserves the audited finite
 algebra while making the analytic seam mathematically real.
+
+## Source disposition: q1 is not the classical Omega remainder
+
+The source route recorded in `PROOF_REFERENCE.md` is more specific than the
+generic phrase “Pan/BV”.  In Liu's corrected proof, the switched variable is
+`a = p₁ p₂`, and the Selberg upper sieve uses coefficients `λ_d` supported on
+`d <= z'`.  After squaring the sieve, its only distribution moduli are
+`[d₁,d₂]`; choosing `z' = N^(1/4 - ε/2)` gives
+
+```text
+[d₁,d₂] <= (z')² = N^(1/2 - ε).
+```
+
+The resulting remainder is
+
+```text
+sum_{d | Q, d <= N^(1/2-ε)} 3^ω(d)
+  | sum_a f(a) Delta(N; a, d, N) |,                           (Liu-10)
+```
+
+with a separate split into `(a,d)=1` and `(a,d)>1`.  The latter is controlled
+by the fact that the **complement** `N-a p` is prime and the congruence then
+forces at most one `p`.  This is precisely the primitive/non-coprime
+architecture recorded in `CHEN_OMEGA_PRIMALITY_OBJECT_AUDIT.md`.
+
+It is not the q1 expression (2): q1 has a prime `q` in a different range and
+two unrestricted full-product divisor sums.  Therefore Liu's Theorem 2 /
+equation (10), Chen's classical Selberg stage, and the ANT a=1 Pan interface
+must **not** be cited as a proof of `q1APErrorUniformBound`.
+
+This gives an explicit fork for the theorem map:
+
+```text
+classical source-faithful Omega line:
+  supported Selberg pair weights -> Liu-10 remainder -> Omega upper bound
+
+current q1 line:
+  prove a new switching/sieve comparison with supported weights
+  -> source-match a theorem for Q1-2D -> q1 upper bound.
+```
+
+The first is the recommended route to an unconditional Chen chain because it
+has a named source and an already audited primality object.  The second may
+remain as a research interface, but has the stop condition that no theorem
+from the first line can be consumed before an explicit comparison theorem is
+proved.  The relevant source is Z. Liu, *A Corrected Simplified Proof of
+Chen's Theorem*, arXiv:2203.07871, Sections III--IV, especially equations
+(9)--(10) and (13).
