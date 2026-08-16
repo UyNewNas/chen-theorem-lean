@@ -73,21 +73,80 @@ absolute lcm sum remains its consumer.
 ## Minimal replacement target
 
 The next theorem must be stated for the **sifted pair**, rather than for a
-collection of individual AP errors.  In schematic notation, for the actual
-Chen ranges of `q`, `d`, and `e`, it must bound the signed/repackaged remainder
+collection of individual AP errors.  There is one further prerequisite which
+the displayed legacy interface cannot hide: the exact identity in
+`q1CandidateAPCount_eq_doubleSum` uses *all* divisors of
+`P_sift(N)` and `F_forb(N)`.  Thus its raw modulus
 
 ```text
-sum_{q in Q_N} | sum_{d|P_N} mu(d) sum_{e|F_N} mu(e)
-  [pi(N-2; lcm(q,d,e), N) - M_N(q,d,e)] |
+m(q,d,e) = lcm(q,d,e)
+```
+
+has no useful uniform level bound: a divisor of either full prime product can
+be far larger than any Bombieri--Vinogradov level.  Squarefreeness does not
+repair this.  Consequently even a theorem controlling the signed expression
+below cannot be an ordinary AP theorem until the full-divisor identity has
+been replaced by source-matched **sieve weights with explicit support**, plus
+an independently bounded sieve remainder.
+
+Write
+
+```text
+Q_N = {q prime : z(N) <= q < y(N)},
+P_N = correctedChenSiftingProduct(N),
+F_N = correctedChenForbiddenProduct(N),
+R_N(m) = q1APBaseCount(N,m) - M_N(m).
+```
+
+Here `M_N(m)` is the exact even-modulus contribution when `m` is even and
+the genuine endpoint `Li(N-2)/phi(m)` when `m` is odd.  The finite algebra
+already proved in Lean identifies the legacy signed remainder as
+
+```text
+B_N(q) = sum_{d|P_N} mu(d) sum_{e|F_N} mu(e) R_N(lcm(q,d,e)).   (2)
+```
+
+It is legitimate as an identity, but it is **not** a distribution-theorem
+input.  A source-matched replacement must introduce weights `lambda_N(d)`
+and `rho_N(e)` (or a single combined switched weight) satisfying a stated
+support condition such as
+
+```text
+lambda_N(d) != 0 and rho_N(e) != 0  =>  lcm(q,d,e) <= L(N)
+```
+
+for every surviving `q in Q_N`, together with a separately stated error for
+replacing the coprimality indicators by those weights.  The exact form of
+`L(N)`, the weights, and that replacement error must be copied from the
+chosen Chen/Pan source; they cannot be inferred from the present raw Möbius
+identity.
+
+Only after that step may the new theorem bound the signed/repackaged remainder
+
+```text
+sum_{q in Q_N} | sum_{d,e} lambda_N(d) rho_N(e)
+  R_N(lcm(q,d,e)) |
   <<_A N/log^A N,                                             (Q1-2D)
 ```
 
-after (and only after) the source theorem has specified the admissible level
-of the lcm modulus and any necessary coprimality or exceptional-even-modulus
-terms. `M_N` must use the genuine `Li(N-2)` main term on odd moduli and the
-verified exact term on even moduli.
+after (and only after) the source theorem has specified the admissible level,
+the coprimality hypotheses, the exceptional-even-modulus terms, and the
+sieve-weight replacement error.  A one-sided signed bound is enough for the
+Chen upper bound, while the displayed absolute-in-`q` version is a stronger
+and easier-to-audit target; the source must say which one it supplies.
 
 This is a Chen-local `DimensionTwoSwitchingRemainder` target. Its eventual
-formal API should expose: the three finite index sets, the modulus map, the
-main-term convention, a uniform threshold before `N`, and the exact final
+formal API should expose: the three finite index sets, the supported weights,
+the modulus map and proved level cutoff, the sieve-weight replacement error,
+the main-term convention, a uniform threshold before `N`, and the exact final
 weight. It should not conceal these data behind a generic pointwise BV name.
+
+## Formalization boundary
+
+The existing theorems through `q1CandidateAPCount_eq_doubleSum` are valuable
+finite identities and should remain available as such.  They must not be used
+as the consumer of `DimensionTwoSwitchingRemainder`.  The next Lean object is
+therefore a new, explicitly supported switched/sieved count, followed by a
+lemma comparing it with `correctedChenQ1Count`; only that new object may
+consume the analytic remainder theorem.  This preserves the audited finite
+algebra while making the analytic seam mathematically real.
