@@ -119,17 +119,18 @@ not silently interchangeable with the Chen delta-at-one weight.
 
 ### The modulus one term
 
-For `d=1`,
+For `d=1`, after the genuine-`Li` normalization repair,
 
 ```text
-Δ_N(1) = π(N-2)-li(N-2).
+Δ_N(1) = π(N-2)-Li(N-2).
 ```
 
 It is outside the coprime-residue Pan maximum and must be bounded by a
 quantitative PNT consequence.  The ANT medium-strength PNT chain is the
-natural supply line, but #48 requires an explicit exported estimate with
-arbitrary log-saving (or an equally strong stated error), not merely the
-asymptotic `π(x) ~ x/log x`.
+natural supply line after its partial-summation transfer is exported.  The
+current working main term `x/log x` cannot be used here: its deterministic
+`x/log²x` discrepancy is audited in
+`CHEN_MAIN_TERM_NORMALIZATION_AUDIT.md`.
 
 Combining these two supplies with (4) proves the small error required by the
 supported lower-sieve positivity argument, with no all-divisor tail.

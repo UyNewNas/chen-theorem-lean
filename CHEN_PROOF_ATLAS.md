@@ -37,6 +37,8 @@ recorded in
 [`CHEN_PAN_TRUNCATION_REPAIR.md`](CHEN_PAN_TRUNCATION_REPAIR.md).
 The Chen-side transport map for that preferred repair is
 [`CHEN_COMPACT_SUPPORT_TRANSPORT.md`](CHEN_COMPACT_SUPPORT_TRANSPORT.md).
+The independent main-term-normalization obstruction is recorded in
+[`CHEN_MAIN_TERM_NORMALIZATION_AUDIT.md`](CHEN_MAIN_TERM_NORMALIZATION_AUDIT.md).
 
 ## Architecture source
 
