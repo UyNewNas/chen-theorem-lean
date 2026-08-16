@@ -60,9 +60,13 @@ theorem q1SupportedCoreCount_le_one_of_prime_dvd_N {N q : ℕ}
           intro p hp
           rcases Finset.mem_filter.mp hp with ⟨hpRange, hpPrime, hpTwo, hqNp, hpCoprime⟩
           have hqP : q ∣ p := by
-            have hsub : q ∣ N - (N - p) := dvd_sub' hqN hqNp
-            have hdiff : N - (N - p) = p := by omega
-            rwa [hdiff] at hsub
+            rcases hqN with ⟨a, ha⟩
+            rcases hqNp with ⟨b, hb⟩
+            refine ⟨a - b, ?_⟩
+            have hpN : p ≤ N := by omega
+            calc
+              p = q * a - q * b := by omega
+              _ = q * (a - b) := by rw [Nat.mul_sub_left_distrib]
           have hqp : q = p :=
             (prime_dvd_prime_iff_eq (Nat.prime_iff.mp hqPrime)
               (Nat.prime_iff.mp hpPrime)).mp hqP
@@ -74,8 +78,18 @@ the q¹ range.  This is the finite separation which turns the surviving AP
 modulus from an lcm into the product `q * r`. -/
 theorem q1_coprime_sifting_divisor {N q r : ℕ} (hq : q.Prime)
     (hqz : correctedChenZ N ≤ q) (hr : r ∣ correctedChenSiftingProduct N) :
-    Nat.Coprime q r :=
-  (coprime_q_siftingProduct hq hqz).coprime_dvd_right hr
+    Nat.Coprime q r := by
+  apply Nat.coprime_of_dvd'
+  intro s hs hs_dvd_q hs_dvd_r
+  have hs_dvd_P : s ∣ correctedChenSiftingProduct N := dvd_trans hs_dvd_r hr
+  have hs_z : s < correctedChenZ N :=
+    (prime_dvd_correctedChenSiftingProduct hs).mp hs_dvd_P |>.1
+  have hs_eq_q : s = q := by
+    rcases (Nat.dvd_prime hq).mp hs_dvd_q with hs_one | hs_q
+    · exact False.elim (hs.ne_one hs_one)
+    · exact hs_q
+  subst s
+  exact False.elim (by omega)
 
 /-- The q¹ prime is recoverable from a surviving supported modulus.  Hence
 `(q,r) ↦ q*r` is injective when `q` is in the large-prime range and `r` is a
@@ -83,7 +97,7 @@ divisor of the corrected sifting product.  This is only the finite
 repackaging part of the future weighted-BV application. -/
 theorem q1_supported_modulus_injective {N q q' r r' : ℕ}
     (hq : q.Prime) (hqz : correctedChenZ N ≤ q)
-    (hq' : q'.Prime) (hq'z : correctedChenZ N ≤ q')
+    (hq' : q'.Prime)
     (hr : r ∣ correctedChenSiftingProduct N)
     (hr' : r' ∣ correctedChenSiftingProduct N)
     (hmul : q * r = q' * r') : q = q' ∧ r = r' := by
