@@ -1277,7 +1277,13 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
         rw [← hcoef]
         ring_nf
         rfl
-      exact le_trans (le_trans hleft hmul) hmul'
+      have hmul0 : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) * Real.log (N : ℝ) ≤
+          (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * ((N : ℝ) / (Real.log (N : ℝ)) ^ A) := by
+        simpa [mul_assoc, mul_comm, mul_left_comm] using hmul
+      have hleft' : ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
+          (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * ((N : ℝ) / (Real.log (N : ℝ)) ^ A) := by
+        exact le_trans hleft hmul0
+      exact le_trans hleft' hmul'
 
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
