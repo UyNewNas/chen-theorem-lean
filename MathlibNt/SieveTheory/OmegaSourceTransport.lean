@@ -44,4 +44,33 @@ noncomputable def correctedTripleNonBoundaryIndex (N : ℕ) : Finset (ℕ × ℕ
         (N : ℝ) ^ (1 / 3 : ℝ) < p₂ ∧
         w.2 * p₂ * p₃ = N - w.1 ∧ w.2 < p₂)
 
+/-- Membership in `sourceOmegaPairs` exposes the exact source-factor
+witnesses.  This is a finite unpacking lemma, not a comparison with the
+numeric sum `chenOmega`. -/
+theorem sourceOmegaPairs_mem_witness {N : ℕ} {w : ℕ × ℕ}
+    (hw : w ∈ sourceOmegaPairs N) :
+    ∃ p₁ p₂ : ℕ, p₁.Prime ∧ p₂.Prime ∧
+      (N : ℝ) ^ (1 / 10 : ℝ) < p₁ ∧
+      p₁ ≤ (N : ℝ) ^ (1 / 3 : ℝ) ∧
+      (N : ℝ) ^ (1 / 3 : ℝ) < p₂ ∧
+      (p₂ : ℝ) ≤ ((N : ℝ) / p₁) ^ (1 / 2 : ℝ) ∧
+      w.1 = p₁ * p₂ ∧ w.2.Prime ∧ w.1 * w.2 ≤ N ∧
+      (N - w.1 * w.2).Prime := by
+  simpa only [sourceOmegaPairs, Finset.mem_filter] using
+    (Finset.mem_filter.mp hw).2
+
+/-- Membership in the corrected non-boundary index exposes a triple witness
+with its ordering intact.  In particular, no later transport may silently
+discard `p₂ ≤ p₃`. -/
+theorem correctedTripleNonBoundaryIndex_mem_witness {N : ℕ} {w : ℕ × ℕ}
+    (hw : w ∈ correctedTripleNonBoundaryIndex N) :
+    w.2.Prime ∧ correctedChenZ N ≤ w.2 ∧ w.2 < correctedChenY N ∧
+      (Nat.floor ((N : ℝ) ^ (1 / 10 : ℝ))) < w.2 ∧
+      ∃ p₂ p₃ : ℕ, p₂.Prime ∧ p₃.Prime ∧
+        correctedChenY N ≤ p₂ ∧ p₂ ≤ p₃ ∧
+        (N : ℝ) ^ (1 / 3 : ℝ) < p₂ ∧
+        w.2 * p₂ * p₃ = N - w.1 ∧ w.2 < p₂ := by
+  simpa only [correctedTripleNonBoundaryIndex, Finset.mem_filter] using
+    (Finset.mem_filter.mp hw).2
+
 end MathlibNt.SieveTheory.SwitchingPrinciple
