@@ -36,7 +36,26 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
       - name: Build the public Lean root
-        run: lake build
+        run: |
+          set +e
+          lake build > /tmp/build.log 2>&1
+          status=$?
+          if [ $status -ne 0 ]; then
+          python3 - <<'PY'
+          raw = open('/tmp/build.log', encoding='utf-8', errors='replace').read().splitlines()
+          out = []
+          for i, l in enumerate(raw):
+              ls = l.strip()
+              if ls.startswith('error:') and 'MathlibNt' in ls:
+                  block = ' '.join(x.strip() for x in raw[i:i+6])[:2800]
+                  out.append(block)
+          print('::error::BUILD FAILED, ' + str(len(out)) + ' error blocks, total lines ' + str(len(raw)))
+          for b in out[:10]:
+              print('::error::' + b)
+          PY
+          exit 1
+          fi
+          cat /tmp/build.log
 
       - name: Audit the conditional Chen chain
         run: |
@@ -49,7 +68,7 @@ jobs:
 
           output = pathlib.Path('audit.log').read_text(encoding='utf-8')
           reports = re.findall(r'depends on axioms:\s*\[(.*?)\]', output, re.S)
-          expected_reports = 206
+          expected_reports = 217
           allowed = {'propext', 'Classical.choice', 'Quot.sound'}
           if len(reports) != expected_reports:
               print(f'Expected {expected_reports} axiom reports, found {len(reports)}.', file=sys.stderr)
