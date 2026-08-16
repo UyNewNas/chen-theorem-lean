@@ -69,3 +69,25 @@ unchanged into q1. q1 belongs to the variable-`a`/`Omega` workline (Chen #50).
 Stop condition: no theorem or documentation may claim q1 error control from
 the `a=1` lower-sieve `WeightedBVAtOne` interface while the displayed
 absolute lcm sum remains its consumer.
+
+## Minimal replacement target
+
+The next theorem must be stated for the **sifted pair**, rather than for a
+collection of individual AP errors.  In schematic notation, for the actual
+Chen ranges of `q`, `d`, and `e`, it must bound the signed/repackaged remainder
+
+```text
+sum_{q in Q_N} | sum_{d|P_N} mu(d) sum_{e|F_N} mu(e)
+  [pi(N-2; lcm(q,d,e), N) - M_N(q,d,e)] |
+  <<_A N/log^A N,                                             (Q1-2D)
+```
+
+after (and only after) the source theorem has specified the admissible level
+of the lcm modulus and any necessary coprimality or exceptional-even-modulus
+terms. `M_N` must use the genuine `Li(N-2)` main term on odd moduli and the
+verified exact term on even moduli.
+
+This is a Chen-local `DimensionTwoSwitchingRemainder` target. Its eventual
+formal API should expose: the three finite index sets, the modulus map, the
+main-term convention, a uniform threshold before `N`, and the exact final
+weight. It should not conceal these data behind a generic pointwise BV name.
