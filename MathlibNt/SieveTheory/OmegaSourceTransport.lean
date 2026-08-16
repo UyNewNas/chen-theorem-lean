@@ -113,4 +113,14 @@ theorem ordered_triple_rpow_half_bound {N p p₁ p₂ p₃ : ℕ}
   have hp₂nonneg : 0 ≤ (p₂ : ℝ) := by positivity
   nlinarith
 
+/-- A first factor strictly below the corrected ceiling cutoff lies in the
+source Ω cube-root range.  The strict form is important: it is what makes a
+natural number below `ceil x` at most the real number `x`. -/
+theorem p1_le_cuberoot_of_lt_correctedChenY {N p₁ : ℕ}
+    (hp₁ : p₁ < correctedChenY N) :
+    (p₁ : ℝ) ≤ (N : ℝ) ^ (1 / 3 : ℝ) := by
+  apply le_of_lt
+  rw [correctedChenY] at hp₁
+  exact Nat.lt_ceil.mp hp₁
+
 end MathlibNt.SieveTheory.SwitchingPrinciple
