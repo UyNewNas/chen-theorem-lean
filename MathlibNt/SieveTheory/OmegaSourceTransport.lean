@@ -118,7 +118,7 @@ theorem ordered_triple_rpow_half_bound {N p p₁ p₂ p₃ : ℕ}
     apply (le_div_iff₀ hp₁pos).mpr
     calc
       (p₂ : ℝ) ^ 2 * (p₁ : ℝ) = (p₁ : ℝ) * (p₂ : ℝ) ^ 2 := by ring
-      _ ≤ N := hcore
+      _ ≤ (N : ℝ) := hcore
   have hbase : 0 ≤ (N : ℝ) / (p₁ : ℝ) := by positivity
   have hroot_nonneg : 0 ≤ ((N : ℝ) / (p₁ : ℝ)) ^ (1 / 2 : ℝ) :=
     Real.rpow_nonneg hbase _
