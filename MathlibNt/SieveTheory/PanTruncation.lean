@@ -49,9 +49,9 @@ def ChenPanTruncationMainTermBound : Prop :=
             (Nat.totient d : ℝ))) +
       (∑ d ∈ (correctedChenSiftingProduct N).divisors,
         (3 : ℝ) ^ d.primeFactors.card *
-          (∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
-            |(μ e : ℝ)| * |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ)| /
-              (Nat.totient (Nat.lcm d e) : ℝ))) ≤
+          |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+            (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+              p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|) ≤
         C * (N : ℝ) / (log (N : ℝ)) ^ A
 
 /-- **`rem d − Δ'(d)` 的精确展开 (Möbius 校正)**: 由 `rem` 的 Möbius 分解
@@ -126,9 +126,9 @@ theorem abs_correctedChenRem_sub_distributionError_le (N d : ℕ)
         AnalyticNumberTheory.Sieve.panDistributionError (N - 2) 1 d (N % d)| ≤
       |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
           AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| / (Nat.totient d : ℝ) +
-        (∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
-          |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)) := by
+        |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| := by
   classical
   have hA := correctedChenRem_sub_distributionError_eq N d hd hN
   have hφ0 : (0 : ℝ) < (Nat.totient d : ℝ) := by
@@ -160,33 +160,10 @@ theorem abs_correctedChenRem_sub_distributionError_le (N d : ℕ)
           rw [hφabs]
     _ ≤ |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
             AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| / (Nat.totient d : ℝ) +
-          (∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
-            |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-              p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)) := by
-          have hSle : |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
-                (μ e : ℝ) * (((Finset.range N).filter (fun p =>
-                  p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| ≤
-              ∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
-                |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-                  p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ) := by
-            let E : Finset ℕ := (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1)
-            calc
-              |∑ e ∈ E, (μ e : ℝ) * (((Finset.range N).filter (fun p =>
-                  p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|
-                  ≤ ∑ e ∈ E, |(μ e : ℝ) * (((Finset.range N).filter (fun p =>
-                    p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| :=
-                    Finset.abs_sum_le_sum_abs (fun e => (μ e : ℝ) *
-                      (((Finset.range N).filter (fun p =>
-                        p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)) E
-              _ = ∑ e ∈ E, |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-                    p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ) := by
-                    apply Finset.sum_congr rfl
-                    intro e he
-                    rw [abs_mul]
-                    have hbase : 0 ≤ (((Finset.range N).filter (fun p =>
-                        p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ) := by positivity
-                    rw [abs_of_nonneg hbase]
-          exact add_le_add_right hSle _
+          |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+            (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+              p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| := by
+          le_rfl
 
 /-- **基计数 ≤ 分布误差 + li 主项**: `base(q) = Δ'(q) + li(N−2)/φ(q)`
 (`supportAPBaseCount_distributionError` 重排), 三角不等式得
@@ -1016,6 +993,62 @@ lemma swap_weightedSum_eq (N : ℕ) (hN : 2 ≤ N) :
         (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) := by
         simp [P, F]
 
+/-- **ω(n) ≤ log n / log 2 (n ≥ 2)** (初等界, chen #39):
+`2^{ω(n)} = ∏_{p|n} 2 ≤ ∏_{p|n} p ≤ n` (素数 ≥ 2, radical 整除 n),
+取 log 得 `ω(n)·log 2 ≤ log n`. 用于 MainTermBound 重写的 √N 吸收. -/
+lemma omega_le_log_two (n : ℕ) (hn : 2 ≤ n) :
+    (n.primeFactors.card : ℝ) ≤ log (n : ℝ) / log 2 := by
+  have hpow : 2 ^ n.primeFactors.card ≤ ∏ p ∈ n.primeFactors, p := by
+    calc
+      2 ^ n.primeFactors.card = ∏ p ∈ n.primeFactors, (2 : ℕ) := by
+        rw [Finset.prod_const]
+      _ ≤ ∏ p ∈ n.primeFactors, p := by
+        exact Finset.prod_le_prod (fun p hp => by norm_num)
+          (fun p hp => (Nat.prime_of_mem_primeFactors hp).two_le)
+  have hprod_le : ∏ p ∈ n.primeFactors, p ≤ n := by
+    exact Nat.le_of_dvd (by omega : 0 < n) (Nat.prod_primeFactors_dvd n)
+  have hpow_le : 2 ^ n.primeFactors.card ≤ n := le_trans hpow hprod_le
+  have hcast : ((2 ^ n.primeFactors.card : ℕ) : ℝ) ≤ (n : ℝ) := by exact_mod_cast hpow_le
+  have hncast : 0 < (n : ℝ) := by exact_mod_cast (by omega : 0 < n)
+  have hlog2 : 0 < log 2 := Real.log_pos (by norm_num : (1 : ℝ) < 2)
+  have hlog : (n.primeFactors.card : ℝ) * log 2 ≤ log (n : ℝ) := by
+    have hlogpow : log (((2 ^ n.primeFactors.card : ℕ) : ℝ)) ≤ log (n : ℝ) := by
+      exact Real.log_le_log (by positivity : 0 < ((2 ^ n.primeFactors.card : ℕ) : ℝ)) hcast
+    have hlog2pow : log (((2 ^ n.primeFactors.card : ℕ) : ℝ)) =
+        (n.primeFactors.card : ℝ) * log 2 := by
+      rw [show ((2 ^ n.primeFactors.card : ℕ) : ℝ) =
+          (2 : ℝ) ^ n.primeFactors.card by norm_num]
+      rw [Real.log_pow]
+    rwa [hlog2pow] at hlogpow
+  have hdiv : (n.primeFactors.card : ℝ) ≤ log (n : ℝ) / log 2 := by
+    rwa [le_div_iff₀ hlog2]
+  exact hdiv
+
+/-- **带符号 forbidden 计数除数加权和的最终界 (chen #39)**:
+`Σ_{d|P} 3^{ω(d)}·|Σ_{1≠e|F} μ(e)·base(lcm(d,e))| ≤ (1+ω(F))·16^8·√N`.
+由 swap 恒等式 (`swap_weightedSum_eq`) 把左端化为 `Σ_{p∈S} 4^{ω(gcd(P,N−p))}`,
+再经 `divisorWeightedSum_le` 界为 `(1+ω(F))·16^8·√N`. 零 sorry. -/
+lemma swapWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card *
+        |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|) ≤
+      (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+  classical
+  have hswap := swap_weightedSum_eq N hN
+  have hdiv := divisorWeightedSum_le N hN hEven
+  calc
+    (∑ d ∈ (correctedChenSiftingProduct N).divisors,
+      (3 : ℝ) ^ d.primeFactors.card *
+        |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
+          (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|)
+        = (∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
+            ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
+          (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) := hswap
+    _ ≤ (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := hdiv
+
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
 `li` 主项部分) 组装出截断输入: 对每个 `d | P(N)`,
@@ -1047,8 +1080,9 @@ theorem CorrectedChenPanTruncationInput.of_sieveBound
   let L : ℕ → ℝ := fun d => |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ) -
       AnalyticNumberTheory.Sieve.logarithmicIntegral (N : ℝ)| / (Nat.totient d : ℝ)
   let S1 : ℕ → ℝ := fun d => ∑ e ∈ E, |(μ e : ℝ)| * |Δ' (Nat.lcm d e)|
-  let S2 : ℕ → ℝ := fun d => ∑ e ∈ E, |(μ e : ℝ)| * |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ)| /
-      (Nat.totient (Nat.lcm d e) : ℝ)
+  let S2 : ℕ → ℝ := fun d =>
+      |∑ e ∈ E, (μ e : ℝ) * (((Finset.range N).filter (fun p =>
+        p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|
   let MainA : ℝ := ∑ d ∈ P.divisors, ω d * L d
   let Sieve1 : ℝ := ∑ d ∈ P.divisors, ω d * S1 d
   let MainB : ℝ := ∑ d ∈ P.divisors, ω d * S2 d
@@ -1064,7 +1098,7 @@ theorem CorrectedChenPanTruncationInput.of_sieveBound
     simpa [ChenPanTruncationMainTermBound] using hM
   have hterm : ∀ d ∈ P.divisors,
       ω d * |(correctedChenBoundingSieve N).rem d - Δ' d| ≤
-        ω d * L d + ω d * S1 d + ω d * S2 d := by
+        ω d * L d + ω d * S2 d := by
     intro d hdmem
     have hd : d ∣ correctedChenSiftingProduct N := (Nat.mem_divisors.mp hdmem).1
     have hPpos : 0 < P := Nat.pos_of_ne_zero (correctedChenSiftingProduct_ne_zero N)
@@ -1073,72 +1107,35 @@ theorem CorrectedChenPanTruncationInput.of_sieveBound
       unfold ω
       positivity
     have hB := abs_correctedChenRem_sub_distributionError_le N d hd hN2'
-    have hS12 : (∑ e ∈ E, |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-          p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)) ≤ S1 d + S2 d := by
-      have hterm2 : ∀ e ∈ E,
-          |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ) ≤
-            |(μ e : ℝ)| * |Δ' (Nat.lcm d e)| +
-              |(μ e : ℝ)| * |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ)| /
-                (Nat.totient (Nat.lcm d e) : ℝ) := by
-        intro e he
-        have heF : e ∣ F := (Nat.mem_divisors.mp (Finset.mem_filter.mp he).1).1
-        have hFpos : 0 < F := Nat.pos_of_ne_zero (correctedChenForbiddenProduct_ne_zero N)
-        have hepos : 0 < e := Nat.pos_of_dvd_of_pos heF hFpos
-        have hlcmpos : 0 < Nat.lcm d e :=
-          Nat.pos_of_ne_zero (Nat.lcm_ne_zero (ne_of_gt hdpos) (ne_of_gt hepos))
-        have hC := baseCount_le_distributionError_add_li N (Nat.lcm d e) hN2' hlcmpos
-        have hmu0 : 0 ≤ |(μ e : ℝ)| := abs_nonneg _
-        calc
-          |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-              p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)
-              ≤ |(μ e : ℝ)| * (|Δ' (Nat.lcm d e)| +
-                  |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ)| /
-                    (Nat.totient (Nat.lcm d e) : ℝ)) :=
-                mul_le_mul_of_nonneg_left hC hmu0
-          _ = |(μ e : ℝ)| * |Δ' (Nat.lcm d e)| +
-              |(μ e : ℝ)| * |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ)| /
-                (Nat.totient (Nat.lcm d e) : ℝ) := by ring
-      calc
-        (∑ e ∈ E, |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-            p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ))
-            ≤ ∑ e ∈ E, (|(μ e : ℝ)| * |Δ' (Nat.lcm d e)| +
-                |(μ e : ℝ)| * |AnalyticNumberTheory.Sieve.logarithmicIntegral (N - 2 : ℝ)| /
-                  (Nat.totient (Nat.lcm d e) : ℝ)) :=
-              Finset.sum_le_sum hterm2
-        _ = S1 d + S2 d := by
-          rw [Finset.sum_add_distrib]
-    have hB' : |(correctedChenBoundingSieve N).rem d - Δ' d| ≤ L d + S1 d + S2 d := by
-      calc
-        |(correctedChenBoundingSieve N).rem d - Δ' d|
-            ≤ L d + (∑ e ∈ E, |(μ e : ℝ)| * (((Finset.range N).filter (fun p =>
-                p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)) := by
-              simpa [L, E, F, Δ'] using hB
-        _ ≤ L d + (S1 d + S2 d) := add_le_add_right hS12 (L d)
-        _ = L d + S1 d + S2 d := by ring
+    have hB' : |(correctedChenBoundingSieve N).rem d - Δ' d| ≤ L d + S2 d := by
+      simpa [L, S2, E, F, Δ'] using hB
     calc
       ω d * |(correctedChenBoundingSieve N).rem d - Δ' d|
-          ≤ ω d * (L d + S1 d + S2 d) := mul_le_mul_of_nonneg_left hB' h3
-      _ = ω d * L d + ω d * S1 d + ω d * S2 d := by ring
+          ≤ ω d * (L d + S2 d) := mul_le_mul_of_nonneg_left hB' h3
+      _ = ω d * L d + ω d * S2 d := by ring
   have hsum1 : (∑ d ∈ P.divisors, ω d * |(correctedChenBoundingSieve N).rem d - Δ' d|) ≤
-      MainA + Sieve1 + MainB := by
+      MainA + MainB := by
     have hle := Finset.sum_le_sum hterm
     calc
       (∑ d ∈ P.divisors, ω d * |(correctedChenBoundingSieve N).rem d - Δ' d|)
-          ≤ ∑ d ∈ P.divisors, (ω d * L d + ω d * S1 d + ω d * S2 d) := hle
-      _ = MainA + Sieve1 + MainB := by
-        rw [Finset.sum_add_distrib]
+          ≤ ∑ d ∈ P.divisors, (ω d * L d + ω d * S2 d) := hle
+      _ = MainA + MainB := by
         rw [Finset.sum_add_distrib]
   calc
     (∑ d ∈ P.divisors, ω d * |(correctedChenBoundingSieve N).rem d - Δ' d|) +
         (∑ d ∈ P.divisors.filter (fun d => ¬ (2 ≤ d ∧ d ≤ D)), ω d * |Δ' d|)
-        ≤ (MainA + Sieve1 + MainB) + Sieve2 := by
-          -- hsum1: Σ ≤ MainA+Sieve1+MainB; 用 add_le_add 两边加 Sieve2
+        ≤ (MainA + MainB) + Sieve2 := by
+          -- hsum1: Σ ≤ MainA+MainB; 用 add_le_add 两边加 Sieve2
           exact add_le_add hsum1 (le_rfl : Sieve2 ≤ Sieve2)
-    _ = (MainA + MainB) + (Sieve1 + Sieve2) := by ring
     _ ≤ (MainA + MainB) + C1 * (N : ℝ) / (log (N : ℝ)) ^ A := by
-        -- hSieveSplit: Sieve1+Sieve2 ≤ C1·N/log^A N; 两边加 MainA+MainB (线性重排)
-        nlinarith [hSieveSplit]
+        -- Sieve2 ≤ C1·N/log^A N (hSieveSplit 中 Sieve1 ≥ 0); 两边加 MainA+MainB
+        have hS2le : Sieve2 ≤ C1 * (N : ℝ) / (log (N : ℝ)) ^ A := by
+          have hS1nn : 0 ≤ Sieve1 := by
+            dsimp [Sieve1]
+            exact Finset.sum_nonneg (fun d hd => by
+              apply mul_nonneg; positivity; positivity)
+          nlinarith [hSieveSplit, hS1nn]
+        nlinarith [hS2le]
     _ ≤ C2 * (N : ℝ) / (log (N : ℝ)) ^ A + C1 * (N : ℝ) / (log (N : ℝ)) ^ A :=
         add_le_add hMainSplit (le_rfl : C1 * (N : ℝ) / (log (N : ℝ)) ^ A ≤ C1 * (N : ℝ) / (log (N : ℝ)) ^ A)
     _ = (C1 + C2) * (N : ℝ) / (log (N : ℝ)) ^ A := by ring
