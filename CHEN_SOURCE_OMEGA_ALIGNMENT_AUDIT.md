@@ -71,21 +71,63 @@ expansion was independently rejected in
 
 ## 3. Consequences
 
-The implication
+There is a promising finite transport for the **triple** summand which is
+stronger than the deliberately coarse existing theorem
+`correctedChenOmega_triple_le_switchingCount`.  The definition of
+`tripleFactorCount` itself retains
+
+```text
+p_1 < p_2 <= p_3,     p_1 p_2 p_3 = N-p < N.
+```
+
+Consequently
+
+```text
+p_2^2 <= N/p_1,  hence  p_2 <= sqrt(N/p_1).                   (B)
+```
+
+This is exactly the upper support condition in (S).  For all non-boundary
+indices, the remaining source conditions also follow from the corrected
+cutoffs:
+
+```text
+floor(N^(1/10)) < p_1 < ceil(N^(1/3)),
+ceil(N^(1/3)) < p_2
+```
+
+imply the strict real inequalities in (S).  Thus the map
+
+```text
+(p, p_1, p_2, p_3) |-> (a=p_1*p_2, p_3)
+```
+
+injects these witnesses into the summands of `chenOmega(N)`, because the
+candidate condition makes `p=N-a*p_3` prime.
+
+There are only two endpoint fibres to remove before this statement is exact:
+
+```text
+p_1 = floor(N^(1/10)),       p_2 = N^(1/3) when the latter is integral.
+```
+
+For each fixed boundary prime, the crude divisor-pair count is at most
+`O(N^(9/10) log N)` (and the second fibre is smaller).  This is negligible
+against `N/log^2 N`; nevertheless the actual finite predicate, injectivity,
+and an explicit eventual inequality must be proved before it is consumed.
+
+Accordingly, the implication
 
 ```text
 Liu source Selberg bound for Omega_src
     => CorrectedChenOmegaUpperBound
 ```
 
-is not established and must not be treated as a documentation-only change.
-It needs both of the following new comparison theorems, or a replacement
-counting bridge that makes them unnecessary:
+is not yet established and must not be treated as a documentation-only
+change.  It needs both of the following new comparison theorems:
 
-1. **Triple transport.**  Compare the corrected triple penalty in (T) with a
-   source-supported switched Selberg object.  The proof must account for all
-   pairs added by the coarser range, including their multiplicity; merely
-   observing that both have a product `p_1 p_2` is insufficient.
+1. **Triple transport.**  Preserve `p_2<=p_3` and prove the injection above,
+   then bound the two explicit endpoint fibres.  The existing coarse
+   reparameterization is insufficient because it has forgotten (B).
 2. **Repeated-prime transport.**  Bound `primePowerSum` by a source-supported
    remainder/negligible term.  q1 cannot supply this until its raw full
    Möbius expansion is replaced by supported weights and a genuine analytic
@@ -117,9 +159,9 @@ fixed against the source.
 2. `SourceSelbergOmegaUpperBound`: a uniform theorem for the source object,
    exposing the coefficient support, `[d1,d2]` level, the main term and Liu's
    coprime/non-coprime remainder split.
-3. `CorrectedTripleTransport`: a finite inequality from the corrected triple
-   penalty to the chosen source/sieved object plus an explicitly bounded
-   boundary term.
+3. `CorrectedTripleTransport`: the source-witness injection retaining
+   `p₂≤p₃`, plus an explicitly bounded `p₁=floor(N^(1/10))` / integral-cube
+   endpoint term.
 4. `CorrectedPrimePowerTransport`: a separate q1 or other source-matched
    bound for the first summand of (C).
 5. Only then package these as `CorrectedChenOmegaUpperBound` and feed the
