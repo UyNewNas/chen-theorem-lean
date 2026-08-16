@@ -59,10 +59,10 @@ theorem q1SupportedCoreCount_le_one_of_prime_dvd_N {N q : ℕ}
           apply Finset.card_le_card
           intro p hp
           rcases Finset.mem_filter.mp hp with ⟨hpRange, hpPrime, hpTwo, hqNp, hpCoprime⟩
-          have hpLe : p ≤ N := Nat.le_of_lt (Finset.mem_range.mp hpRange)
           have hqP : q ∣ p := by
-            have hsub : q ∣ N - (N - p) := Nat.dvd_sub' hqN hqNp
-            simpa [Nat.sub_sub_cancel hpLe] using hsub
+            have hsub : q ∣ N - (N - p) := dvd_sub' hqN hqNp
+            have hdiff : N - (N - p) = p := by omega
+            rwa [hdiff] at hsub
           have hqp : q = p :=
             (prime_dvd_prime_iff_eq (Nat.prime_iff.mp hqPrime)
               (Nat.prime_iff.mp hpPrime)).mp hqP
