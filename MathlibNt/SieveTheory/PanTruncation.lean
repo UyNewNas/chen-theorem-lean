@@ -1211,7 +1211,6 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
             Real.log (N : ℝ) + Real.log (N : ℝ) / Real.log 2 := by
           rw [add_mul, one_mul]
           field_simp
-          ring
         rw [hre]
         nlinarith [hlog2N]
       exact le_trans hleft hright
@@ -1242,7 +1241,7 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
         exact le_of_eq hsq
       exact le_trans (le_trans hle1 hle2) hle3
     -- 装配
-    have hcN : (1 + 1 / Real.log 2) * Real.log (N : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
+    have hcN : ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
         C * (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
       dsimp [C]
       have hnn : 0 ≤ (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) := by positivity
@@ -1284,6 +1283,7 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
           (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * ((N : ℝ) / (Real.log (N : ℝ)) ^ A) := by
         exact le_trans hleft hmul0
       exact le_trans hleft' hmul'
+    exact hcN
 
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
