@@ -75,6 +75,7 @@ The q-power component has a distinct AP-error/main-term decomposition
 (`q1APErrorUniformBound`, `q1MainTermAbsorption`). Its base prime count is
 an `a=1` AP count, but its double Möbius expansion and even-modulus correction
 must be audited independently before importing the lower-sieve `a=1` result.
+That audit is recorded in [`CHEN_Q1_ERROR_INTERFACE_AUDIT.md`](CHEN_Q1_ERROR_INTERFACE_AUDIT.md).
 
 ## 3. Consequences for the current interfaces
 
