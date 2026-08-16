@@ -87,4 +87,30 @@ theorem ordered_triple_sq_le_N {N p p₁ p₂ p₃ : ℕ}
     _ = N - p := hprod
     _ ≤ N := Nat.sub_le _ _
 
+/-- The source square-root condition follows from the retained ordered
+triple.  This is the real-valued form of `ordered_triple_sq_le_N`; the only
+extra hypothesis is positivity of the first prime so division is legitimate. -/
+theorem ordered_triple_rpow_half_bound {N p p₁ p₂ p₃ : ℕ}
+    (hp₁ : p₁.Prime) (hp₂₃ : p₂ ≤ p₃)
+    (hprod : p₁ * p₂ * p₃ = N - p) :
+    (p₂ : ℝ) ≤ ((N : ℝ) / p₁) ^ (1 / 2 : ℝ) := by
+  have hnat : p₁ * p₂ * p₂ ≤ N := ordered_triple_sq_le_N hp₂₃ hprod
+  have hcore : (p₁ : ℝ) * (p₂ : ℝ) ^ 2 ≤ (N : ℝ) := by
+    exact_mod_cast hnat
+  have hp₁pos : (0 : ℝ) < p₁ := by exact_mod_cast hp₁.pos
+  have hratio : (p₂ : ℝ) ^ 2 ≤ (N : ℝ) / p₁ := by
+    apply (le_div_iff₀ hp₁pos).mpr
+    calc
+      (p₂ : ℝ) ^ 2 * p₁ = p₁ * (p₂ : ℝ) ^ 2 := by ring
+      _ ≤ N := hcore
+  have hbase : 0 ≤ (N : ℝ) / p₁ := by positivity
+  have hroot_nonneg : 0 ≤ ((N : ℝ) / p₁) ^ (1 / 2 : ℝ) :=
+    Real.rpow_nonneg hbase _
+  have hroot_sq : (((N : ℝ) / p₁) ^ (1 / 2 : ℝ)) ^ 2 = (N : ℝ) / p₁ := by
+    rw [← Real.rpow_two]
+    rw [← Real.rpow_mul hbase (1 / 2 : ℝ) (2 : ℝ)]
+    norm_num
+  have hp₂nonneg : 0 ≤ (p₂ : ℝ) := by positivity
+  nlinarith
+
 end MathlibNt.SieveTheory.SwitchingPrinciple
