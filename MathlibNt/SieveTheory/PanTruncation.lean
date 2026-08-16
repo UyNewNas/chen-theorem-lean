@@ -914,44 +914,29 @@ lemma swap_weightedSum_eq (N : ℕ) (hN : 2 ≤ N) :
           apply Finset.sum_congr rfl
           intro d hd
           by_cases hdnp : d ∣ N - p
-          · have hc : (p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
-                ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p) = True := by
-              apply propext
-              constructor
-              · intro _; trivial
-              · intro _
-                exact ⟨hpp, h2, hdnp, ⟨r, hrprime, hrF, hrNp⟩⟩
-            simp [hc, hdnp]
-          · have hc : (p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧
-                ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p) = False := by
-              apply propext
-              constructor
-              · intro h
-                exact hdnp h.2.2.1
-              · intro h; cases h
-            simp [hc]
+          · have hex : ∃ r : ℕ, r.Prime ∧ r ∣ F ∧ r ∣ N - p := ⟨r, hrprime, hrF, hrNp⟩
+            simp [hpp, h2, hdnp, hex]
+          · simp [hpp, h2, hdnp]
         have hf : P.divisors.filter (fun d => d ∣ N - p) =
             (Nat.gcd P (N - p)).divisors := by
-          rw [← Nat.divisors_filter_dvd_of_dvd hP0 (Nat.gcd_dvd_left P (N - p))]
           ext d
           constructor
           · intro hd
-            have hdmem1 : d ∈ P.divisors := (Finset.mem_filter.mp hd).1
-            have hdNP : d ∣ N - p := (Finset.mem_filter.mp hd).2
-            rw [Finset.mem_divisors] at hdmem1
-            rw [Finset.mem_filter]
-            rw [Nat.mem_divisors]
-            rcases hdmem1 with ⟨hdvdP, hPne⟩
-            refine ⟨Nat.dvd_gcd hdvdP hdNP, hPne⟩
-          · intro hd
             rw [Finset.mem_filter] at hd
+            rcases hd with ⟨hdmem, hdNP⟩
+            rw [Nat.mem_divisors] at hdmem
+            rcases hdmem with ⟨hdvdP, hPne⟩
+            rw [Nat.mem_divisors]
+            refine ⟨Nat.dvd_gcd hdvdP hdNP, ?_⟩
+            exact ne_of_gt (Nat.gcd_pos_of_pos_left (N - p) (Nat.pos_of_ne_zero hP0))
+          · intro hd
             rw [Nat.mem_divisors] at hd
+            rcases hd with ⟨hdgcd, hgcdne⟩
             rw [Finset.mem_filter]
             rw [Nat.mem_divisors]
-            rcases hd with ⟨hdgcd, hPne⟩
             have hdvdP : d ∣ P := dvd_trans hdgcd (Nat.gcd_dvd_left P (N - p))
             have hdvdNP : d ∣ N - p := dvd_trans hdgcd (Nat.gcd_dvd_right P (N - p))
-            refine ⟨⟨hdvdP, hPne⟩, hdvdNP⟩
+            refine ⟨⟨hdvdP, hP0⟩, hdvdNP⟩
         calc
           (∑ d ∈ P.divisors,
               if p.Prime ∧ 2 ≤ N - p ∧ d ∣ N - p ∧

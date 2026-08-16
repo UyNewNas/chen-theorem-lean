@@ -205,6 +205,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.abs_moebiusBaseCount_signed_le
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.four_pow_omega_le_sqrt
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.divisorWeightedSum_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.squarefree_divisorSum_three_pow_omega
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.swap_weightedSum_eq
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenRem_sub_distributionError_eq
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.abs_correctedChenRem_sub_distributionError_le
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.baseCount_le_distributionError_add_li
