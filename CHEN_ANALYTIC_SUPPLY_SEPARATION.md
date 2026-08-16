@@ -54,16 +54,23 @@ and then through the prime-pair linear-form count
 ```
 
 Here `a` genuinely varies over a two-prime range. The `a=1` theorem has no
-route to this assertion. The documented required supply is instead:
+route to this assertion. The required supply is a uniform dimension-two
+prime-pair estimate with its full local-density factor:
 
 ```text
 uniform in 1 <= a and 2a <= N,
 PrimePairLinearFormCount(N,a)
-  << (a/phi(a)) * (N/a)/(log(N/a)*log N),                     (U)
+  << S(N,a) * (N/a)/(log(N/a)*log N),                          (U)
 ```
 
-or the stronger `N/(phi(a) log^2 N)` form. `PrimePairLinearForm.lean`
-correctly decomposes this into three still-open ingredients:
+Here `S(N,a)` must include the Goldbach local factor from primes dividing
+`N`, together with the treatment of primes shared by `a` and `N`. The bare
+`a/phi(a)` expression formerly written here is not a source-valid uniform
+replacement; see
+[`CHEN_VARIABLE_A_LOCAL_DENSITY_AUDIT.md`](CHEN_VARIABLE_A_LOCAL_DENSITY_AUDIT.md).
+
+`PrimePairLinearForm.lean` correctly decomposes the analytic portion into
+three still-open ingredients:
 
 | ingredient | role | status |
 | --- | --- | --- |
