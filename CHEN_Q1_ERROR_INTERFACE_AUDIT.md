@@ -194,9 +194,16 @@ E_N(m) = pi(N-2; m, N) - Li(N-2)/phi(m).
 
 To consume weighted BV, a finite repackaging lemma must prove that the
 coefficient of each `m=q*d` in the middle sum is bounded by a fixed multiple
-of `mu(m)^2 3^omega(m)`, and that `m<=D(N)`.  It may then be bounded by the
-`a=1` weighted BV theorem; this is a genuine one-modulus distribution
-statement, not an invocation of pointwise BV.
+of `mu(m)^2 3^omega(m)`, and that `m<=D(N)`.  In the intended strict ranges
+this is especially clean: `d|P(z)` has all prime factors `<z`, while
+`q>=z` is prime, so `gcd(q,d)=1`; moreover `q` is the unique prime factor of
+`m` which is at least `z`.  Thus `(q,d) -> q*d` is injective on the surviving
+pairs.  If the chosen upper weights satisfy `|lambda_{N,q}(d)|<=1`, their
+repackaged coefficient is at most one, hence certainly at most
+`mu(m)^2 3^omega(m)` for squarefree `m`.  These elementary facts still need
+Lean proofs against the exact endpoint conventions.  The resulting sum may
+then be bounded by the `a=1` weighted BV theorem; this is a genuine
+one-modulus distribution statement, not an invocation of pointwise BV.
 
 There are two compulsory qualifications.
 
