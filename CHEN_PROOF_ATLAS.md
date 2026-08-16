@@ -25,6 +25,14 @@ The sieve parity barrier remains relevant: this supply line aims at
 prime-plus-`P₂`, not prime-plus-prime.  It must not be described as a route
 around the barrier to Goldbach.
 
+Two source-matching audits delimit the outstanding Omega work: the
+variable-`a` local-density factor is recorded in
+`CHEN_VARIABLE_A_LOCAL_DENSITY_AUDIT.md`, while
+`CHEN_OMEGA_PRIMALITY_OBJECT_AUDIT.md` establishes that the legacy
+`primesInAP_weighted` count tests primality of `a*p`, not of `N-a*p`.
+Consequently the legacy non-coprime bound is not an analytic input to the
+corrected Chen route.
+
 For the Chen-specific Pan truncation seam, the separate written audit
 [`CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md`](CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md)
 proves the MainA/MainB main-term estimate on paper, and refutes the current

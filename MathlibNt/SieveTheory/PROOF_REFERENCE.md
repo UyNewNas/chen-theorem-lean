@@ -240,7 +240,16 @@ $$
 
 其中 $R^{(=1)}$ 为 $(a, d) = 1$ 部分(由 Pan 的定理/Bombieri-Vinogradov 控制,$\ll N/\log^A N$),$R_1$ 为 $(a, d) > 1$ 部分。
 
-**第 2 步. 利用 $(a, d) > 1$ 时 $\pi$ 退化。** 由于 $(a, d) > 1$ 时等差数列 $N - a p \equiv 0 \pmod{d}$ 至多有一个素数解($p$ 唯一),
+**第 2 步. 利用 $(a, d) > 1$ 时正确的补素数计数退化。** 令
+$g=(a,d)>1$。若 $d\mid N-ap$ 且 $N-ap$ 是素数，则 $g\mid N-ap$；
+故必有 $N-ap=g$，从而 $p=(N-g)/a$ 唯一。因此**以 $N-ap$ 为素数的
+正确内层计数**至多为一。
+
+> 实现审计：当前 legacy `primesInAP_weighted` 错把 `a*p` 而不是
+> `N-a*p` 作为素数条件；它的同名 `≤ 1` 定理只是在错误对象上由
+> `a>1` 平凡成立，不能作为本步骤的 Lean 实现。详见
+> `CHEN_OMEGA_PRIMALITY_OBJECT_AUDIT.md`。
+
 
 $$
 R_1 \ll \sum_{d \mid Q} \frac{3^{\omega(d)}}{\varphi(d)} \cdot \max \sum_{\substack{a \\ (a, d) > 1}} f(a)\, \operatorname{li}(N/a).
@@ -332,7 +341,7 @@ $$
 | $\Omega$ 完整界 | `SelbergUpperBound.lean` | `chenOmega_complete_bound` | 内核已证的固定参数接口 |
 | Lemma 1 | `MertensTheorem.lean` | `prime_reciprocal_sum_bounded` | 依赖 `mertens_second_theorem`，故含 `sorryAx` |
 | Lemma 2 | `SelbergUpperBound.lean` | `divisor_sum_bound` | 经 `prime_inv_pminus1_bound → mertens_second_theorem` 依赖 `sorryAx`；另含有限计算的 `native_decide` 公理 |
-| $R_1$ 辅助界 | `SelbergUpperBound.lean` | `r1_upper_bound` | 经素数倒数和界依赖 `mertens_second_theorem`，故含 `sorryAx` |
+| $R_1$ 辅助界 | `SelbergUpperBound.lean` | `r1_upper_bound` | legacy 辅助对象；其 `primesInAP_weighted` 谓词错配，不能作为 Liu 修正或 corrected Omega 输入（见对象审计） |
 
 ## 关键数值常数
 
