@@ -39,6 +39,12 @@ The Chen-side transport map for that preferred repair is
 [`CHEN_COMPACT_SUPPORT_TRANSPORT.md`](CHEN_COMPACT_SUPPORT_TRANSPORT.md).
 The independent main-term-normalization obstruction is recorded in
 [`CHEN_MAIN_TERM_NORMALIZATION_AUDIT.md`](CHEN_MAIN_TERM_NORMALIZATION_AUDIT.md).
+After the genuine-`Li` migration, the required `a = 1` distribution supply is
+not ANT's generic principal-part Pan chain: it is the delta-weight
+specialization of the classical `3^{ω(q)}` weighted mean-value theorem. The
+exact source match, its compact-support transport, and the remaining separate
+`d=1` PNT/MainB/coefficient obligations are recorded in ANT's
+[`A1_WEIGHTED_BV_SOURCE_MATCH.md`](https://github.com/UyNewNas/analytic-number-theory-lean/blob/dev/A1_WEIGHTED_BV_SOURCE_MATCH.md).
 
 ## Architecture source
 
