@@ -25,6 +25,72 @@ The sieve parity barrier remains relevant: this supply line aims at
 prime-plus-`P₂`, not prime-plus-prime.  It must not be described as a route
 around the barrier to Goldbach.
 
+Two source-matching audits delimit the outstanding Omega work: the
+variable-`a` local-density factor is recorded in
+`CHEN_VARIABLE_A_LOCAL_DENSITY_AUDIT.md`, while
+`CHEN_OMEGA_PRIMALITY_OBJECT_AUDIT.md` establishes that the legacy
+`primesInAP_weighted` count tests primality of `a*p`, not of `N-a*p`.
+Consequently the legacy non-coprime bound is not an analytic input to the
+corrected Chen route.
+
+The companion q1 audit, `CHEN_Q1_ERROR_INTERFACE_AUDIT.md`, identifies a
+separate failure of source matching: its actual absolute double-Mobius/lcm
+sum is neither the `a = 1` Pan/BV consumer nor correctly normalized by the
+legacy `Li(N)` endpoint.  It requires a genuine `Li(N-2)` convention and a
+Chen-local dimension-two switching remainder.  The two legacy conditional
+interfaces remain only to preserve the kernel-checked *conditional*
+assembly; they are not analytic supply for the active route.
+
+`CHEN_SOURCE_OMEGA_ALIGNMENT_AUDIT.md` adds the necessary source-object
+distinction: Liu's classical Selberg estimate bounds the historical
+`chenOmega` supported by `chenF`, whereas the proved corrected counting bridge
+consumes `correctedChenOmega`.  The latter also contains a repeated-prime
+penalty.  Neither the source triple range nor the source constant `3.9404`
+has yet been transported to that corrected object.  The source-Selberg and
+q1 worklines are therefore complementary open consumers, not interchangeable
+names for one completed Omega estimate.
+
+For the Chen-specific Pan truncation seam, the separate written audit
+[`CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md`](CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md)
+proves the MainA/MainB main-term estimate on paper, and refutes the current
+absolute-value truncation distribution input: signed cancellation leaves a
+tail-only analytic obligation before a Pan/BV estimate can be applied.  It is deliberately not a Lean-certification
+claim.
+The consequent interim tail-only interface, and the preferred
+compact-support lower-sieve repair that avoids manufacturing that tail, are
+recorded in
+[`CHEN_PAN_TRUNCATION_REPAIR.md`](CHEN_PAN_TRUNCATION_REPAIR.md).
+The Chen-side transport map for that preferred repair is
+[`CHEN_COMPACT_SUPPORT_TRANSPORT.md`](CHEN_COMPACT_SUPPORT_TRANSPORT.md).
+The independent main-term-normalization obstruction is recorded in
+[`CHEN_MAIN_TERM_NORMALIZATION_AUDIT.md`](CHEN_MAIN_TERM_NORMALIZATION_AUDIT.md).
+After the genuine-`Li` migration, the required `a = 1` distribution supply is
+not ANT's generic principal-part Pan chain: it is the delta-weight
+specialization of the classical `3^{ω(q)}` weighted mean-value theorem. The
+exact source match, its compact-support transport, and the remaining separate
+`d=1` PNT/MainB/coefficient obligations are recorded in ANT's
+[`A1_WEIGHTED_BV_SOURCE_MATCH.md`](https://github.com/UyNewNas/analytic-number-theory-lean/blob/dev/A1_WEIGHTED_BV_SOURCE_MATCH.md).
+The separate lower-sieve and variable-`a` `Omega` supply lines are mapped in
+[`CHEN_ANALYTIC_SUPPLY_SEPARATION.md`](CHEN_ANALYTIC_SUPPLY_SEPARATION.md).
+
+## Active independent worklines
+
+These lines may proceed in parallel, but their outputs are not substitutes
+for one another.
+
+| Workline | Smallest next artifact | Consumer | Stop condition |
+| --- | --- | --- | --- |
+| A. Lower candidate sieve | Supported JR lower coefficients, the `d=1` `pi-Li` transfer, and the supported `a=1` weighted-BV transport | Lower bound for `correctedChenCandidates` | Reject all-divisor errors or `N/log N` as a genuine-`Li` error main term. |
+| B. Source triple Omega | Exact `chenF` support plus supported Selberg/Liu remainder and a transport to the corrected triple penalty | Triple component of `correctedChenOmega` | Do not reuse `3.9404` until every enlarged corrected range has a proved transport bound. |
+| C. q1/repeated prime | Direct AP upper sieve with `q*d<=D`, exceptional fixed-prime fibres, and the injective one-modulus weighted-BV repackaging | `primePowerSum` component of `correctedChenOmega` | Abandon this reduction if supported coefficients or `μ²3^ω` domination fail; never use the raw absolute `lcm(q,d,e)` sum. |
+| D. Variable-`a` local factors | Primitive/imprimitive split and `primePairNu(N,a,ell)` transport for the actual triple support | Any alternative direct prime-pair upper bound | A bare `a/φ(a)` bound may not be called a standard Chen/Selberg estimate. |
+
+Lines B and C meet only at the already-proved finite decomposition
+`correctedChenOmega_eq_primePower_add_triple`; line A meets them only through
+the final positivity inequality.  This separation is intentional: it makes a
+genuine missing theorem visible instead of allowing a successful result on
+one consumer to be cited for a different one.
+
 ## Architecture source
 
 - Landmark programme: the classical Chen/Jurkat--Richert/Selberg sieve

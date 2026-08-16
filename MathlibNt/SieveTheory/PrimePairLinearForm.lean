@@ -5,12 +5,15 @@ import Mathlib.Analysis.SpecialFunctions.Log.Monotone
 /-!
 # 线性型素数对一致上界 (PrimePairLinearFormBound) 的推进与台阶分解
 
-本文件推进 `PrimePairLinearFormBound` (PrimePair.lean) 的证明。目标是经典
-二线性型素数对估计 (Chen 1966 / Halberstam--Richert 1974 Ch.9):
+本文件研究 legacy `PrimePairLinearFormBound` (PrimePair.lean)。其裸
+`a/φ(a)` 右端遗漏随 N 变化的 Goldbach 局部因子，因而其中的相关 Prop
+与推导仅是条件性代数基础设施，不能被用作 corrected Chen 的解析供给：
 
     #{p₃ ≤ X : p₃ 素数, N − a·p₃ 素数} ≤ C·(a/φ(a))·X/(log X·log N),  X = N/a,
 
-统一于 1 ≤ a, 2a ≤ N。经典证明需要二线性型筛 (维度 2 的 Selberg/线性筛)
+正确替代接口须携带 `primePairNu(N,a;ell)`、原始/固定因子分裂、实际 Chen
+`a` 支撑与统一阈值，详见 `CHEN_VARIABLE_A_LOCAL_DENSITY_AUDIT.md`。
+在该修复后，经典证明仍需要二线性型筛 (维度 2 的 Selberg/线性筛)
 + Bombieri--Vinogradov/Pan 级平均分布 + Mertens 主项; 当前 ant 材料不含
 其中的平均 BV/Pan 定理 (ant 的 `bombieri_vinogradov` 只是逐参数平凡接口,
 `PanMeanValueUniform` 是开放研究输入), 故本次无法完整证明该台阶。
@@ -442,7 +445,9 @@ def LinearFormPairLocalDensityBound : Prop :=
 
     count ≤ C·(N/φ(a))/log²N,   (1 ≤ a, 2a ≤ N)
 
-经典来源: 维度 2 上界筛 + 平均分布 + 局部密度 (Chen 1966 / HR 1974 Ch.9)。
+作为 legacy 条件目标，它模拟维度 2 上界筛 + 平均分布 + 局部密度的尺度；
+但遗漏 `N`-局部奇异因子，不能直接归因于 Chen 1966 / HR 1974。正确 API
+必须先替换后才可启动此路线。
 比 `PrimePairLinearFormBound` 更强: `log²N ≥ log N·log(N/a)` 故
 `1/log²N ≤ 1/(logN·log(N/a))` (见 `PrimePairLinearFormBound.of_logSquareBound`)。 -/
 def PrimePairLinearFormLogSquareBound : Prop :=
