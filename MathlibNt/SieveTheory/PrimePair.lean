@@ -15,14 +15,17 @@ import MathlibNt.SieveTheory.TripleMain
 "线性型素数对" p₃ 集合之间的双射, 且 C(N) 的 < z 小素因子筛除条件在
 上界方向上自动放宽为 N−ap₃ 素性。
 
-第三行 `PrimePairLinearFormBound` 是经典解析台阶 (Chen 1966 的二线性型筛
-估计 / Halberstam--Richert 1974 Ch.9): 一致界
+第三行 `PrimePairLinearFormBound` 是**legacy provisional Prop**，不是当前可
+直接归因于经典二线性型筛的接口：
 
     #{p₃ ≤ X : p₃ 素数, N − a·p₃ 素数} ≤ C · (a/φ(a)) · X/(log X · log N),  X = N/a,
 
-由 ant #15 (Pan 分布) / #17 (素数对) 机制实例化 — 与 `ChenPrimePairInput`
-同级的显式外部输入 (常数先于 `∀ N a`, 见仓库纪律)。本文件给出它与目标
-之间的零 sorry 归约: `ChenPrimePairInput.of_linearFormBound`。
+该右端遗漏随 `N` 变化的 Goldbach 局部因子
+`∏_{ell | N, ell>2}(ell-1)/(ell-2)`，故只能作为旧消费者的显式假设，
+不得称为标准 Chen/Selberg 素数对供给。正确替代必须携带完整
+`primePairNu(N,a,ell)` 局部密度、原始/固定因子分裂和实际 `a` 支撑；书面
+规格见 `CHEN_VARIABLE_A_LOCAL_DENSITY_AUDIT.md`。本文件给出 legacy Prop
+与目标之间的零 sorry 条件归约: `ChenPrimePairInput.of_linearFormBound`。
 -/
 
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
@@ -191,18 +194,16 @@ theorem primePairLinearFormCount_le_pi (N a : ℕ) :
     rw [Finset.mem_filter] at hp ⊢
     exact ⟨hp.1, hp.2.1⟩)
 
-/-- **线性型素数对一致上界 (解析台阶, Chen 1966 / Halberstam--Richert 1974)**:
+/-- **legacy 线性型素数对上界（显式假设，非 source-valid Chen API）**:
 
-经典估计 (Chen 的二线性型筛 + Bombieri--Vinogradov 级分布):
+这个裸 `a/φ(a)` 形态遗漏了 `N`-局部奇异因子；它只保留给已经引用它的
+条件性归约，不宣称为经典估计：
 
     #{p₃ ≤ X : p₃ 素数, N − a·p₃ 素数} ≤ C · (a/φ(a)) · X / (log X · log N),  X = N/a,
 
 即 `PrimePairLinearFormCount N a ≤ C·(N/φ(a))·1/(log N·log(N/a))` (1 ≤ a, 2a ≤ N)。
-a/φ(a) 是奇异级数的局部密度因子 (素数对的 G(2) 因子); 本台阶是 hTripleMain
-的解析核心 `ChenPrimePairInput` 的直接来源, 由 ant #15 (Pan 分布) /
-#17 (素数对) 机制实例化, 与 `UniformJurkatRichertLowerBound` /
-`chen_distribution_condition` 同级。量词顺序: 常数 C 先于 ∀ N a (一致界),
-与仓库纪律一致; 任何把 C 放进 N 之后的版本不构成此输入。 -/
+量词顺序仍是常数 C 先于 ∀ N a；任何把 C 放进 N 之后的版本不构成一致输入。
+正确的支持型 API 见书面审计。 -/
 def PrimePairLinearFormBound : Prop :=
   ∃ C : ℝ, 0 < C ∧ ∀ N a : ℕ, 1 ≤ a → 2 * a ≤ N →
     (PrimePairLinearFormCount N a : ℝ) ≤
