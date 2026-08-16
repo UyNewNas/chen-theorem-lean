@@ -201,6 +201,10 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPrimePairInput.of_linearFormBound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPanTruncationSieveBound
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ChenPanTruncationMainTermBound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.moebiusBaseCount_signed_eq
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.abs_moebiusBaseCount_signed_le
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.four_pow_omega_le_sqrt
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.divisorWeightedSum_le
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedChenRem_sub_distributionError_eq
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.abs_correctedChenRem_sub_distributionError_le
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.baseCount_le_distributionError_add_li
