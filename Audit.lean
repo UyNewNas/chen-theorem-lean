@@ -246,3 +246,4 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1MainTermAbsorption_holds
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.sourceOmegaPairs_mem_witness
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedTripleNonBoundaryIndex_mem_witness
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ordered_triple_sq_le_N

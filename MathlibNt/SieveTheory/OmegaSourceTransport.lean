@@ -73,4 +73,18 @@ theorem correctedTripleNonBoundaryIndex_mem_witness {N : ℕ} {w : ℕ × ℕ}
   simpa only [correctedTripleNonBoundaryIndex, Finset.mem_filter] using
     (Finset.mem_filter.mp hw).2
 
+/-- The ordering retained by the corrected triple count gives the integer
+core of the source square-root cutoff.  No estimate is involved: the square
+of `p₂` may replace `p₂*p₃` because `p₂ ≤ p₃`, and the complement is at most
+`N`. -/
+theorem ordered_triple_sq_le_N {N p p₁ p₂ p₃ : ℕ}
+    (hp₂₃ : p₂ ≤ p₃) (hprod : p₁ * p₂ * p₃ = N - p) :
+    p₁ * p₂ * p₂ ≤ N := by
+  calc
+    p₁ * p₂ * p₂ = p₁ * (p₂ * p₂) := by rw [Nat.mul_assoc]
+    _ ≤ p₁ * (p₂ * p₃) := Nat.mul_le_mul_left p₁ (Nat.mul_le_mul_left p₂ hp₂₃)
+    _ = p₁ * p₂ * p₃ := by rw [Nat.mul_assoc]
+    _ = N - p := hprod
+    _ ≤ N := Nat.sub_le _ _
+
 end MathlibNt.SieveTheory.SwitchingPrinciple
