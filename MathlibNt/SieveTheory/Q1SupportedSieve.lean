@@ -69,4 +69,35 @@ theorem q1SupportedCoreCount_le_one_of_prime_dvd_N {N q : ℕ}
           simpa [hqp]
     _ = 1 := Finset.card_singleton q
 
+/-- Every divisor of the corrected sifting product is coprime to a prime in
+the q¹ range.  This is the finite separation which turns the surviving AP
+modulus from an lcm into the product `q * r`. -/
+theorem q1_coprime_sifting_divisor {N q r : ℕ} (hq : q.Prime)
+    (hqz : correctedChenZ N ≤ q) (hr : r ∣ correctedChenSiftingProduct N) :
+    Nat.Coprime q r :=
+  (coprime_q_siftingProduct hq hqz).coprime_dvd_right hr
+
+/-- The q¹ prime is recoverable from a surviving supported modulus.  Hence
+`(q,r) ↦ q*r` is injective when `q` is in the large-prime range and `r` is a
+divisor of the corrected sifting product.  This is only the finite
+repackaging part of the future weighted-BV application. -/
+theorem q1_supported_modulus_injective {N q q' r r' : ℕ}
+    (hq : q.Prime) (hqz : correctedChenZ N ≤ q)
+    (hq' : q'.Prime) (hq'z : correctedChenZ N ≤ q')
+    (hr : r ∣ correctedChenSiftingProduct N)
+    (hr' : r' ∣ correctedChenSiftingProduct N)
+    (hmul : q * r = q' * r') : q = q' ∧ r = r' := by
+  have hq_dvd : q ∣ q' * r' := by
+    rw [← hmul]
+    exact dvd_mul_right q r
+  rcases (Nat.Prime.dvd_mul hq).mp hq_dvd with hq_q' | hq_r'
+  · have hqq' : q = q' :=
+      (prime_dvd_prime_iff_eq (Nat.prime_iff.mp hq)
+        (Nat.prime_iff.mp hq')).mp hq_q'
+    refine ⟨hqq', ?_⟩
+    apply Nat.eq_of_mul_eq_mul_left (Nat.Prime.pos hq)
+    simpa [hqq'] using hmul
+  · exact False.elim (Nat.not_coprime_of_dvd_of_dvd hq.one_lt (by rfl) hq_r'
+      (q1_coprime_sifting_divisor hq hqz hr'))
+
 end MathlibNt.SieveTheory.SwitchingPrinciple
