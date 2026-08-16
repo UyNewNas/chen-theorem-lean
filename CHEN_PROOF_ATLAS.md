@@ -31,8 +31,9 @@ proves the MainA/MainB main-term estimate on paper, and refutes the current
 absolute-value truncation distribution input: signed cancellation leaves a
 tail-only analytic obligation before a Pan/BV estimate can be applied.  It is deliberately not a Lean-certification
 claim.
-The consequent tail-only replacement interface and its exact remaining
-analytic obligation are recorded in
+The consequent interim tail-only interface, and the preferred
+compact-support lower-sieve repair that avoids manufacturing that tail, are
+recorded in
 [`CHEN_PAN_TRUNCATION_REPAIR.md`](CHEN_PAN_TRUNCATION_REPAIR.md).
 
 ## Architecture source

@@ -293,11 +293,13 @@ the uncovered single-modulus tail
 ```
 
 The covered range is the part to which the a=1 weighted Pan/BV mean-value
-theorem applies.  The exact replacement API, its proof reduction, and its
-falsification checks are recorded in
+theorem applies.  The tail formulation is an interim repair of the current
+all-divisor interface; the preferred source-faithful repair retains compact
+lower-sieve coefficient support.  Both routes, their proof reductions, and
+their falsification checks are recorded in
 [`CHEN_PAN_TRUNCATION_REPAIR.md`](CHEN_PAN_TRUNCATION_REPAIR.md).  A claim
-that Chen is complete before this tail input and the corresponding averaged
-estimate are supplied is false.
+that Chen is complete before one of these sound repairs and the corresponding
+averaged estimate are supplied is false.
 
 ## 5. Atlas entry and stop condition
 
@@ -311,7 +313,7 @@ current absolute-value truncation error       [refuted]
           v
 signed Möbius correction                      [proved on paper]
           +
-uncovered single-modulus tail                  [conditional: open]
+tail bound or compact-support sieve repair     [conditional: open]
           |
           v
 CorrectedChenPanTruncationInput               [conditional]

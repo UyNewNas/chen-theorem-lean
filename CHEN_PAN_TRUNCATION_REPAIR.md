@@ -4,10 +4,15 @@
 
 `ChenPanTruncationSieveBound` must not be repaired by strengthening its
 distribution theorem.  It is false because it takes absolute values of the
-individual Möbius-expanded progression errors.  The useful replacement is a
-strictly smaller statement: a bound only for the **uncovered tail** of the
-single-modulus error.  The Möbius correction is already disposed of by the
-signed finite identity proved in `PanTruncation.lean`.
+individual Möbius-expanded progression errors.  Relative to the current
+all-divisor `errSum(1)` object, a tail-only bound is a logically sufficient
+replacement: the Möbius correction is already disposed of by the signed
+finite identity proved in `PanTruncation.lean`.
+
+The source audit in Section 5 adds an important qualification.  The preferred
+long-term repair is not to prove such an all-divisor tail at all, but to retain
+the compact support of the lower-sieve coefficients in the error sum.  This is
+how the classical distribution range is normally preserved.
 
 This is a written proof-architecture audit, not a Lean certification claim.
 
@@ -36,7 +41,7 @@ The covered range `2≤d≤D` is separately placed into the a=1 Pan/BV modulus
 sum by the existing structural reduction.  Thus no theorem about
 `Δ_N(lcm(d,e))` is required.
 
-The replacement analytic input is precisely:
+An interim replacement analytic input is precisely:
 
 ```text
 ChenPanTruncationTailBound:
@@ -139,9 +144,11 @@ The replacement has a deliberately narrow, testable obligation.
   then places absolute values around individual `lcm(d,e)` errors, it has
   reverted to the refuted statement and must be rejected.
 
-These checks give a concrete stop condition: until a source theorem is
-matched to `(Tail)` with its exact modulus range, weights, and arbitrary-`A`
-quantifiers, the Chen chain remains conditional at this one analytic node.
+These checks give a concrete stop condition for the interim route: until a
+source theorem is matched to `(Tail)` with its exact modulus range, weights,
+and arbitrary-`A` quantifiers, that route remains conditional.  Section 6
+gives the preferred alternative which removes the all-divisor tail at the
+lower-sieve interface.
 
 ## 5. Literature cross-check: Liu's correction is a warning, not a proof
 
@@ -171,10 +178,38 @@ two formulations are reconciled.
 
 Primary source: [Liu, arXiv:2203.07871, Section IV](https://arxiv.org/abs/2203.07871).
 
-## 6. Formalization consequence (deferred)
+## 6. Preferred compact-support interface (deferred)
 
-When formal work resumes, the sound API change is to replace the false
-`ChenPanTruncationSieveBound` and its constructor
-`CorrectedChenPanTruncationInput.of_sieveBound` by a tail-only Prop and a
-constructor using `(4) + (Tail)`.  This is a semantic repair, not a proof by
-axiom or a weakening of the audit.  No Lean edit is made by this document.
+The ANT lower-sieve reduction currently derives an `errSum(1)` bound from a
+lower Möbius sequence by the coarse inequality
+
+```text
+errSum(μ⁻) ≤ errSum(1).
+```
+
+That loses the support of `μ⁻`.  The classical analogue instead keeps the
+error sum over the support of the lower-sieve coefficients, conventionally
+`d≤D`.  The preferred replacement interface should therefore select, uniformly
+in `N`, coefficients `λ⁻_{N,D}` satisfying
+
+```text
+IsLowerMoebius(λ⁻),
+|λ⁻(d)| ≤ 1,
+λ⁻(d) ≠ 0  =>  d ≤ D(N,B),
+```
+
+and retain `errSum(λ⁻)` in the lower-sieve conclusion.  The a=1 Pan/BV input
+then controls its nontrivial moduli directly; `d=1` is handled by the
+quantitative PNT error.  No all-divisor tail is created.
+
+Accordingly there are two honest future routes:
+
+1. prove `(Tail)` for the present broad interface, after an exact source
+   match; or
+2. rework the lower-sieve API so that compactly supported coefficients are
+   preserved, then match the resulting supported error sum to the classical
+   Pan/BV range.
+
+Route 2 is mathematically closer to the source proof and is the recommended
+one.  Neither route is a proof by axiom or a weakening of the audit.  No Lean
+edit is made by this document.
