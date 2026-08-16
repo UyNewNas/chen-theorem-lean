@@ -73,6 +73,24 @@ exact source match, its compact-support transport, and the remaining separate
 The separate lower-sieve and variable-`a` `Omega` supply lines are mapped in
 [`CHEN_ANALYTIC_SUPPLY_SEPARATION.md`](CHEN_ANALYTIC_SUPPLY_SEPARATION.md).
 
+## Active independent worklines
+
+These lines may proceed in parallel, but their outputs are not substitutes
+for one another.
+
+| Workline | Smallest next artifact | Consumer | Stop condition |
+| --- | --- | --- | --- |
+| A. Lower candidate sieve | Supported JR lower coefficients, the `d=1` `pi-Li` transfer, and the supported `a=1` weighted-BV transport | Lower bound for `correctedChenCandidates` | Reject all-divisor errors or `N/log N` as a genuine-`Li` error main term. |
+| B. Source triple Omega | Exact `chenF` support plus supported Selberg/Liu remainder and a transport to the corrected triple penalty | Triple component of `correctedChenOmega` | Do not reuse `3.9404` until every enlarged corrected range has a proved transport bound. |
+| C. q1/repeated prime | Direct AP upper sieve with `q*d<=D`, exceptional fixed-prime fibres, and the injective one-modulus weighted-BV repackaging | `primePowerSum` component of `correctedChenOmega` | Abandon this reduction if supported coefficients or `μ²3^ω` domination fail; never use the raw absolute `lcm(q,d,e)` sum. |
+| D. Variable-`a` local factors | Primitive/imprimitive split and `primePairNu(N,a,ell)` transport for the actual triple support | Any alternative direct prime-pair upper bound | A bare `a/φ(a)` bound may not be called a standard Chen/Selberg estimate. |
+
+Lines B and C meet only at the already-proved finite decomposition
+`correctedChenOmega_eq_primePower_add_triple`; line A meets them only through
+the final positivity inequality.  This separation is intentional: it makes a
+genuine missing theorem visible instead of allowing a successful result on
+one consumer to be cited for a different one.
+
 ## Architecture source
 
 - Landmark programme: the classical Chen/Jurkat--Richert/Selberg sieve
