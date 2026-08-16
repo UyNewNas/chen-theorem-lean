@@ -1161,7 +1161,7 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
   have hA_le_n : A ≤ (n : ℝ) := by
     dsimp [n]
     exact Nat.le_ceil A
-  have hA_le_n1 : A + 1 ≤ (n : ℝ) + 1 := by linarith [hA_le_n]
+  have hA_le_n1 : A ≤ (n : ℝ) + 1 := by linarith [hA_le_n]
   have hn1 : 1 ≤ n := by
     -- A > 0 ⟹ ceil A ≥ 1 (ceil_pos)
     have hApos : 0 < A := hA
@@ -1238,22 +1238,27 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
         have hdiv : Real.log (N : ℝ) / Real.log 2 ≤ (1 / Real.log 2) * Real.log (N : ℝ) := by
           rw [div_eq_mul_inv]
           rw [mul_comm (Real.log (N : ℝ))]
-          rfl
+          have hinv : (Real.log 2)⁻¹ = 1 / Real.log 2 := by exact one_div _
+          rw [hinv]
         nlinarith
       exact le_trans hleft hright
     -- 核心: √N·log N·log^A N ≤ N
     have hsqrtN : (Real.log (N : ℝ)) ^ (n + 1) ≤ Real.sqrt (N : ℝ) := hsqrt₁ N hNx0₁
     have hlogpow : (Real.log (N : ℝ)) ^ A ≤ (Real.log (N : ℝ)) ^ (n + 1) := by
-      apply Real.rpow_le_rpow_of_exponent_le hlog1
-      exact hA_le_n1
+      have hAn1 : A ≤ ((n + 1 : ℕ) : ℝ) := by
+        have hcast : ((n + 1 : ℕ) : ℝ) = (n : ℝ) + 1 := by norm_num
+        rw [hcast]
+        exact hA_le_n1
+      exact Real.rpow_le_rpow_of_exponent_le hlog1 hAn1
     have hcore : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤ (N : ℝ) := by
       -- √N·log N·log^A N = √N·log^{A+1} N ≤ √N·log^{n+1} N ≤ √N·√N = N
       have hnn : 0 ≤ Real.sqrt (N : ℝ) := Real.sqrt_nonneg _
       have hpow : Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
           (Real.log (N : ℝ)) ^ (A + 1) := by
+        -- x^1·x^A = x^(1+A) = x^(A+1)
         rw [← Real.rpow_add hlogpos]
-        rw [Real.rpow_one]
-        rw [mul_comm]
+        congr 1
+        ring
       have hle1 : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤
           Real.sqrt (N : ℝ) * (Real.log (N : ℝ)) ^ (A + 1) := by
         have hre : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
@@ -1263,13 +1268,18 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
       have hle2 : Real.sqrt (N : ℝ) * (Real.log (N : ℝ)) ^ (A + 1) ≤
           Real.sqrt (N : ℝ) * Real.sqrt (N : ℝ) := by
         have hlogA1 : (Real.log (N : ℝ)) ^ (A + 1) ≤ (Real.log (N : ℝ)) ^ (n + 1) := by
-          apply Real.rpow_le_rpow_of_exponent_le hlog1
-          exact hA_le_n1
+          have hA1n1 : A + 1 ≤ ((n + 1 : ℕ) : ℝ) := by
+            have hcast : ((n + 1 : ℕ) : ℝ) = (n : ℝ) + 1 := by norm_num
+            rw [hcast]
+            linarith [hA_le_n]
+          exact Real.rpow_le_rpow_of_exponent_le hlog1 hA1n1
         exact mul_le_mul_of_nonneg_left (le_trans hlogA1 hsqrtN) hnn
       have hle3 : Real.sqrt (N : ℝ) * Real.sqrt (N : ℝ) ≤ (N : ℝ) := by
-        rw [← Real.sqrt_sq_eq_abs]
-        rw [abs_of_nonneg (by positivity : 0 ≤ (N : ℝ))]
-        rfl
+        have hnn : 0 ≤ (N : ℝ) := by positivity
+        have hsq := Real.sq_sqrt hnn
+        -- hsq: (√N)^2 = N;  √N·√N = (√N)^2
+        rw [← sq]
+        exact le_of_eq hsq
       exact le_trans (le_trans hle1 hle2) hle3
     -- 装配
     have hcN : (1 + 1 / Real.log 2) * Real.log (N : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
