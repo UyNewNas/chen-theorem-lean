@@ -163,7 +163,7 @@ theorem abs_correctedChenRem_sub_distributionError_le (N d : ℕ)
           |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
             (μ e : ℝ) * (((Finset.range N).filter (fun p =>
               p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| := by
-          le_rfl
+          exact le_rfl
 
 /-- **基计数 ≤ 分布误差 + li 主项**: `base(q) = Δ'(q) + li(N−2)/φ(q)`
 (`supportAPBaseCount_distributionError` 重排), 三角不等式得
