@@ -18,18 +18,31 @@ namespace MathlibNt.SieveTheory.SwitchingPrinciple
 
 open scoped Classical
 
+/-- The factor-range predicate used by the source Ω indicator `chenF`. -/
+def sourceOmegaFactorCondition (N a : ℕ) : Prop :=
+  ∃ p₁ p₂ : ℕ, p₁.Prime ∧ p₂.Prime ∧
+    (N : ℝ) ^ (1 / 10 : ℝ) < p₁ ∧
+    p₁ ≤ (N : ℝ) ^ (1 / 3 : ℝ) ∧
+    (N : ℝ) ^ (1 / 3 : ℝ) < p₂ ∧
+    (p₂ : ℝ) ≤ ((N : ℝ) / p₁) ^ (1 / 2 : ℝ) ∧
+    a = p₁ * p₂
+
+/-- The remaining-prime condition in the source Ω sum. -/
+def sourceOmegaPrimeCondition (N a p₃ : ℕ) : Prop :=
+  p₃.Prime ∧ a * p₃ ≤ N ∧ (N - a * p₃).Prime
+
+/-- `chenF` is exactly the real indicator of the named source factor
+condition.  Naming this equality prevents future finite transports from
+silently changing the source range. -/
+theorem chenF_eq_sourceOmegaFactorIndicator (N a : ℕ) :
+    chenF N a = if sourceOmegaFactorCondition N a then 1 else 0 := rfl
+
 /-- The finite pairs counted by the source Ω sum, presented without the
 real-valued indicator `chenF`.  The first coordinate is `a = p₁*p₂`; the
 second is the remaining prime `p₃`. -/
 noncomputable def sourceOmegaPairs (N : ℕ) : Finset (ℕ × ℕ) :=
   ((Finset.range (N + 1)).product (Finset.range (N + 1))).filter (fun w =>
-    ∃ p₁ p₂ : ℕ, p₁.Prime ∧ p₂.Prime ∧
-      (N : ℝ) ^ (1 / 10 : ℝ) < p₁ ∧
-      p₁ ≤ (N : ℝ) ^ (1 / 3 : ℝ) ∧
-      (N : ℝ) ^ (1 / 3 : ℝ) < p₂ ∧
-      (p₂ : ℝ) ≤ ((N : ℝ) / p₁) ^ (1 / 2 : ℝ) ∧
-      w.1 = p₁ * p₂ ∧ w.2.Prime ∧ w.1 * w.2 ≤ N ∧
-      (N - w.1 * w.2).Prime)
+    sourceOmegaFactorCondition N w.1 ∧ sourceOmegaPrimeCondition N w.1 w.2)
 
 /-- The part of the corrected triple penalty whose strict cutoff conditions
 already match the source Ω ranges.  Boundary fibres
@@ -56,7 +69,8 @@ theorem sourceOmegaPairs_mem_witness {N : ℕ} {w : ℕ × ℕ}
       (p₂ : ℝ) ≤ ((N : ℝ) / p₁) ^ (1 / 2 : ℝ) ∧
       w.1 = p₁ * p₂ ∧ w.2.Prime ∧ w.1 * w.2 ≤ N ∧
       (N - w.1 * w.2).Prime := by
-  simpa only [sourceOmegaPairs, Finset.mem_filter] using
+  simpa only [sourceOmegaPairs, sourceOmegaFactorCondition,
+    sourceOmegaPrimeCondition, Finset.mem_filter] using
     (Finset.mem_filter.mp hw).2
 
 /-- Membership in the corrected non-boundary index exposes a triple witness
