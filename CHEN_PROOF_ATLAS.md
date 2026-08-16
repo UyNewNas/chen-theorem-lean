@@ -33,6 +33,14 @@ variable-`a` local-density factor is recorded in
 Consequently the legacy non-coprime bound is not an analytic input to the
 corrected Chen route.
 
+The companion q1 audit, `CHEN_Q1_ERROR_INTERFACE_AUDIT.md`, identifies a
+separate failure of source matching: its actual absolute double-Mobius/lcm
+sum is neither the `a = 1` Pan/BV consumer nor correctly normalized by the
+legacy `Li(N)` endpoint.  It requires a genuine `Li(N-2)` convention and a
+Chen-local dimension-two switching remainder.  The two legacy conditional
+interfaces remain only to preserve the kernel-checked *conditional*
+assembly; they are not analytic supply for the active route.
+
 For the Chen-specific Pan truncation seam, the separate written audit
 [`CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md`](CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md)
 proves the MainA/MainB main-term estimate on paper, and refutes the current
