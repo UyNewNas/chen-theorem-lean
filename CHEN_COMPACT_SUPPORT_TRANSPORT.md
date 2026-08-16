@@ -89,6 +89,12 @@ Since `|μ⁻_N(d)|≤1≤w(d)`, (4) also controls its supported sub-sum.  This 
 where the forbidden-divisor expansion ends.  In particular, no subsequent
 step may form `|Δ_N(lcm(d,e))|` term by term.
 
+After the genuine-`Li` migration, the endpoint used in `S_N.totalMass` and in
+`Δ_N` is the same `Li(N-2)`.  The displayed `[li(N-2)-li(N)]/phi(d)` term is
+then absent identically: the e=1 base count and the exact same Li main term
+cancel.  Only the signed MainB correction remains, so the old MainA estimate
+becomes unnecessary rather than another analytic input.
+
 Using the triangle inequality only after (3) has been collapsed, (2) gives
 
 ```text

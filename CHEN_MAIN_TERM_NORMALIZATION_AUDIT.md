@@ -99,7 +99,48 @@ The familiar `N/log N` formula may remain as a coarse asymptotic consequence
 for main-term lower bounds.  It must not be the definition against which an
 arbitrary-log-saving remainder is measured.
 
-## 4. Stop condition and acceptance
+## 4. Exact cancellation gained by the migration
+
+The normalization repair is not merely defensive.  It removes an artificial
+MainA term from the truncation identity.  With
+
+```text
+totalMass_N = Li(N-2),
+Delta_N(d) = base_N(d) - Li(N-2)/phi(d),
+```
+
+the e=1 term in the finite Möbius expansion of `rem_N(d)` is exactly
+`base_N(d)`, while the subtracted distribution error contains the same
+`base_N(d)-Li(N-2)/phi(d)`.  Hence for every `d|P_N`,
+
+```text
+rem_N(d) - Delta_N(d)
+ = sum_{1!=e|F_N} mu(e) base_N(lcm(d,e)).                      (3)
+```
+
+There is no residual
+
+```text
+[li(N-2)-li(N)]/phi(d)
+```
+
+because both sides use the same genuine endpoint.  The signed finite
+Möbius identity then controls (3) by the previously audited MainB argument.
+Thus the migration replaces
+
+```text
+working-main-term mismatch + MainA + MainB
+```
+
+by
+
+```text
+exactly matched Li main term + MainB.
+```
+
+This is a structural simplification, not a new analytic assumption.
+
+## 5. Stop condition and acceptance
 
 Do not attempt to prove `ChenWeightedPanInput`, a truncation input, or a
 supported d=1 PNT facade at arbitrary exponent while their error definitions
