@@ -1146,13 +1146,6 @@ lemma omega_forbidden_le (N : ℕ) (hN : 2 ≤ N) :
           N.primeFactors.card := Finset.card_le_card hsub2
       omega
 
-/-- **MainB 部分的最终 log^A 吸收 (chen #39)**: 对任意 `A > 0`, 最终
-`(1 + ω(F(N)))·16^8·√N ≤ C·N/log^A N`.
-证明链: `ω(F) ≤ 1 + ω(N)` (omega_forbidden_le) + `ω(N) ≤ log N/log 2`
-(omega_le_log_two) ⟹ `1+ω(F) ≤ (1+1/log 2)·log N` (log N ≥ 1);
-`eventual_log_pow_le_sqrt` 给最终 `log^{n+1} N ≤ √N` (n = ceil A),
-`log^A N ≤ log^{n+1} N` (log ≥ 1); 故 `√N·log N·log^A N ≤ N`;
-组合得目标. 零 sorry. -/
 /-- **MainB 部分的最终 log^A 吸收 (chen #39, ℕ 指数版)**: 对任意 `A`, 最终
 `(1 + ω(F(N)))·16^8·√N ≤ C·N/(log N)^A`.
 证明链: `ω(F) ≤ 1 + ω(N)` (omega_forbidden_le) + `ω(N) ≤ log N/log 2`
@@ -1209,12 +1202,13 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
               ≤ 1 + (1 + (N.primeFactors.card : ℝ)) := by linarith
           _ = 2 + (N.primeFactors.card : ℝ) := by ring
           _ ≤ 2 + Real.log (N : ℝ) / Real.log 2 := by
-                exact add_le_add_left hNo2 2
+                exact add_le_add_right hNo2 2
       have hright : 2 + Real.log (N : ℝ) / Real.log 2 ≤
           (1 + 1 / Real.log 2) * Real.log (N : ℝ) := by
         have hre : (1 + 1 / Real.log 2) * Real.log (N : ℝ) =
             Real.log (N : ℝ) + Real.log (N : ℝ) / Real.log 2 := by
-          rw [add_mul, one_mul, div_eq_mul_inv, mul_comm, mul_one_div]
+          rw [add_mul, one_mul]
+          field_simp
           ring
         rw [hre]
         linarith [hlog2N]
@@ -1222,24 +1216,21 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
     -- 核心: √N·log N·(log N)^A ≤ N
     have hsqrtN : (Real.log (N : ℝ)) ^ (A + 1) ≤ Real.sqrt (N : ℝ) := hsqrt₁ N hNx0₁
     have hlogpow : (Real.log (N : ℝ)) ^ A ≤ (Real.log (N : ℝ)) ^ (A + 1) := by
-      have hlog1n : 1 ≤ Real.log (N : ℝ) := hlog1
       have hAl : A ≤ A + 1 := by omega
-      exact pow_le_pow_right₀ (by positivity : 0 ≤ Real.log (N : ℝ)) hlog1n hAl
+      exact pow_le_pow_right₀ hlog1 hAl
     have hcore : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤ (N : ℝ) := by
       have hnn : 0 ≤ Real.sqrt (N : ℝ) := Real.sqrt_nonneg _
       have hle1 : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤
           Real.sqrt (N : ℝ) * (Real.log (N : ℝ)) ^ (A + 1) := by
-        have hprod : Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A ≤
+        -- √N·(log·log^A) = √N·log^(A+1) (pow_succ 结合)
+        have hpow : Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
             (Real.log (N : ℝ)) ^ (A + 1) := by
-          -- log^(A+1) = log^A·log (pow_succ)
-          have hpow : (Real.log (N : ℝ)) ^ (A + 1) =
-              (Real.log (N : ℝ)) ^ A * Real.log (N : ℝ) := by
-            rw [pow_succ']
-            ring
-          rw [hpow]
-          rw [mul_comm]
+          rw [← pow_succ]
           rfl
-        exact mul_le_mul_of_nonneg_left hprod hnn
+        have hre : Real.sqrt (N : ℝ) * Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A =
+            Real.sqrt (N : ℝ) * (Real.log (N : ℝ) * (Real.log (N : ℝ)) ^ A) := by ring
+        rw [hre, hpow]
+        rfl
       have hle2 : Real.sqrt (N : ℝ) * (Real.log (N : ℝ)) ^ (A + 1) ≤
           Real.sqrt (N : ℝ) * Real.sqrt (N : ℝ) := by
         exact mul_le_mul_of_nonneg_left hsqrtN hnn
