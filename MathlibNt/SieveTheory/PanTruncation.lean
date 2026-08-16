@@ -471,7 +471,7 @@ theorem abs_moebiusBaseCount_signed_le (N d : ℕ) (hN : 2 ≤ N) (hEven : Even 
     |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
       (μ e : ℝ) * (((Finset.range N).filter (fun p =>
         p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)| ≤
-      (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) := by
+      ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) := by
   classical
   let F : ℕ := correctedChenForbiddenProduct N
   have hEq := moebiusBaseCount_signed_eq N d hN
@@ -675,7 +675,7 @@ lemma divisorWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
     (∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
         ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
       (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) ≤
-      (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+      ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
   classical
   let F : ℕ := correctedChenForbiddenProduct N
   let P : ℕ := correctedChenSiftingProduct N
@@ -780,7 +780,7 @@ lemma divisorWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
           have hc : (S.card : ℝ) ≤ (1 + F.primeFactors.card : ℝ) := by exact_mod_cast hcardS
           have hpos : 0 ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by positivity
           exact mul_le_mul_of_nonneg_right hc hpos
-    _ = (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+    _ = ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
           simp [F, mul_assoc]
 
 
@@ -1037,7 +1037,7 @@ lemma swapWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
         |∑ e ∈ (correctedChenForbiddenProduct N).divisors.filter (fun e => e ≠ 1),
           (μ e : ℝ) * (((Finset.range N).filter (fun p =>
             p.Prime ∧ 2 ≤ N - p ∧ p ≡ N [MOD Nat.lcm d e])).card : ℝ)|) ≤
-      (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+      ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
   classical
   have hswap := swap_weightedSum_eq N hN
   have hdiv := divisorWeightedSum_le N hN hEven
@@ -1050,7 +1050,7 @@ lemma swapWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
         = (∑ p ∈ (Finset.range N).filter (fun p => p.Prime ∧ 2 ≤ N - p ∧
             ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
           (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) := hswap
-    _ ≤ (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := hdiv
+    _ ≤ ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := hdiv
 
 /-- **√N·polylog 吸收 (chen #39)**: 对任意 `A`, 最终 `log^{A+1} N ≤ √N`.
 证明: `isLittleO_log_rpow_atTop (1/(2(A+1)))` 给出最终 `log x ≤ x^{1/(2(A+1))}`,
@@ -1155,13 +1155,13 @@ lemma omega_forbidden_le (N : ℕ) (hN : 2 ≤ N) :
 组合得目标. 零 sorry. -/
 lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
     ∃ C : ℝ, 0 < C ∧ ∃ x₀ : ℕ,
-      ∀ N : ℕ, x₀ ≤ N → (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
+      ∀ N : ℕ, x₀ ≤ N → ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
         C * (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
   let n : ℕ := Nat.ceil A
   have hA_le_n : A ≤ (n : ℝ) := by
     dsimp [n]
     exact Nat.le_ceil A
-  have hA_le_n1 : A + 1 ≤ (n : ℝ) + 1 := by linarith
+  have hA_le_n1 : A + 1 ≤ (n : ℝ) + 1 := by linarith [hA_le_n]
   have hn1 : 1 ≤ n := by
     -- A > 0 ⟹ ceil A ≥ 1
     have hApos : 0 < A := hA
@@ -1208,7 +1208,7 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
     have hFo := omega_forbidden_le N hN2
     have hNo := omega_le_log_two N hN2
     -- 1+ω(F) ≤ (1+1/log 2)·log N
-    have h1wo : (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
+    have h1wo : ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) ≤
         (1 + 1 / Real.log 2) * Real.log (N : ℝ) := by
       have hc : ((correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
           ((1 + N.primeFactors.card : ℕ) : ℝ) := by exact_mod_cast hFo
@@ -1218,7 +1218,7 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
       -- ω(F) ≤ 1 + ω(N) ≤ 1 + log N/log 2; 1 + ω(F) ≤ 2 + log N/log 2 ≤ (1+1/log 2)·log N
       -- (最后一步: 2 ≤ log N 且 1/log 2 ≥ 1)
       have hNo' : (N.primeFactors.card : ℝ) ≤ Real.log (N : ℝ) / Real.log 2 := hNo
-      have hleft : 1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ ≤
+      have hleft : (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
           2 + Real.log (N : ℝ) / Real.log 2 := by
         have hc2 : (correctedChenForbiddenProduct N).primeFactors.card : ℝ ≤ 1 + (N.primeFactors.card : ℝ) := by
           have hcast : ((correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
@@ -1279,7 +1279,7 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
         simpa [mul_assoc, mul_comm, mul_left_comm] using hre
       have hmul := mul_le_mul_of_nonneg_left hdiv hnn
       -- hmul: (1+1/log2)·16^8·(√N·log N) ≤ (1+1/log2)·16^8·(N/log^A N)
-      have hleft : (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
+      have hleft : ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) ≤
           (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * (Real.sqrt (N : ℝ) * Real.log (N : ℝ)) := by
         have h16nn : 0 ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by positivity
         have hm1 := mul_le_mul_of_nonneg_right h1wo h16nn
