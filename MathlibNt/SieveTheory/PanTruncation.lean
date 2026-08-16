@@ -1163,15 +1163,11 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
     exact Nat.le_ceil A
   have hA_le_n1 : A + 1 ≤ (n : ℝ) + 1 := by linarith [hA_le_n]
   have hn1 : 1 ≤ n := by
-    -- A > 0 ⟹ ceil A ≥ 1
+    -- A > 0 ⟹ ceil A ≥ 1 (ceil_pos)
     have hApos : 0 < A := hA
-    by_contra h0
-    have hn0 : n = 0 := by omega
-    have hc0 : (Nat.ceil A : ℝ) = 0 := by
-      dsimp [n] at hn0
-      exact_mod_cast hn0
-    have hle : A ≤ (Nat.ceil A : ℝ) := Nat.le_ceil A
-    linarith
+    have hceilpos : 0 < Nat.ceil A := (Nat.ceil_pos.mpr hApos)
+    dsimp [n]
+    exact Nat.succ_le_iff.mpr hceilpos
   rcases eventual_log_pow_le_sqrt n with ⟨x₀₁, hsqrt₁⟩
   have hlog1ev : ∀ᶠ x : ℝ in atTop, (2 : ℝ) ≤ Real.log x := by
     exact (Real.tendsto_log_atTop.eventually_ge_atTop 2)
@@ -1220,12 +1216,21 @@ lemma mainB_sqrt_absorbed (A : ℝ) (hA : 0 < A) :
       have hNo' : (N.primeFactors.card : ℝ) ≤ Real.log (N : ℝ) / Real.log 2 := hNo
       have hleft : (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
           2 + Real.log (N : ℝ) / Real.log 2 := by
-        have hc2 : (correctedChenForbiddenProduct N).primeFactors.card : ℝ ≤ 1 + (N.primeFactors.card : ℝ) := by
+        have hc2 : ((correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤ 1 + (N.primeFactors.card : ℝ) := by
           have hcast : ((correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
               ((1 + N.primeFactors.card : ℕ) : ℝ) := hc
           norm_num at hcast ⊢
           linarith
-        linarith
+        have hNo2 : (N.primeFactors.card : ℝ) ≤ Real.log (N : ℝ) / Real.log 2 := hNo
+        calc
+          (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)
+              ≤ 1 + (1 + (N.primeFactors.card : ℝ)) := by
+                have hc2' : ((correctedChenForbiddenProduct N).primeFactors.card : ℝ) ≤
+                    1 + (N.primeFactors.card : ℝ) := hc2
+                linarith
+          _ = 2 + (N.primeFactors.card : ℝ) := by ring
+          _ ≤ 2 + Real.log (N : ℝ) / Real.log 2 := by
+                exact add_le_add_left hNo2 2
       have hright : 2 + Real.log (N : ℝ) / Real.log 2 ≤
           (1 + 1 / Real.log 2) * Real.log (N : ℝ) := by
         -- 2 ≤ log N 且 log N/log 2 ≤ (1/log 2)·log N ⟹ 2 + log N/log 2 ≤ (1 + 1/log 2)·log N
