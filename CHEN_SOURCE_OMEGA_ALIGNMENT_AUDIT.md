@@ -115,6 +115,44 @@ For each fixed boundary prime, the crude divisor-pair count is at most
 against `N/log^2 N`; nevertheless the actual finite predicate, injectivity,
 and an explicit eventual inequality must be proved before it is consumed.
 
+Here is the needed elementary calculation.  Put
+`t=floor(N^(1/10))`.  For sufficiently large `N`, `t >= N^(1/10)/2`.  If the
+first boundary `p_1=t` occurs, forgetting primality and the ordering only
+enlarges the number of possible pairs `(p_2,p_3)` to
+
+```text
+sum_{u <= N/t} floor(N/(t*u))
+ <= (N/t) (1 + log(N/t))
+ <= 2 N^(9/10) (1 + log N).                                   (E1)
+```
+
+The last inequality uses the elementary harmonic-sum bound and the lower
+bound on `t`.  Each possible pair determines at most one complement prime
+`p=N-t*p_2*p_3`, so (E1) bounds the corresponding penalty fibre even before
+the candidate restrictions are imposed.
+
+If `s=N^(1/3)` is integral and the second boundary `p_2=s` occurs, the same
+argument, now summing `p_1*p_3 <= N/s`, gives
+
+```text
+sum_{u <= N/s} floor(N/(s*u))
+ <= N^(2/3) (1 + log N).                                      (E2)
+```
+
+The overlap of the two fibres may be counted twice, which is harmless for an
+upper bound.  Standard eventual growth gives both (E1) and (E2) as
+`o(N/log^2 N)`.  Thus the desired written target is a concrete inequality
+
+```text
+correctedTriplePenalty(N)
+ <= chenOmega(N)
+    + 2*N^(9/10)*(1+log N) + N^(2/3)*(1+log N),                (CT)
+```
+
+up to harmless integer-floor ceilings and the finite small-`N` threshold.
+The source-Selberg theorem may be transported only after a Lean version of
+(CT), with the exact repository cutoffs, replaces this schematic display.
+
 Accordingly, the implication
 
 ```text
