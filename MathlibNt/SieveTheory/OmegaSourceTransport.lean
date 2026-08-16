@@ -69,9 +69,11 @@ theorem sourceOmegaPairs_mem_witness {N : ℕ} {w : ℕ × ℕ}
       (p₂ : ℝ) ≤ ((N : ℝ) / p₁) ^ (1 / 2 : ℝ) ∧
       w.1 = p₁ * p₂ ∧ w.2.Prime ∧ w.1 * w.2 ≤ N ∧
       (N - w.1 * w.2).Prime := by
-  simpa only [sourceOmegaPairs, sourceOmegaFactorCondition,
-    sourceOmegaPrimeCondition, Finset.mem_filter] using
-    (Finset.mem_filter.mp hw).2
+  unfold sourceOmegaPairs at hw
+  rcases Finset.mem_filter.mp hw with ⟨_, hfactor, hprime⟩
+  rcases hfactor with ⟨p₁, p₂, hp₁, hp₂, hp₁low, hp₁high, hp₂low, hp₂high, ha⟩
+  exact ⟨p₁, p₂, hp₁, hp₂, hp₁low, hp₁high, hp₂low, hp₂high, ha,
+    hprime.1, hprime.2.1, hprime.2.2⟩
 
 /-- Membership in the corrected non-boundary index exposes a triple witness
 with its ordering intact.  In particular, no later transport may silently
