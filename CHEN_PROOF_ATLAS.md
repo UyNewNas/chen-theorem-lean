@@ -27,8 +27,9 @@ around the barrier to Goldbach.
 
 For the Chen-specific Pan truncation seam, the separate written audit
 [`CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md`](CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md)
-proves the MainA/MainB main-term estimate on paper and isolates the remaining
-weighted distributional input.  It is deliberately not a Lean-certification
+proves the MainA/MainB main-term estimate on paper, and refutes the current
+absolute-value truncation distribution input: a signed/coprime repair is
+required before a Pan/BV estimate can be applied.  It is deliberately not a Lean-certification
 claim.
 
 ## Architecture source

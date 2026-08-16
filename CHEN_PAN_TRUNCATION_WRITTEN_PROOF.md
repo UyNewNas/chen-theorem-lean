@@ -225,11 +225,11 @@ reciprocal-prime estimate already supplied by the ANT foundation.  It is not
 yet asserted as a completed Lean theorem; the former WIP Lean attempt was
 closed so this document, not CI status, is the current source of truth.
 
-## 4. The genuinely open input: truncated distribution error
+## 4. Red-team result: the current truncated distribution input is false
 
 The preceding proof does **not** prove
-`ChenPanTruncationSieveBound`.  Its left side contains two averaged AP error
-terms:
+`ChenPanTruncationSieveBound`.  More strongly, that proposition is false as
+currently written.  Its first summand contains
 
 ```text
 Σ_{d|P} 3^ω(d) Σ_{1≠e|F} |μ(e)| |Δ(N-2; lcm(d,e), N mod lcm(d,e))|
@@ -237,13 +237,66 @@ terms:
 + Σ_{d|P, d outside the truncation range} 3^ω(d)|Δ(N-2;d,N mod d)|.
 ```
 
-Here `Δ` is the prime-counting error relative to `li/φ`.  A pointwise AP
-bound cannot be summed over these divisor families; the required statement
-is a Pan/Bombieri--Vinogradov-type *weighted mean-value theorem*, with the
-correct truncation and a log-saving of every prescribed order.
+Here `Δ` is the prime-counting error relative to `li/φ`.
 
-This is an essential analytic obstruction, not a Lean-engineering gap.  The
-ANT supply line is:
+### Exact counterexample family
+
+Let `N` be a sufficiently large even integer.  The forbidden product contains
+the prime 2, while `1 | P(N)`.  Select the single terms `d=1` and `e=2` in
+the first double sum.  They have weight one and modulus
+
+```text
+lcm(1,2)=2,    N mod 2=0.
+```
+
+For `N≥4`, the primes at most `N-2` in the residue class 0 modulo 2 consist
+only of `2`.  Since `φ(2)=1`, the corresponding Pan error is exactly
+
+```text
+Δ(N-2;1,2,0) = 1 - li(N-2).
+```
+
+It follows that the left side of `ChenPanTruncationSieveBound` is at least
+
+```text
+|1 - (N-2)/log(N-2)|.
+```
+
+For all sufficiently large `N` this is at least, say,
+`N/(3 log N)`.  Taking `A=2`, the asserted conclusion would require a fixed
+positive `C` with
+
+```text
+N/(3 log N) ≤ C N/(log N)^2
+```
+
+for every sufficiently large even `N`, equivalently `log N ≤ 3C`.  This is
+impossible.  Thus the present proposition cannot be supplied by Pan,
+Bombieri--Vinogradov, or any stronger distribution theorem.
+
+### What went wrong
+
+The `e=2` term has a non-coprime residue class: `gcd(N mod 2,2)=2`.  Weighted
+Pan/BV theorems control coprime residue classes.  More importantly, the
+Möbius cancellation which made MainB small occurs **before** absolute values:
+it is the signed identity (5).  The present SieveBound puts absolute values
+around each distribution error before summing over `e`, thereby retaining the
+spurious `li/φ` contribution.
+
+The next theorem must therefore be redesigned, not proved as written.  A
+valid route must either:
+
+1. retain the signed `e`-sum until the exceptional non-coprime fibres have
+   been evaluated and cancelled exactly; or
+2. split the terms into coprime residues (where weighted Pan applies) and
+   non-coprime residues (where the prime count is an explicit exceptional
+   fibre), cancelling their main terms before any absolute value is taken.
+
+Only after this repair can a Pan/Bombieri--Vinogradov-type *weighted
+mean-value theorem* enter.  It must have the correct truncation and a
+log-saving of every prescribed order.
+
+The repaired ANT supply line is:
 
 ```text
 Vaughan identity
@@ -255,8 +308,9 @@ Vaughan identity
 
 The first and last arrows have substantial finite/algebraic reductions in the
 repositories.  The Type-I/II character mean-value estimates remain the
-research-level core.  Any claim that Chen is complete before this averaged
-estimate is supplied is false.
+research-level core, but they can only be attached after the signed
+truncation interface is corrected.  Any claim that Chen is complete before
+this repair and the resulting averaged estimate are supplied is false.
 
 ## 5. Atlas entry and stop condition
 
@@ -264,6 +318,11 @@ estimate is supplied is false.
 corrected finite bridge                       [proven]
           +
 MainA/MainB truncation main term              [proved on paper]
+          +
+current absolute-value truncation error       [refuted]
+          |
+          v
+signed/coprime repaired truncation interface  [hypothesis]
           +
 weighted Pan/BV truncated error               [conditional: open]
           |
@@ -277,8 +336,9 @@ Chen weighted error control and positivity    [conditional]
 prime + P2 representation for large even N   [universal target]
 ```
 
-The next smallest falsifiable artifact is a written derivation of the exact
-weighted Pan statement needed for the two displayed error sums, including its
-modulus range and lcm multiplicities.  Stop the current route if that
-derivation requires a stronger statement than the classical Pan theorem or
-if its weights cannot be reduced to the existing `3^ω(q)` mean-value form.
+The next smallest falsifiable artifact is a written derivation of a signed,
+coprime-residue truncation identity.  It must show exactly which main terms
+cancel before absolute values and which remaining moduli lie in the weighted
+Pan range.  Stop the current route if this repair still leaves an `e=2`
+contribution of order `N/log N`, or if its modulus multiplicities cannot be
+reduced to the existing `3^ω(q)` mean-value form.
