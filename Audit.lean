@@ -4,6 +4,7 @@ import MathlibNt.SieveTheory.PanTruncation
 import MathlibNt.SieveTheory.PrimePair
 import MathlibNt.SieveTheory.PrimePairLinearForm
 import MathlibNt.SieveTheory.Q1MainTermAbsorption
+import MathlibNt.SieveTheory.Q1SupportedSieve
 import MathlibNt.SieveTheory.TripleMain
 
 /-!
@@ -150,6 +151,8 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.candidatesAPCount_eq_unsiftedMoebiusSum
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1CandidateAPCount_eq_doubleSum
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1CandidateAPCount_le_main_add_error
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1CandidateAPCount_le_supportedCore
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1SupportedCoreCount_le_one_of_prime_dvd_N
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1Count_le_mainTerm_add_error
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1APBaseCount_even
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1APError_even_zero
@@ -244,3 +247,6 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_log_z_sub_one_lower
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenSingularSeriesTruncated_eq_ant
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1MainTermAbsorption_holds
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_coprime_sifting_divisor
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_supported_modulus_injective
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_supported_modulus_coprime_N
