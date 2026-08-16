@@ -10,7 +10,10 @@ ChenPanTruncationMainTermBound). Zero sorry; analytic steps are explicit Props.
 
 namespace MathlibNt.SieveTheory.SwitchingPrinciple
 
-open Real Finset
+open Real Finset Filter
+open Asymptotics
+
+open scoped Topology
 
 open scoped Classical
 open scoped ArithmeticFunction.Moebius
@@ -1048,6 +1051,50 @@ lemma swapWeightedSum_le (N : ℕ) (hN : 2 ≤ N) (hEven : Even N) :
             ∃ r : ℕ, r.Prime ∧ r ∣ correctedChenForbiddenProduct N ∧ r ∣ N - p),
           (4 : ℝ) ^ (Nat.gcd (correctedChenSiftingProduct N) (N - p)).primeFactors.card) := hswap
     _ ≤ (1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := hdiv
+
+/-- **√N·polylog 吸收 (chen #39)**: 对任意 `A`, 最终 `log^{A+1} N ≤ √N`.
+证明: `isLittleO_log_rpow_atTop (1/(2(A+1)))` 给出最终 `log x ≤ x^{1/(2(A+1))}`,
+离散化到 ℕ 后乘 `A+1` 次幂得 `log^{A+1} N ≤ N^{1/2} = √N`. 零 sorry. -/
+lemma eventual_log_pow_le_sqrt (A : ℕ) :
+    ∃ x₀ : ℕ, ∀ N : ℕ, x₀ ≤ N → (Real.log (N : ℝ)) ^ (A + 1) ≤ Real.sqrt (N : ℝ) := by
+  let r : ℝ := 1 / (2 * ((A : ℝ) + 1))
+  have hr : 0 < r := by
+    dsimp [r]
+    positivity
+  have hleR : ∀ᶠ x : ℝ in atTop, Real.log x ≤ x ^ r := by
+    have hE := (isLittleO_log_rpow_atTop hr).eventuallyLE
+    filter_upwards [hE, eventually_ge_atTop (1 : ℝ)] with x hxE hx1
+    have hlognn : 0 ≤ Real.log x := Real.log_nonneg hx1
+    have hxrnn : 0 ≤ x ^ r := by positivity
+    simpa [Real.norm_eq_abs, abs_of_nonneg hlognn, abs_of_nonneg hxrnn] using hxE
+  -- eventually atTop on ℝ ⟹ ∃ M
+  rcases (eventually_atTop.1 hleR) with ⟨M, hM⟩
+  let x₀ : ℕ := Nat.ceil (max M 1)
+  refine ⟨x₀, ?_⟩
+  intro N hN
+  have hNge : (max M 1 : ℝ) ≤ (N : ℝ) := by
+    have h1 : (x₀ : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
+    have h2 : (max M 1 : ℝ) ≤ (x₀ : ℝ) := by
+      dsimp [x₀]
+      exact Nat.le_ceil _
+    linarith
+  have hN1 : (1 : ℝ) ≤ (N : ℝ) := (max_le_iff.mp hNge).2
+  have hMle : M ≤ (N : ℝ) := (max_le_iff.mp hNge).1
+  have hxle := hM (N : ℝ) hMle
+  calc
+    (Real.log (N : ℝ)) ^ (A + 1) ≤ ((N : ℝ) ^ r) ^ (A + 1) := by
+      exact pow_le_pow_left₀ (Real.log_nonneg hN1) hxle (A + 1)
+    _ = (N : ℝ) ^ (r * ((A : ℝ) + 1)) := by
+      rw [← Real.rpow_natCast]
+      rw [← Real.rpow_mul (by positivity : 0 ≤ (N : ℝ))]
+      congr 1
+      norm_num
+    _ = (N : ℝ) ^ (1 / 2 : ℝ) := by
+      congr 1
+      dsimp [r]
+      field_simp
+    _ = Real.sqrt (N : ℝ) := by
+      rw [Real.sqrt_eq_rpow]
 
 /-- **`CorrectedChenPanTruncationInput` 的结构归约 (chen #8)**: 由两条解析台阶
 (`ChenPanTruncationSieveBound` 分布误差部分, `ChenPanTruncationMainTermBound`
