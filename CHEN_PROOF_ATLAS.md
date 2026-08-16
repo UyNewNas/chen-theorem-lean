@@ -25,6 +25,12 @@ The sieve parity barrier remains relevant: this supply line aims at
 prime-plus-`P₂`, not prime-plus-prime.  It must not be described as a route
 around the barrier to Goldbach.
 
+For the Chen-specific Pan truncation seam, the separate written audit
+[`CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md`](CHEN_PAN_TRUNCATION_WRITTEN_PROOF.md)
+proves the MainA/MainB main-term estimate on paper and isolates the remaining
+weighted distributional input.  It is deliberately not a Lean-certification
+claim.
+
 ## Architecture source
 
 - Landmark programme: the classical Chen/Jurkat--Richert/Selberg sieve
