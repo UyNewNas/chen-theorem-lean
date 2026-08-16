@@ -45,6 +45,8 @@ specialization of the classical `3^{ω(q)}` weighted mean-value theorem. The
 exact source match, its compact-support transport, and the remaining separate
 `d=1` PNT/MainB/coefficient obligations are recorded in ANT's
 [`A1_WEIGHTED_BV_SOURCE_MATCH.md`](https://github.com/UyNewNas/analytic-number-theory-lean/blob/dev/A1_WEIGHTED_BV_SOURCE_MATCH.md).
+The separate lower-sieve and variable-`a` `Omega` supply lines are mapped in
+[`CHEN_ANALYTIC_SUPPLY_SEPARATION.md`](CHEN_ANALYTIC_SUPPLY_SEPARATION.md).
 
 ## Architecture source
 
