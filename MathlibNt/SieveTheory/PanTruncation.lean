@@ -1213,7 +1213,7 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
           field_simp
           ring
         rw [hre]
-        linarith [hlog2N]
+        nlinarith [hlog2N]
       exact le_trans hleft hright
     -- 核心: √N·log N·(log N)^A ≤ N
     have hsqrtN : (Real.log (N : ℝ)) ^ (A + 1) ≤ Real.sqrt (N : ℝ) := hsqrt₁ N hNx0₁
@@ -1262,15 +1262,20 @@ lemma mainB_sqrt_absorbed (A : ℕ) :
         have h16nn : 0 ≤ (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by positivity
         have hm1 := mul_le_mul_of_nonneg_right h1wo h16nn
         -- hm1: (1+ω(F))·(16^8·√N) ≤ (1+1/log2)·log N·(16^8·√N)
-        simpa [mul_assoc, mul_comm, mul_left_comm] using hm1
+        -- 目标 RHS = (1+1/log2)·16^8·√N·log N = (1+1/log2)·log N·16^8·√N (交换)
+        calc
+          ((1 + (correctedChenForbiddenProduct N).primeFactors.card : ℝ)) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ)
+              ≤ (1 + 1 / Real.log 2) * Real.log (N : ℝ) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) := by
+                -- 由 hm1 (乘结合交换)
+                simpa [mul_assoc, mul_comm, mul_left_comm] using hm1
+          _ = (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * Real.sqrt (N : ℝ) * Real.log (N : ℝ) := by ring
       have hmul' : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) * ((N : ℝ) / (Real.log (N : ℝ)) ^ A) ≤
           C * (N : ℝ) / (Real.log (N : ℝ)) ^ A := by
-        dsimp [C]
-        -- 系数相等: (1+1/log2)·16^8 = C
         have hcoef : (1 + 1 / Real.log 2) * (16 ^ 8 : ℝ) = C := by
           dsimp [C]
           ring
         rw [← hcoef]
+        ring_nf
         rfl
       exact le_trans (le_trans hleft hmul) hmul'
 
