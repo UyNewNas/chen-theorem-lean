@@ -283,34 +283,21 @@ it is the signed identity (5).  The present SieveBound puts absolute values
 around each distribution error before summing over `e`, thereby retaining the
 spurious `li/φ` contribution.
 
-The next theorem must therefore be redesigned, not proved as written.  A
-valid route must either:
-
-1. retain the signed `e`-sum until the exceptional non-coprime fibres have
-   been evaluated and cancelled exactly; or
-2. split the terms into coprime residues (where weighted Pan applies) and
-   non-coprime residues (where the prime count is an explicit exceptional
-   fibre), cancelling their main terms before any absolute value is taken.
-
-Only after this repair can a Pan/Bombieri--Vinogradov-type *weighted
-mean-value theorem* enter.  It must have the correct truncation and a
-log-saving of every prescribed order.
-
-The repaired ANT supply line is:
+The next theorem must therefore be redesigned, not proved as written.  The
+signed `e`-sum is already evaluated exactly by (5): it belongs to MainB, not
+to a Pan/BV distributional estimate.  The remaining analytic supply is only
+the uncovered single-modulus tail
 
 ```text
-Vaughan identity
-  -> Type-I and Type-II character mean values
-  -> weighted Pan mean-value theorem
-  -> Chen-specific lcm/truncation bridge
-  -> ChenPanTruncationSieveBound.
+Σ_{d|P, d outside 2≤d≤D} 3^ω(d)|Δ(N-2;d,N mod d)|.
 ```
 
-The first and last arrows have substantial finite/algebraic reductions in the
-repositories.  The Type-I/II character mean-value estimates remain the
-research-level core, but they can only be attached after the signed
-truncation interface is corrected.  Any claim that Chen is complete before
-this repair and the resulting averaged estimate are supplied is false.
+The covered range is the part to which the a=1 weighted Pan/BV mean-value
+theorem applies.  The exact replacement API, its proof reduction, and its
+falsification checks are recorded in
+[`CHEN_PAN_TRUNCATION_REPAIR.md`](CHEN_PAN_TRUNCATION_REPAIR.md).  A claim
+that Chen is complete before this tail input and the corresponding averaged
+estimate are supplied is false.
 
 ## 5. Atlas entry and stop condition
 
@@ -322,9 +309,9 @@ MainA/MainB truncation main term              [proved on paper]
 current absolute-value truncation error       [refuted]
           |
           v
-signed/coprime repaired truncation interface  [hypothesis]
+signed Möbius correction                      [proved on paper]
           +
-weighted Pan/BV truncated error               [conditional: open]
+uncovered single-modulus tail                  [conditional: open]
           |
           v
 CorrectedChenPanTruncationInput               [conditional]
@@ -336,9 +323,9 @@ Chen weighted error control and positivity    [conditional]
 prime + P2 representation for large even N   [universal target]
 ```
 
-The next smallest falsifiable artifact is a written derivation of a signed,
-coprime-residue truncation identity.  It must show exactly which main terms
-cancel before absolute values and which remaining moduli lie in the weighted
-Pan range.  Stop the current route if this repair still leaves an `e=2`
-contribution of order `N/log N`, or if its modulus multiplicities cannot be
-reduced to the existing `3^ω(q)` mean-value form.
+The next smallest falsifiable artifact is a source-level match for the tail
+statement: it must give the exact modulus range, the `3^ω(d)` weights, and an
+arbitrary prescribed logarithmic saving.  Stop the route if a proposed proof
+re-expands the signed forbidden-divisor sum and leaves individual
+`lcm(d,e)` errors under absolute values, or if it lacks the required tail
+range.

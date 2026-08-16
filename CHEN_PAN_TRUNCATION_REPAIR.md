@@ -143,7 +143,35 @@ These checks give a concrete stop condition: until a source theorem is
 matched to `(Tail)` with its exact modulus range, weights, and arbitrary-`A`
 quantifiers, the Chen chain remains conditional at this one analytic node.
 
-## 5. Formalization consequence (deferred)
+## 5. Literature cross-check: Liu's correction is a warning, not a proof
+
+Zihao Liu, *A Corrected Simplified Proof of Chen's Theorem* (2022), Section
+IV, identifies the same logical hazard in the Pan-et-al. simplification.  Its
+mean-value theorem is applicable to the coprime part, but the implication
+`f(a) ≠ 0` ⇒ `(a,d)=1` is false.  Liu explicitly splits off the `(a,d)>1`
+part as `R_1`, uses the resulting exceptional prime-count bound, and then
+estimates that residual separately.
+
+That source supports the **methodological** conclusion here: a non-coprime
+or signed exceptional fibre cannot be hidden inside a coprime Pan/BV average.
+It does **not** by itself prove `(Tail)`.  The objects, divisor supports,
+weights, and quantifiers must be matched line by line before it can be used
+as supply.
+
+There is also an architectural mismatch worth preserving as an open audit
+question.  Liu's Selberg coefficients are compactly supported, so the lcm
+moduli in its displayed remainder are already below the available
+distribution range.  The current Chen object has
+`correctedChenBoundingSieve.weights = fun _ => 1` and its generic `errSum`
+ranges over every divisor of the full sifting product.  Consequently the
+tail may be a genuine deep estimate, or it may signal that the formal sieve
+object is broader than the compactly-supported Selberg/Jurkat--Richert
+weights used in the classical proof.  No conclusion is licensed until the
+two formulations are reconciled.
+
+Primary source: [Liu, arXiv:2203.07871, Section IV](https://arxiv.org/abs/2203.07871).
+
+## 6. Formalization consequence (deferred)
 
 When formal work resumes, the sound API change is to replace the false
 `ChenPanTruncationSieveBound` and its constructor
