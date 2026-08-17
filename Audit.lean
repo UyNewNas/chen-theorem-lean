@@ -4,6 +4,7 @@ import MathlibNt.SieveTheory.PanTruncation
 import MathlibNt.SieveTheory.PrimePair
 import MathlibNt.SieveTheory.PrimePairLinearForm
 import MathlibNt.SieveTheory.Q1MainTermAbsorption
+import MathlibNt.SieveTheory.OmegaSourceTransport
 import MathlibNt.SieveTheory.TripleMain
 
 /-!
@@ -244,3 +245,9 @@ imported PNT and Mertens interfaces.
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1_log_z_sub_one_lower
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenSingularSeriesTruncated_eq_ant
 #print axioms MathlibNt.SieveTheory.SwitchingPrinciple.q1MainTermAbsorption_holds
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.sourceOmegaPairs_mem_witness
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.correctedTripleNonBoundaryIndex_mem_witness
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ordered_triple_sq_le_N
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.ordered_triple_rpow_half_bound
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.p1_le_cuberoot_of_lt_correctedChenY
+#print axioms MathlibNt.SieveTheory.SwitchingPrinciple.chenF_eq_sourceOmegaFactorIndicator
