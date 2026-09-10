@@ -35,6 +35,14 @@ jobs:
             | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
+      - name: Fetch prebuilt mathlib olean cache
+        # Without this step a cold cache miss compiles mathlib4 from source
+        # (~1h): the actions/cache below only restores ~/.elan and
+        # .lake/packages, which cannot supply the compiled oleans.
+        # `|| true` keeps it non-blocking: if the cache is unavailable, the
+        # build simply falls back to compiling from source as before.
+        run: lake exe cache get || true
+
       - name: Build the public Lean root
         run: |
           set +e
