@@ -2,7 +2,6 @@ import MathlibNt.ChensTheorem
 import MathlibNt.SieveTheory.BombieriVinogradov
 import MathlibNt.SieveTheory.LinearSieve
 import MathlibNt.SieveTheory.PanTruncation
-import MathlibNt.SieveTheory.ParityBiasThreshold
 import MathlibNt.SieveTheory.PrimePair
 import MathlibNt.SieveTheory.PrimePairLinearForm
 import MathlibNt.SieveTheory.Q1MainTermAbsorption
