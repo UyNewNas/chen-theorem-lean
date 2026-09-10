@@ -89,11 +89,13 @@ theorem parity_bias_threshold_pos
   -- step 3: M ≥ A X turns that into a bound depending only on (A,B,X,κ)
   have h3 : (1 + κ) * A * X / 2 - B * X ≤ (1 + κ) * M / 2 - B * X := by
     have hone : (0 : ℚ) ≤ 1 + κ := by linarith
-    nlinarith [hM, hMdef, hone]
+    have h4 : (1 + κ) * (A * X) ≤ (1 + κ) * M := by
+      exact mul_le_mul_of_nonneg_left (by rwa [hMdef] at hM) hone
+    linarith
   -- step 4: that quantity is strictly positive by 2B < (1+κ)A
   have h4 : 0 < (1 + κ) * A * X / 2 - B * X := by
-    have : 0 < (1 + κ) * A - 2 * B := by nlinarith [hκ]
-    have : 0 < ((1 + κ) * A - 2 * B) * X := mul_pos this hX
+    have hpos : 0 < (1 + κ) * A - 2 * B := by linarith
+    have hmul : 0 < ((1 + κ) * A - 2 * B) * X := mul_pos hpos hX
     linarith
   linarith
 
@@ -129,15 +131,21 @@ theorem parity_bias_threshold_upper
   set M := M₁ + M₂ + M₃ + M₄ with hMdef
   have h1 : M₁ = (M + (M₁ - M₂ + M₃ - M₄)) / 2 - M₃ := by
     rw [hMdef]; ring
-  have h2 : (1 - κ) * M / 2 - B * X ≤ M₁ := by
+  -- (i) M₁ is at least (1-κ)M/2 - M₃, using the two one-sided hypotheses
+  have h2 : (1 - κ) * M / 2 - M₃ ≤ M₁ := by
     rw [h1]; linarith
-  have h3 : (1 - κ) * A * X / 2 - B * X ≤ (1 - κ) * M / 2 - B * X := by
-    have hone : (0 : ℚ) < 1 - κ := by linarith
-    nlinarith [hM, hMdef, hone]
-  have h4 : 0 < (1 - κ) * A * X / 2 - B * X := by
-    have hpos : 0 < (1 - κ) * A - 2 * B := by nlinarith [hκ]
-    have : 0 < ((1 - κ) * A - 2 * B) * X := mul_pos hpos hX
+  -- (ii) M₃ ≤ B X
+  have h3 : (1 - κ) * M / 2 - B * X ≤ (1 - κ) * M / 2 - M₃ := by linarith
+  -- (iii) M ≥ A X, with (1-κ) > 0, gives the A·X form
+  have hone : (0 : ℚ) < 1 - κ := by linarith
+  have h4 : (1 - κ) * (A * X) ≤ (1 - κ) * M := by
+    exact mul_le_mul_of_nonneg_left (by rwa [hMdef] at hM) (le_of_lt hone)
+  have h5 : (1 - κ) * A * X / 2 - B * X ≤ (1 - κ) * M / 2 - B * X := by
     linarith
+  -- (iv) the resulting quantity is strictly positive by 2B < (1-κ)A
+  have h6 : 2 * B < (1 - κ) * A := by linarith
+  have h7 : 0 < ((1 - κ) * A - 2 * B) * X := mul_pos (by linarith) hX
+  have h8 : 0 < (1 - κ) * A * X / 2 - B * X := by linarith
   linarith
 
 end MathlibNt.SieveTheory
